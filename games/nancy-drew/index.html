@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>нэнси дрю — vol4games</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 100%; height: 100%; background: #040408; overflow: hidden;
+    color: #fff;
+  }
+  /* font-family из type.css (через soon.js → import) */
+  #ui { position: fixed; inset: 0; pointer-events: none; }
+  #title {
+    position: absolute; top: 22px; left: 24px;
+    font-size: 11px; font-weight: 600;
+    letter-spacing: 0.34em; text-transform: uppercase;
+    color: rgba(255,255,255,0.45);
+  }
+  #back {
+    position: absolute; bottom: 22px; right: 24px;
+    font-size: 10px; letter-spacing: 0.18em;
+    color: rgba(255,255,255,0.32); text-decoration: none;
+    pointer-events: auto;
+    text-transform: uppercase;
+    transition: color 0.2s;
+  }
+  #back:hover { color: #f0d8a8; }
+  #soon {
+    position: absolute; left: 50%; top: 50%;
+    transform: translate(-50%, -50%); text-align: center;
+  }
+  #soon .big {
+    font-size: 14px; letter-spacing: 0.32em; opacity: 0.85;
+    text-transform: uppercase;
+  }
+  #soon .sub {
+    margin-top: 18px;
+    font-size: 10px; letter-spacing: 0.18em; opacity: 0.4;
+    line-height: 1.8em;
+  }
+</style>
+</head>
+<body>
+<div id="ui">
+  <div id="title">vol4 · НЭНСИ ДРЮ</div>
+  <a id="back" href="/">← КАРТА</a>
+</div>
+<script type="module" src="/src/games/nancy-drew/main.js"></script>
+</body>
+</html>

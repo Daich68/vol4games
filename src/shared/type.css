@@ -1,0 +1,133 @@
+/* ─── vol4 type system ──────────────────────────────────────────────────
+   Один шрифт (JetBrains Mono), но проработанная шкала + паттерны:
+   мелкий трекованый лейбл сверху, крупное табличное значение снизу.
+   Все размеры/цвета — через CSS custom properties, чтобы тюнить разом.
+*/
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* шкала */
+  --t-xs:  10px;
+  --t-sm:  11px;
+  --t-md:  13px;
+  --t-lg:  22px;
+  --t-xl:  36px;
+
+  /* трекинг */
+  --tk-norm: 0.02em;
+  --tk-wide: 0.18em;
+  --tk-mega: 0.34em;
+
+  /* цвета */
+  --c-label:  rgba(255, 255, 255, 0.40);
+  --c-value:  rgba(255, 255, 255, 0.92);
+  --c-muted:  rgba(255, 255, 255, 0.24);
+  --c-accent: #f0d8a8;
+  --c-danger: #ff7a7a;
+  --c-rule:   rgba(255, 255, 255, 0.10);
+}
+
+body, button, input, textarea {
+  font-family: var(--font-mono);
+  /* tnum: табличные цифры (не прыгают), calt: контекстные альтернаты, ss01: стилистика */
+  font-feature-settings: "tnum" 1, "lnum" 1, "calt" 1, "ss01" 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── атомарные классы ─────────────────────────────────────────────────── */
+
+.t-label {
+  font-size: var(--t-sm);
+  font-weight: 500;
+  letter-spacing: var(--tk-wide);
+  text-transform: uppercase;
+  color: var(--c-label);
+  line-height: 1;
+}
+
+.t-value {
+  font-size: var(--t-lg);
+  font-weight: 400;
+  letter-spacing: var(--tk-norm);
+  color: var(--c-value);
+  font-variant-numeric: tabular-nums lining-nums;
+  line-height: 1;
+}
+.t-value.accent { color: var(--c-accent); }
+.t-value.danger { color: var(--c-danger); animation: t-pulse 0.7s infinite alternate; }
+@keyframes t-pulse { from { opacity: 0.6; } to { opacity: 1; } }
+
+.t-hint {
+  font-size: var(--t-xs);
+  letter-spacing: var(--tk-wide);
+  text-transform: uppercase;
+  color: var(--c-muted);
+  font-weight: 400;
+}
+.t-hint.arrow::before {
+  content: "›";
+  margin-right: 8px;
+  opacity: 0.6;
+}
+
+/* watermark/угловой маркер проекта */
+.t-mark {
+  font-size: var(--t-sm);
+  font-weight: 600;
+  letter-spacing: var(--tk-mega);
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+  line-height: 1;
+}
+
+/* большой дисплей-заголовок для оверлеев */
+.t-display {
+  font-size: var(--t-xl);
+  font-weight: 300;
+  letter-spacing: var(--tk-wide);
+  text-transform: uppercase;
+  color: var(--c-value);
+  line-height: 1.1;
+}
+
+/* блок: лейбл сверху, значение снизу */
+.t-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+}
+.t-stat.center { align-items: center;  text-align: center;  }
+.t-stat.end    { align-items: flex-end; text-align: right;  }
+
+/* кнопка [ скобки ] — обёртки добавляются автоматически */
+.t-btn {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  color: var(--c-value);
+  font-family: var(--font-mono);
+  font-size: var(--t-md);
+  font-weight: 500;
+  letter-spacing: var(--tk-wide);
+  padding: 14px 24px 14px 24px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.18s, border-color 0.18s, color 0.18s;
+}
+.t-btn::before { content: "[\00a0"; opacity: 0.45; }
+.t-btn::after  { content: "\00a0]"; opacity: 0.45; }
+.t-btn:hover {
+  background: rgba(240, 216, 168, 0.07);
+  border-color: var(--c-accent);
+  color: var(--c-accent);
+}
+.t-btn:hover::before, .t-btn:hover::after { opacity: 0.9; }
+
+.t-rule {
+  height: 1px;
+  background: var(--c-rule);
+  border: 0;
+}

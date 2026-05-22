@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>птицы — vol4games</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 100%; height: 100%; background: #040408; overflow: hidden;
+    color: #fff;
+  }
+
+  .frame {
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    height: 100vh;
+    width: min(64vh, 100vw);
+    display: flex;
+    flex-direction: column;
+    padding: 56px 22px 56px;
+  }
+
+  /* ── top status bar ──────────────────────────────────────────────── */
+  #topbar {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    align-items: end;
+    margin-bottom: 18px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.10);
+    flex: 0 0 auto;
+    gap: 8px;
+  }
+  #hearts {
+    display: flex; gap: 6px;
+    font-size: 18px;
+    line-height: 1;
+    color: var(--c-accent);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.1em;
+  }
+  #hearts .h { transition: opacity 0.3s, color 0.3s; }
+  #hearts .h.lost { color: rgba(255,255,255,0.18); }
+
+  /* ── контейнер канваса ───────────────────────────────────────────── */
+  #stage {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+  }
+  #c {
+    flex: 1 1 auto;
+    width: 100%;
+    height: 100%;
+    display: block;
+    min-height: 0;
+  }
+
+  /* ── chrome ──────────────────────────────────────────────────────── */
+  #title { position: absolute; top: 22px; left: 22px; }
+  #hint  { position: absolute; bottom: 22px; left: 22px; }
+  #back  {
+    position: absolute; bottom: 22px; right: 22px;
+    text-decoration: none; color: var(--c-muted);
+    font-size: var(--t-xs); letter-spacing: var(--tk-wide); text-transform: uppercase;
+    transition: color 0.2s;
+  }
+  #back:hover { color: var(--c-accent); }
+
+  /* ── overlays ────────────────────────────────────────────────────── */
+  .overlay {
+    position: fixed; inset: 0;
+    background: rgba(4, 4, 8, 0.84);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 20px;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.6s;
+    z-index: 10;
+  }
+  .overlay.show { opacity: 1; pointer-events: auto; }
+  .overlay .ov-meta {
+    color: var(--c-muted);
+    font-size: var(--t-xs);
+    letter-spacing: var(--tk-wide);
+    text-transform: uppercase;
+  }
+  .overlay .ov-sub {
+    color: var(--c-label);
+    font-size: var(--t-md);
+    letter-spacing: var(--tk-norm);
+    text-align: center; line-height: 1.6em;
+    max-width: 28em;
+    margin-bottom: 8px;
+  }
+</style>
+</head>
+<body>
+<div class="frame">
+  <div id="topbar">
+    <div class="t-stat">
+      <div class="t-label">время</div>
+      <div class="t-value" id="timer">1:30</div>
+    </div>
+    <div class="t-stat center">
+      <div class="t-label">стих</div>
+      <div class="t-value accent" id="counter">0%</div>
+    </div>
+    <div class="t-stat end">
+      <div class="t-label">жизни</div>
+      <div id="hearts">
+        <span class="h">♥</span><span class="h">♥</span><span class="h">♥</span>
+      </div>
+    </div>
+  </div>
+  <div id="poem"><div class="inner"></div></div>
+  <div id="stage"><canvas id="c"></canvas></div>
+</div>
+
+<div id="title" class="t-mark">vol4 · птицы</div>
+<div id="hint"  class="t-hint arrow">клик · обмен соседних</div>
+<a   id="back"  href="/">← карта</a>
+
+<div id="winOverlay" class="overlay">
+  <div class="ov-meta">завершено</div>
+  <div class="t-display" style="color: var(--c-accent);">стих раскрыт</div>
+  <div class="ov-sub">так как видят, что не должны</div>
+  <button class="t-btn" data-action="restart">сыграть ещё</button>
+</div>
+
+<div id="loseOverlay" class="overlay">
+  <div class="ov-meta">конец</div>
+  <div class="t-display">смерть несезонна</div>
+  <div class="ov-sub" id="loseSub">стих не дочитан</div>
+  <button class="t-btn" data-action="restart">с начала</button>
+</div>
+
+<style>
+  /* poem strip — внутри frame, чтобы иметь доступ к --c-* переменным */
+  #poem {
+    flex: 0 0 auto;
+    min-height: 22%;
+    max-height: 24%;
+    overflow: hidden;
+    color: var(--c-label);
+    font-size: clamp(11px, 1.5vh, 14px);
+    line-height: 1.85em;
+    letter-spacing: 0.04em;
+    white-space: pre-wrap;
+    text-align: center;
+    padding: 8px 4px;
+    margin-bottom: 16px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  #poem .inner { width: 100%; }
+  #poem span { transition: opacity 0.6s ease-out, color 0.6s; }
+</style>
+
+<script type="module" src="/src/games/birds/main.js"></script>
+</body>
+</html>

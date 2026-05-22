@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>сталагмит — vol4games</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 100%; height: 100%; background: #000; overflow: hidden;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    color: #fff;
+  }
+
+  /* портретный канвас в центре экрана: «как на мобилке».
+     На широких экранах — letterbox. На вертикальных мобилках — fullscreen. */
+  #c {
+    display: block;
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    height: 100vh;
+    width: min(58vh, 100vw);
+    background: #000;
+  }
+
+  /* UI: тоже в той же портретной рамке */
+  #ui {
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    height: 100vh;
+    width: min(58vh, 100vw);
+    pointer-events: none;
+  }
+  #ui > * { position: absolute; }
+
+  #title    { top: 18px; left: 22px; font-size: 10px; letter-spacing: 0.22em; color: #fff; opacity: 0.45; }
+  #counter  { top: 18px; right: 22px; font-size: 11px; letter-spacing: 0.2em;  color: #fff; opacity: 0.7; }
+  #hint     { bottom: 18px; left: 22px; font-size: 9px;  letter-spacing: 0.14em; color: #fff; opacity: 0.22; }
+  #back {
+    bottom: 18px; right: 22px; font-size: 9px; letter-spacing: 0.18em;
+    color: #fff; opacity: 0.45; text-decoration: none; pointer-events: auto;
+  }
+  #back:hover { opacity: 1; }
+
+  #status {
+    left: 50%; top: 38%;
+    transform: translate(-50%, -50%);
+    font-size: 14px; letter-spacing: 0.22em;
+    color: #fff; text-transform: uppercase;
+    text-align: center; opacity: 0;
+    transition: opacity 0.4s;
+    width: 90%;
+  }
+  #status .sub {
+    display: block; margin-top: 12px; font-size: 9px; color: #888;
+    letter-spacing: 0.16em; line-height: 1.6em;
+  }
+  #status.show { opacity: 1; }
+
+  #poem {
+    left: 50%; top: 50%;
+    transform: translate(-50%, -50%);
+    width: 80%;
+    color: #ddd; font-size: 11px; line-height: 1.75em;
+    letter-spacing: 0.04em;
+    white-space: pre-wrap;
+    opacity: 0; transition: opacity 1.2s;
+    text-shadow: 0 0 12px rgba(0,0,0,0.9);
+  }
+  #poem.show { opacity: 0.9; }
+  #poem .sig { display: block; margin-top: 1.6em; opacity: 0.55; font-size: 9px; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="ui">
+  <div id="title">vol4 · СТАЛАГМИТ</div>
+  <div id="counter">000 / 020</div>
+  <div id="hint">SPACE — сбросить · ESC — назад</div>
+  <a id="back" href="/">← КАРТА</a>
+  <div id="status"></div>
+  <div id="poem"></div>
+</div>
+
+<script type="module" src="/src/games/stalagmit/main.js"></script>
+</body>
+</html>

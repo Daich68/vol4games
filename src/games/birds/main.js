@@ -1,0 +1,671 @@
+import "../../shared/type.css";
+import { showCompleted } from "../../shared/nav.js";
+// Match-3 «Много снега и много птиц».
+// 5 типов фишек (снежки, воробьи, голуби, вёдра, бутоны) — образы стиха.
+// Сверху над полем — текст стиха, проявляющийся посимвольно по мере матчей.
+//
+// Геймплей: таймер 90с, 3 жизни. Не успел до таймера — минус жизнь, таймер
+// перезапускается. Жизни кончились — game over. Раскрыл стих целиком — win.
+
+const POEM = [
+  "Много снега и много птиц —",
+  "перегрузка апреля, несогласованность",
+  "двух расписаний. Крик вернувшихся:",
+  "они не должны были видеть горы",
+  "и бутоны мусорных вёдер; вообще крик",
+  "невольных свидетелей несезонной",
+  "смерти. Чувствительный контент",
+  "в инстаграме, мокредь под пальцами,",
+  "двухгодовщина, двухголовый голубь",
+  "лифляндской заставы с растянутыми",
+  "крыльями, как остеклевший",
+  "детский воротничок. Не могу заснуть,",
+  "потому что всю ночь кричат",
+  "так как видят, что не должны.",
+].join("\n");
+
+// ── DOM ──────────────────────────────────────────────────────────────────
+const canvas    = document.getElementById("c");
+const ctx       = canvas.getContext("2d");
+const poemInner = document.querySelector("#poem .inner");
+const counter   = document.getElementById("counter");
+const timerEl   = document.getElementById("timer");
+const heartsEl  = document.getElementById("hearts");
+const winOv     = document.getElementById("winOverlay");
+const loseOv    = document.getElementById("loseOverlay");
+const loseSub   = document.getElementById("loseSub");
+
+const charEls = [];
+for (const ch of POEM) {
+  const s = document.createElement("span");
+  s.textContent = ch;
+  s.style.opacity = "0";
+  poemInner.appendChild(s);
+  charEls.push(s);
+}
+
+// ── константы поля ───────────────────────────────────────────────────────
+const COLS = 7, ROWS = 8;
+const CELL = 64;
+const GRID_W = COLS * CELL;
+const GRID_H = ROWS * CELL;
+
+// ── canvas DPR-fit ───────────────────────────────────────────────────────
+// Используем clientWidth/Height (CSS-пиксели, до 3D-трансформа), чтобы
+// внутренний размер канваса и хитбоксы кликов оставались согласованными
+// даже когда канвас наклонён/повёрнут CSS-камерой.
+function fitCanvas() {
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  canvas.width  = Math.floor(w * dpr);
+  canvas.height = Math.floor(h * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+window.addEventListener("resize", fitCanvas);
+
+function viewport() {
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  const sx = w / GRID_W, sy = h / GRID_H;
+  const s  = Math.min(sx, sy);
+  const gw = GRID_W * s, gh = GRID_H * s;
+  return { ox: (w - gw) / 2, oy: (h - gh) / 2, s, w, h };
+}
+
+// ── state ────────────────────────────────────────────────────────────────
+let grid, anim, particles, snow;
+let revealed = 0;
+let busy = false;
+let selected = null;
+let hover    = null;
+
+let lives = 3;
+const TIME_LIMIT = 90;
+let timeLeft = TIME_LIMIT;
+let gameOver = false;
+let won      = false;
+
+function makeGrid() {
+  const g = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      let t;
+      do {
+        t = 1 + Math.floor(Math.random() * 5);
+      } while (
+        (c >= 2 && g[r][c-1] === t && g[r][c-2] === t) ||
+        (r >= 2 && g[r-1][c] === t && g[r-2][c] === t)
+      );
+      g[r][c] = t;
+    }
+  }
+  return g;
+}
+
+function freshAnim() {
+  return Array.from({ length: ROWS }, () =>
+    Array.from({ length: COLS }, () => ({
+      fallFrom: 0, fallStart: -1, fallDur: 300,
+      removeStart: -1, removeDur: 320,
+      swapDx: 0, swapDy: 0, swapStart: -1, swapDur: 160,
+      bornAt: 0,
+    }))
+  );
+}
+
+function resetGame() {
+  grid = makeGrid();
+  anim = freshAnim();
+  particles = [];
+  snow = [];
+  for (let i = 0; i < 28; i++) { spawnSnow(); snow[snow.length - 1].y = Math.random() * GRID_H; }
+  revealed = 0;
+  busy = false; selected = null; hover = null;
+  lives = 3; timeLeft = TIME_LIMIT; gameOver = false; won = false;
+  // стих
+  for (const el of charEls) { el.style.opacity = "0"; el.style.color = "#c7c7d2"; }
+  // ui
+  updateHearts(); updateTimer(); updateCounter();
+  winOv.classList.remove("show");
+  loseOv.classList.remove("show");
+  // плитки выезжают сверху
+  const t0 = now();
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      anim[r][c].bornAt    = t0 + (r + c) * 28;
+      anim[r][c].fallFrom  = -(r + 2) * CELL;
+      anim[r][c].fallStart = t0 + (r + c) * 28;
+      anim[r][c].fallDur   = 520;
+    }
+  }
+}
+
+// ── палитра — настоящие 3D-сферы в ASCII ────────────────────────────────
+// Каждый тип = три ключевых цвета (deep → base → core) для shading-ramp.
+// Сферы шейдятся попиксельно (Lambert + specular) и рисуются монохромными
+// ASCII-символами разной плотности. Спрайты пре-рендерятся один раз.
+const TYPE_COL = {
+  1: { base: "#dbeafe", core: "#ffffff", deep: "#3e5c88" }, // снежок — холодно-белый
+  2: { base: "#e0b878", core: "#ffe9bb", deep: "#5a3a12" }, // воробей — тёплый коричневый
+  3: { base: "#b8a8c8", core: "#f0e0ff", deep: "#3a2548" }, // голубь — лавандово-серый (тёплый)
+  4: { base: "#4e7a6e", core: "#9cc4b8", deep: "#0e1e1a" }, // ведро — окисленный медно-зелёный
+  5: { base: "#e0a8c8", core: "#ffd4e8", deep: "#582038" }, // бутон — розово-маджента
+};
+
+// Плотностная лестница ASCII — узкая, с резким переходом тень/свет.
+// Тёмный край обрывается в «·», свет даёт сплошной блок «█» в самом ярком.
+const ASCII_RAMP = " .·-+*x#@█";
+
+// Свет: верх-лево-перёд, ближе к фронту чем раньше — даёт яркий блик в центре.
+const LIGHT = (() => {
+  const v = [-0.42, -0.55, 0.72];
+  const m = Math.hypot(v[0], v[1], v[2]);
+  return [v[0]/m, v[1]/m, v[2]/m];
+})();
+
+function parseHex(h) {
+  const n = parseInt(h.slice(1), 16);
+  return [(n >> 16) & 0xff, (n >> 8) & 0xff, n & 0xff];
+}
+function mixColor(a, b, t) {
+  return [a[0] + (b[0]-a[0]) * t, a[1] + (b[1]-a[1]) * t, a[2] + (b[2]-a[2]) * t];
+}
+
+// Цвета типов в виде заранее распарсенных RGB-троек — чтобы не пересчитывать в горячем цикле.
+const TYPE_RGB = {};
+for (const k of Object.keys(TYPE_COL)) {
+  const t = TYPE_COL[k];
+  TYPE_RGB[k] = { deep: parseHex(t.deep), base: parseHex(t.base), core: parseHex(t.core) };
+}
+
+// Живой рендер сферы. Свет передаётся каждый кадр снаружи — при его повороте
+// блик движется по поверхности, и сфера выглядит настоящим 3D-объектом.
+function drawSphereLive(cx, cy, size, type, alpha, scale, hi, light, hv) {
+  if (!type || alpha <= 0.005) return;
+  const cols = TYPE_RGB[type];
+  if (!cols) return;
+  const { deep, base, core } = cols;
+
+  const N = 14;
+  const w = size * 1.0 * scale;
+  const cellPx = w / N;
+  const half = w / 2;
+  const r = half * 0.96;
+
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.font = `bold ${Math.round(cellPx * 1.2)}px "SF Mono", ui-monospace, Menlo, monospace`;
+
+  // контактная тень (короткая, без свечения)
+  ctx.fillStyle = "rgba(0,0,0,0.55)";
+  ctx.beginPath();
+  ctx.ellipse(cx, cy + half * 0.85, half * 0.95, half * 0.28, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  const lx = light[0], ly = light[1], lz = light[2];
+  const hx = hv[0], hy = hv[1], hz = hv[2];
+
+  for (let j = 0; j < N; j++) {
+    const y = (j + 0.5) * cellPx - half;
+    for (let i = 0; i < N; i++) {
+      const x = (i + 0.5) * cellPx - half;
+      const d2 = x * x + y * y;
+      if (d2 > r * r) continue;
+      const z  = Math.sqrt(r * r - d2);
+      const nx = x / r, ny = y / r, nz = z / r;
+
+      // Lambert
+      const lambert = nx * lx + ny * ly + nz * lz;
+      const diffuse = lambert > 0 ? lambert : 0;
+      // Blinn specular — tight highlight
+      const hdot = nx * hx + ny * hy + nz * hz;
+      const spec = hdot > 0 ? Math.pow(hdot, 110) * 1.6 : 0;
+      // Rim — reduced so shadow side stays dark
+      const oneMinusNz = 1 - nz;
+      const rim = oneMinusNz * oneMinusNz * oneMinusNz * oneMinusNz * 0.15;
+
+      let I = 0.02 + diffuse * 1.25 + spec + rim;
+      if (I > 1) I = 1;
+
+      const ri = (I * ASCII_RAMP.length) | 0;
+      const ch = ASCII_RAMP[ri >= ASCII_RAMP.length ? ASCII_RAMP.length - 1 : ri];
+      if (ch === " ") continue;
+
+      // лерп цвета
+      let R, G, B;
+      if (I < 0.5) {
+        const k = I * 2;
+        R = deep[0] + (base[0] - deep[0]) * k;
+        G = deep[1] + (base[1] - deep[1]) * k;
+        B = deep[2] + (base[2] - deep[2]) * k;
+      } else {
+        const k = (I - 0.5) * 2;
+        R = base[0] + (core[0] - base[0]) * k;
+        G = base[1] + (core[1] - base[1]) * k;
+        B = base[2] + (core[2] - base[2]) * k;
+      }
+      ctx.fillStyle = `rgb(${R|0},${G|0},${B|0})`;
+      ctx.fillText(ch, cx + x, cy + y);
+    }
+  }
+
+  // selected — тонкий ASCII-кружок вокруг (без свечения)
+  if (hi) {
+    ctx.strokeStyle = "rgba(255,255,255,0.55)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(cx, cy, half * 1.02, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
+// drawSphereLive объявлена выше — здесь только её обёртка для совместимости
+// с интерфейсом старого вызова drawSphereAt.
+function drawSphereAt(cx, cy, size, type, alpha, scale, hi) {
+  drawSphereLive(cx, cy, size, type, alpha, scale, hi, CURRENT_LIGHT, CURRENT_HV);
+}
+
+// ── снег и частицы ──────────────────────────────────────────────────────
+function spawnSnow() {
+  snow.push({
+    x: Math.random() * GRID_W,
+    y: -10,
+    vx: (Math.random() - 0.5) * 8,
+    vy: 10 + Math.random() * 18,
+    r: 0.6 + Math.random() * 1.8,
+    sway: Math.random() * Math.PI * 2,
+    swaySpeed: 0.6 + Math.random() * 1.2,
+  });
+}
+
+function updateSnow(dt) {
+  if (Math.random() < dt * 8) spawnSnow();
+  for (let i = snow.length - 1; i >= 0; i--) {
+    const s = snow[i];
+    s.sway += dt * s.swaySpeed;
+    s.x += (s.vx + Math.sin(s.sway) * 6) * dt;
+    s.y += s.vy * dt;
+    if (s.y > GRID_H + 8) snow.splice(i, 1);
+  }
+}
+
+function drawSnow(vp) {
+  ctx.fillStyle = "rgba(220,230,255,0.18)";
+  for (const s of snow) {
+    ctx.beginPath();
+    ctx.arc(vp.ox + s.x * vp.s, vp.oy + s.y * vp.s, s.r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function burstAt(r, c, type) {
+  const cx = c * CELL + CELL / 2;
+  const cy = r * CELL + CELL / 2;
+  const col = TYPE_COL[type]?.base || "#fff";
+  for (let i = 0; i < 14; i++) {
+    const ang = Math.random() * Math.PI * 2;
+    const sp  = 80 + Math.random() * 160;
+    particles.push({
+      x: cx, y: cy,
+      vx: Math.cos(ang) * sp,
+      vy: Math.sin(ang) * sp - 50,
+      r: 1.4 + Math.random() * 2.6,
+      col, life: 0, ttl: 0.55 + Math.random() * 0.35,
+    });
+  }
+}
+
+function updateParticles(dt) {
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.life += dt;
+    if (p.life >= p.ttl) { particles.splice(i, 1); continue; }
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    p.vy += 240 * dt;
+    p.vx *= 0.96;
+  }
+}
+
+function drawParticles(vp) {
+  for (const p of particles) {
+    const a = 1 - p.life / p.ttl;
+    ctx.fillStyle = p.col;
+    ctx.globalAlpha = a;
+    ctx.beginPath();
+    ctx.arc(vp.ox + p.x * vp.s, vp.oy + p.y * vp.s, p.r * (0.5 + a * 0.7) * vp.s, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
+// ── утилиты тайминга ─────────────────────────────────────────────────────
+const now = () => performance.now();
+const sleep   = ms => new Promise(r => setTimeout(r, ms));
+const clamp01 = v => v < 0 ? 0 : v > 1 ? 1 : v;
+const easeOutCubic = p => 1 - Math.pow(1 - p, 3);
+const easeOutBack  = p => { const c = 1.70158; const x = p - 1; return 1 + (c + 1) * x * x * x + c * x * x; };
+const easeInQuad   = p => p * p;
+
+// ── киношная камера = подвижный свет ─────────────────────────────────────
+// Канвас не наклоняется — это делало сферы плоскими «стикерами». Вместо
+// этого крутится сам источник света: блик скользит по сферам, и они
+// читаются как 3D-объекты, а не как 2D-картинки.
+const CURRENT_LIGHT = [0, 0, 1];   // обновляется в updateCamera каждый кадр
+const CURRENT_HV    = [0, 0, 1];   // half-vector для блика
+
+function updateCamera(t) {
+  const s = t / 1000;
+  // базовый свет — верх-перёд, медленно орбитирует вокруг сферы
+  const yawAmp   = 0.55;
+  const yaw      = Math.sin(s * 0.18) * yawAmp;
+  const pitchAmp = 0.18;
+  const pitch    = -0.45 + Math.sin(s * 0.11) * pitchAmp;
+
+  const lx = Math.sin(yaw) * Math.cos(pitch);
+  const ly = Math.sin(pitch);
+  const lz = Math.cos(yaw) * Math.cos(pitch);
+
+  CURRENT_LIGHT[0] = lx; CURRENT_LIGHT[1] = ly; CURRENT_LIGHT[2] = lz;
+
+  // half-vector к зрителю (+Z)
+  const hx = lx, hy = ly, hz = lz + 1;
+  const hm = Math.hypot(hx, hy, hz);
+  CURRENT_HV[0] = hx / hm; CURRENT_HV[1] = hy / hm; CURRENT_HV[2] = hz / hm;
+}
+
+// ── главный RAF ──────────────────────────────────────────────────────────
+let prevT = now();
+function frame() {
+  const t  = now();
+  const dt = Math.min(0.06, (t - prevT) / 1000);
+  prevT = t;
+
+  if (!gameOver && !won) tickTime(dt);
+  updateSnow(dt);
+  updateParticles(dt);
+  updateCamera(t);
+
+  const vp = viewport();
+  ctx.clearRect(0, 0, vp.w, vp.h);
+  drawSnow(vp);
+
+  // тёмное «дно» поля — мягкое
+  ctx.fillStyle = "rgba(255,255,255,0.015)";
+  ctx.fillRect(vp.ox, vp.oy, vp.w, vp.h);
+
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      const type = grid[r][c];
+      if (!type) continue;
+      const a = anim[r][c];
+
+      const breath = Math.sin((t * 0.001 + r * 0.43 + c * 0.31) * Math.PI * 2 * 0.16) * 1.1;
+
+      let fallY = 0;
+      if (a.fallStart >= 0) {
+        const p = clamp01((t - a.fallStart) / a.fallDur);
+        if (p >= 1) a.fallStart = -1;
+        fallY = a.fallFrom * (1 - easeOutCubic(p));
+      }
+
+      let sx = 0, sy = 0;
+      if (a.swapStart >= 0) {
+        const p = clamp01((t - a.swapStart) / a.swapDur);
+        if (p >= 1) a.swapStart = -1;
+        sx = a.swapDx * (1 - easeOutCubic(p));
+        sy = a.swapDy * (1 - easeOutCubic(p));
+      }
+
+      let alpha = 1, scale = 1;
+      if (a.removeStart >= 0) {
+        const p = clamp01((t - a.removeStart) / a.removeDur);
+        alpha = 1 - p;
+        scale = 1 + easeInQuad(p) * 0.6;
+      }
+
+      const since = (t - a.bornAt) / 1000;
+      if (since < 0.45 && since > 0) {
+        const p = clamp01(since / 0.45);
+        scale *= 0.4 + 0.6 * easeOutBack(p);
+        alpha *= p;
+      }
+
+      const isSel  = selected && selected.r === r && selected.c === c;
+      const isHov  = hover    && hover.r    === r && hover.c    === c;
+      const pulse  = isSel ? 1 + Math.sin(t * 0.012) * 0.06 : 1;
+      const hoverK = isHov ? 1.06 : 1;
+
+      const px = vp.ox + (c * CELL + CELL / 2 + sx) * vp.s;
+      const py = vp.oy + (r * CELL + CELL / 2 + sy + fallY + breath) * vp.s;
+
+      drawSphereAt(px, py, CELL * vp.s, type, alpha, scale * pulse * hoverK, isSel || isHov);
+    }
+  }
+
+  drawParticles(vp);
+  requestAnimationFrame(frame);
+}
+
+// ── таймер / жизни ───────────────────────────────────────────────────────
+let timerCum = 0;
+function tickTime(dt) {
+  timerCum += dt;
+  if (timerCum >= 1) {
+    timeLeft = Math.max(0, timeLeft - Math.floor(timerCum));
+    timerCum = timerCum - Math.floor(timerCum);
+    updateTimer();
+    if (timeLeft <= 0) loseLife();
+  }
+}
+
+function updateTimer() {
+  const m = Math.floor(timeLeft / 60);
+  const s = timeLeft % 60;
+  timerEl.textContent = `${m}:${String(s).padStart(2, "0")}`;
+  timerEl.classList.toggle("danger", timeLeft <= 10);
+}
+
+function updateHearts() {
+  const els = heartsEl.querySelectorAll(".h");
+  els.forEach((el, i) => {
+    const lost = i >= lives;
+    el.classList.toggle("lost", lost);
+    el.textContent = lost ? "♡" : "♥";
+  });
+}
+
+function updateCounter() {
+  const pct = Math.round((revealed / charEls.length) * 100);
+  counter.textContent = `${pct}%`;
+}
+
+function loseLife() {
+  lives--;
+  updateHearts();
+  if (lives <= 0) {
+    gameOver = true;
+    loseSub.textContent = revealed > 0
+      ? `раскрыто ${Math.round(revealed / charEls.length * 100)}% стиха`
+      : "стих не дочитан";
+    loseOv.classList.add("show");
+  } else {
+    timeLeft = TIME_LIMIT;
+    updateTimer();
+  }
+}
+
+// ── матчинг и каскады ────────────────────────────────────────────────────
+function findMatches() {
+  const m = new Set();
+  for (let r = 0; r < ROWS; r++) {
+    let s = 0;
+    for (let c = 1; c <= COLS; c++) {
+      const here  = c < COLS ? grid[r][c] : -1;
+      const there = grid[r][s];
+      if (here !== there) {
+        if (there && c - s >= 3) for (let k = s; k < c; k++) m.add(r * COLS + k);
+        s = c;
+      }
+    }
+  }
+  for (let c = 0; c < COLS; c++) {
+    let s = 0;
+    for (let r = 1; r <= ROWS; r++) {
+      const here  = r < ROWS ? grid[r][c] : -1;
+      const there = grid[s][c];
+      if (here !== there) {
+        if (there && r - s >= 3) for (let k = s; k < r; k++) m.add(k * COLS + c);
+        s = r;
+      }
+    }
+  }
+  return m;
+}
+
+function applyGravity() {
+  const tNow = now();
+  for (let c = 0; c < COLS; c++) {
+    let writeR = ROWS - 1;
+    for (let r = ROWS - 1; r >= 0; r--) {
+      if (grid[r][c]) {
+        if (writeR !== r) {
+          grid[writeR][c] = grid[r][c];
+          grid[r][c] = 0;
+          anim[writeR][c].fallFrom  = -(writeR - r) * CELL;
+          anim[writeR][c].fallStart = tNow;
+          anim[writeR][c].fallDur   = 260 + (writeR - r) * 40;
+          anim[writeR][c].bornAt    = anim[r][c].bornAt;
+        }
+        writeR--;
+      }
+    }
+    for (let r = writeR; r >= 0; r--) {
+      grid[r][c] = 1 + Math.floor(Math.random() * 5);
+      anim[r][c].fallFrom  = -(writeR + 1 - r) * CELL - 30;
+      anim[r][c].fallStart = tNow + r * 30;
+      anim[r][c].fallDur   = 360;
+      anim[r][c].bornAt    = tNow + r * 30;
+    }
+  }
+}
+
+async function resolveMatches() {
+  busy = true;
+  let cycles = 0;
+  while (true) {
+    const m = findMatches();
+    if (m.size === 0) break;
+    const tNow = now();
+    for (const key of m) {
+      const r = (key / COLS) | 0, c = key % COLS;
+      anim[r][c].removeStart = tNow;
+      burstAt(r, c, grid[r][c]);
+    }
+    revealChars(m.size);
+    await sleep(300);
+    for (const key of m) {
+      const r = (key / COLS) | 0, c = key % COLS;
+      grid[r][c] = 0;
+      anim[r][c].removeStart = -1;
+    }
+    await sleep(40);
+    applyGravity();
+    await sleep(420);
+    cycles++;
+    if (cycles > 40) break;
+  }
+  busy = false;
+  if (revealed >= charEls.length && !won) {
+    won = true;
+    winOv.classList.add("show");
+  }
+}
+
+function revealChars(matchCount) {
+  const want = matchCount * 3;
+  let done = 0;
+  while (done < want && revealed < charEls.length) {
+    const el = charEls[revealed++];
+    el.style.opacity = "1";
+    el.style.color = "#fff";
+    if (el.textContent.trim()) done++;
+  }
+  updateCounter();
+}
+
+// ── ввод ────────────────────────────────────────────────────────────────
+function cellFromEvent(e) {
+  // offsetX/Y у трансформированного элемента возвращает координаты в его
+  // нетрансформированной системе — браузер инвертирует CSS-камеру за нас.
+  const vp = viewport();
+  const x = e.offsetX - vp.ox;
+  const y = e.offsetY - vp.oy;
+  if (x < 0 || y < 0 || x >= GRID_W * vp.s || y >= GRID_H * vp.s) return null;
+  return { r: (y / (CELL * vp.s)) | 0, c: (x / (CELL * vp.s)) | 0 };
+}
+
+canvas.addEventListener("mousemove", e => {
+  hover = (busy || gameOver || won) ? null : cellFromEvent(e);
+});
+canvas.addEventListener("mouseleave", () => { hover = null; });
+
+canvas.addEventListener("click", async e => {
+  if (busy || gameOver || won) return;
+  const cell = cellFromEvent(e);
+  if (!cell) return;
+  if (!selected) { selected = cell; return; }
+  const dr = Math.abs(cell.r - selected.r);
+  const dc = Math.abs(cell.c - selected.c);
+  if (dr === 0 && dc === 0) { selected = null; return; }
+  if (dr + dc === 1) {
+    const a = selected, b = cell;
+    selected = null;
+    await animateSwap(a, b);
+    swap(a, b);
+    if (findMatches().size === 0) {
+      await sleep(80);
+      await animateSwap(a, b);
+      swap(a, b);
+    } else {
+      await resolveMatches();
+    }
+  } else {
+    selected = cell;
+  }
+});
+
+function swap(a, b) {
+  const t = grid[a.r][a.c];
+  grid[a.r][a.c] = grid[b.r][b.c];
+  grid[b.r][b.c] = t;
+}
+
+async function animateSwap(a, b) {
+  const tNow = now();
+  const dur = 170;
+  anim[a.r][a.c].swapDx = (b.c - a.c) * CELL;
+  anim[a.r][a.c].swapDy = (b.r - a.r) * CELL;
+  anim[a.r][a.c].swapStart = tNow;
+  anim[a.r][a.c].swapDur = dur;
+  anim[b.r][b.c].swapDx = (a.c - b.c) * CELL;
+  anim[b.r][b.c].swapDy = (a.r - b.r) * CELL;
+  anim[b.r][b.c].swapStart = tNow;
+  anim[b.r][b.c].swapDur = dur;
+  await sleep(dur);
+}
+
+// ── restart ─────────────────────────────────────────────────────────────
+for (const btn of document.querySelectorAll('[data-action="restart"]')) {
+  btn.addEventListener("click", () => resetGame());
+}
+
+// ── старт ────────────────────────────────────────────────────────────────
+if (!showCompleted("birds", "птицы")) {
+  fitCanvas();
+  resetGame();
+  requestAnimationFrame(frame);
+}

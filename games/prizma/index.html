@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>призма — vol4games</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 100%; height: 100%; background: #040408; overflow: hidden;
+    color: #fff;
+  }
+
+  .frame {
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    height: 100vh;
+    width: min(58vh, 100vw);
+    display: flex; flex-direction: column;
+    padding: 50px 18px;
+  }
+
+  #topbar {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    align-items: end;
+    margin-bottom: 14px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    flex: 0 0 auto;
+    gap: 8px;
+  }
+
+  #stage { flex: 1 1 auto; min-height: 0; display: flex; position: relative; }
+  #c {
+    flex: 1 1 auto;
+    width: 100%; height: 100%;
+    display: block; min-height: 0;
+    image-rendering: pixelated;
+  }
+
+  /* wind streaks layer: visual reinforcement of "когда дует ветер" */
+  #wind {
+    position: absolute; inset: 0;
+    pointer-events: none; overflow: hidden;
+    mix-blend-mode: screen;
+  }
+
+  /* poem strip — текущий стих этажа */
+  #stanza {
+    position: absolute;
+    left: 50%; bottom: 16px;
+    transform: translateX(-50%);
+    width: 90%;
+    text-align: center;
+    color: rgba(255,255,255,0.78);
+    font-size: clamp(10px, 1.4vh, 13px);
+    line-height: 1.6em;
+    letter-spacing: 0.04em;
+    opacity: 0;
+    transition: opacity 0.7s ease-out, transform 0.7s;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.95);
+    pointer-events: none;
+    white-space: pre-wrap;
+  }
+  #stanza.show { opacity: 0.88; }
+
+  #title { position: absolute; top: 18px; left: 18px; }
+  #hint  { position: absolute; bottom: 18px; left: 18px; }
+  #back  {
+    position: absolute; bottom: 18px; right: 18px;
+    text-decoration: none; color: var(--c-muted);
+    font-size: var(--t-xs); letter-spacing: var(--tk-wide); text-transform: uppercase;
+    transition: color 0.2s;
+  }
+  #back:hover { color: var(--c-accent); }
+
+  /* overlays */
+  .overlay {
+    position: fixed; inset: 0;
+    background: rgba(4, 4, 8, 0.86);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 20px;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.6s;
+    z-index: 10;
+  }
+  .overlay.show { opacity: 1; pointer-events: auto; }
+  .overlay .ov-meta { color: var(--c-muted); font-size: var(--t-xs); letter-spacing: var(--tk-wide); text-transform: uppercase; }
+  .overlay .ov-sub  { color: var(--c-label); font-size: var(--t-md);  letter-spacing: var(--tk-norm); text-align: center; line-height: 1.7em; max-width: 28em; margin-bottom: 8px; }
+  .overlay .ov-poem {
+    color: rgba(255,255,255,0.78);
+    font-size: clamp(10px, 1.3vh, 12px);
+    line-height: 1.7em;
+    letter-spacing: 0.04em;
+    max-height: 50vh; overflow-y: auto;
+    text-align: center;
+    max-width: 40em;
+    white-space: pre-wrap;
+    padding: 0 20px;
+  }
+</style>
+</head>
+<body>
+<div class="frame">
+  <div id="topbar">
+    <div class="t-stat">
+      <div class="t-label">этаж</div>
+      <div class="t-value" id="floor">0</div>
+    </div>
+    <div class="t-stat center">
+      <div class="t-label">ветер</div>
+      <div class="t-value accent" id="wind-val">тихо</div>
+    </div>
+    <div class="t-stat end">
+      <div class="t-label">цель</div>
+      <div class="t-value" id="goal">13</div>
+    </div>
+  </div>
+  <div id="stage">
+    <canvas id="c"></canvas>
+    <div id="wind"></div>
+    <div id="stanza"></div>
+  </div>
+</div>
+
+<div id="title" class="t-mark">vol4 · ПРИЗМА</div>
+<div id="hint"  class="t-hint arrow">← → бежать · SPACE прыжок</div>
+<a   id="back"  href="/">← карта</a>
+
+<div id="winOverlay" class="overlay">
+  <div class="ov-meta">вершина</div>
+  <div class="t-display" style="color: var(--c-accent);">пагода сокровищ</div>
+  <div class="ov-sub">обратный отсчёт окончен</div>
+  <div class="ov-poem" id="winPoem"></div>
+  <button class="t-btn" data-action="restart">ещё раз</button>
+</div>
+
+<div id="loseOverlay" class="overlay">
+  <div class="ov-meta">падение</div>
+  <div class="t-display">ветер сильнее</div>
+  <div class="ov-sub" id="loseSub">не доросло</div>
+  <button class="t-btn" data-action="restart">с начала</button>
+</div>
+
+<script type="module" src="/src/games/prizma/main.js"></script>
+</body>
+</html>

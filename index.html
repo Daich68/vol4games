@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>vol4games</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; background: #040408; overflow: hidden; }
+  canvas { display: block; }
+
+  #ui {
+    position: fixed; inset: 0;
+    pointer-events: none;
+  }
+  #title {
+    position: absolute; top: 22px; left: 24px;
+    font-size: 11px; font-weight: 600;
+    letter-spacing: 0.34em; text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.45);
+    line-height: 1;
+  }
+  #title .dim { color: rgba(255, 255, 255, 0.25); }
+
+  #hint {
+    position: absolute; bottom: 22px; left: 24px;
+    font-size: 10px; letter-spacing: 0.18em;
+    color: rgba(255, 255, 255, 0.28);
+    text-transform: uppercase;
+  }
+  #hint kbd {
+    color: rgba(255, 255, 255, 0.65);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    padding: 1px 5px;
+    margin: 0 2px;
+    font: inherit;
+    border-radius: 2px;
+    font-size: 9px;
+  }
+
+  #prompt {
+    position: absolute; left: 50%; bottom: 56px;
+    transform: translateX(-50%);
+    font-size: 12px; letter-spacing: 0.24em;
+    color: #f0d8a8; text-transform: uppercase;
+    opacity: 0; transition: opacity 0.2s;
+  }
+  #prompt::before { content: "[\00a0"; opacity: 0.5; }
+  #prompt::after  { content: "\00a0]"; opacity: 0.5; }
+  #prompt.show { opacity: 0.95; }
+  #prompt.done { color: rgba(255,255,255,0.35); }
+  #prompt.done::before, #prompt.done::after { display: none; }
+
+  /* ── node labels = BOSS REVEAL ─────────────────────────────────────
+     Далеко — едва заметная маркировка. Подходишь — имя разворачивается
+     с орнаментными чёрточками по бокам и автором золотом снизу.
+  */
+  .nlabel {
+    position: absolute;
+    text-align: center;
+    white-space: nowrap;
+    transform: translate(-50%, 0);
+    opacity: 0.5;
+    color: #4a4a58;
+    pointer-events: none;
+    transition:
+      transform 0.5s cubic-bezier(0.2, 0.7, 0.2, 1),
+      opacity   0.4s,
+      color     0.4s;
+  }
+  .nlabel .title {
+    display: block;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    line-height: 1.2;
+    transition: font-size 0.45s cubic-bezier(0.2, 0.7, 0.2, 1),
+                letter-spacing 0.45s, text-shadow 0.45s, color 0.4s;
+  }
+  .nlabel .sub {
+    display: block;
+    margin-top: 4px;
+    font-size: 9px;
+    letter-spacing: 0.14em;
+    text-transform: lowercase;
+    opacity: 0;
+    max-height: 0;
+    overflow: hidden;
+    transition: opacity 0.45s, max-height 0.45s, margin-top 0.45s, color 0.4s;
+  }
+  .nlabel.has-game            { color: #7a7a8a; opacity: 0.78; }
+  .nlabel.done                { color: #f0d8a8; opacity: 1; }
+  .nlabel.done .title         { color: #f0d8a8; }
+
+  /* BOSS-режим — нода активна. Лейбл уезжает над нодой, под ним —
+     горизонтальный затемнённый баннер с золотыми рамками. */
+  .nlabel { isolation: isolate; }
+  .nlabel.near {
+    opacity: 1;
+    color: #fff;
+    transform: translate(-50%, -86px);
+    padding: 14px 0 12px;
+  }
+  .nlabel.near::before {
+    content: "";
+    position: absolute;
+    top: 0; bottom: 0;
+    left: -180px; right: -180px;
+    background: linear-gradient(to right,
+      transparent 0%,
+      rgba(4, 4, 8, 0.88) 22%,
+      rgba(4, 4, 8, 0.92) 50%,
+      rgba(4, 4, 8, 0.88) 78%,
+      transparent 100%);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    z-index: -1;
+  }
+  .nlabel.near::after {
+    /* нижняя золотая линия с фейдом по краям */
+    content: "";
+    position: absolute;
+    left: -140px; right: -140px;
+    bottom: 0;
+    height: 1px;
+    background: linear-gradient(to right,
+      transparent, rgba(240, 216, 168, 0.55) 25%,
+      rgba(240, 216, 168, 0.55) 75%, transparent);
+    z-index: -1;
+  }
+  .nlabel.near .title {
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: 0.36em;
+    text-shadow:
+      0 0 26px rgba(240, 216, 168, 0.45),
+      0 1px 1px rgba(0, 0, 0, 0.9);
+  }
+  .nlabel.near .title::before,
+  .nlabel.near .title::after {
+    content: "──";
+    display: inline-block;
+    margin: 0 18px;
+    color: rgba(240, 216, 168, 0.65);
+    letter-spacing: -0.05em;
+    vertical-align: middle;
+    transform: translateY(-3px);
+  }
+  .nlabel.near .sub {
+    opacity: 0.85;
+    max-height: 20px;
+    margin-top: 10px;
+    color: #f0d8a8;
+    font-size: 10px;
+    letter-spacing: 0.28em;
+    text-transform: lowercase;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85);
+  }
+  .nlabel.near.done .title { color: #f0d8a8; }
+
+  /* верхняя линия — отзеркаленный ::after через дополнительный псевдо
+     невозможен; делаем через box-shadow на ::before */
+  .nlabel.near::before {
+    box-shadow:
+      inset 0 1px 0 rgba(240, 216, 168, 0),
+      0 -1px 0 rgba(240, 216, 168, 0);
+  }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="ui">
+  <div id="title">vol4 <span class="dim">·</span> games</div>
+  <div id="hint"><kbd>WASD</kbd> двигаться <kbd>ENTER</kbd> войти</div>
+  <div id="prompt">enter войти</div>
+</div>
+<div id="allDoneOverlay" style="
+  position:fixed;inset:0;
+  background:rgba(4,4,8,0.88);
+  backdrop-filter:blur(8px);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;
+  opacity:0;pointer-events:none;
+  transition:opacity 0.8s;
+  z-index:30;
+  font-family:'JetBrains Mono',ui-monospace,monospace;
+">
+  <div style="font-size:10px;letter-spacing:0.34em;text-transform:uppercase;color:rgba(240,216,168,0.7)">завершено</div>
+  <div style="font-size:clamp(24px,5vw,42px);font-weight:300;letter-spacing:0.28em;text-transform:uppercase;color:#f0d8a8;text-shadow:0 0 40px rgba(240,216,168,0.3)">все стихи прочитаны</div>
+  <div style="font-size:11px;letter-spacing:0.16em;color:rgba(255,255,255,0.38);line-height:1.9em;text-align:center;max-width:32em;margin-top:4px">
+    птицы · сталагмит · призма
+  </div>
+</div>
+<style>
+  #allDoneOverlay.show { opacity:1; pointer-events:auto; }
+</style>
+
+<script type="module" src="/src/map/main.js"></script>
+
+<!-- ── SVG goo-filter (скрытый) ──────────────────────────────────────── -->
+<svg style="position:absolute;width:0;height:0;overflow:hidden">
+  <defs>
+    <filter id="goo" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="9" result="blur"/>
+      <feColorMatrix in="blur" mode="matrix"
+        values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 22 -11" result="goo"/>
+    </filter>
+  </defs>
+</svg>
+
+<!-- ── метабол-меню уровней ──────────────────────────────────────────── -->
+<div id="fanMenu">
+  <button id="fanTrigger"><kbd>TAB</kbd> уровни</button>
+  <div id="fanBlobs">
+
+    <a class="blob-item" href="/games/birds/">
+      <div class="blob-goo">
+        <div class="bc" style="width:72px;height:72px;top:8px;left:8px"></div>
+        <div class="bc" style="width:58px;height:58px;top:4px;left:62px"></div>
+        <div class="bc" style="width:48px;height:48px;top:34px;left:36px"></div>
+      </div>
+      <div class="blob-text">
+        <span class="bt-name">птицы</span>
+        <span class="bt-sub">match-3</span>
+      </div>
+    </a>
+
+    <a class="blob-item" href="/games/nancy-drew/">
+      <div class="blob-goo">
+        <div class="bc" style="width:64px;height:64px;top:10px;left:4px"></div>
+        <div class="bc" style="width:56px;height:56px;top:6px;left:56px"></div>
+        <div class="bc" style="width:52px;height:52px;top:28px;left:74px"></div>
+      </div>
+      <div class="blob-text">
+        <span class="bt-name">нэнси дрю</span>
+        <span class="bt-sub">hidden object</span>
+      </div>
+    </a>
+
+    <a class="blob-item" href="/games/stalagmit/">
+      <div class="blob-goo">
+        <div class="bc" style="width:60px;height:60px;top:6px;left:30px"></div>
+        <div class="bc" style="width:52px;height:52px;top:30px;left:8px"></div>
+        <div class="bc" style="width:52px;height:52px;top:30px;left:60px"></div>
+      </div>
+      <div class="blob-text">
+        <span class="bt-name">сталагмит</span>
+        <span class="bt-sub">tower bloxx</span>
+      </div>
+    </a>
+
+    <a class="blob-item" href="/games/prizma/">
+      <div class="blob-goo">
+        <div class="bc" style="width:62px;height:62px;top:10px;left:14px"></div>
+        <div class="bc" style="width:48px;height:48px;top:6px;left:60px"></div>
+        <div class="bc" style="width:40px;height:40px;top:38px;left:48px"></div>
+      </div>
+      <div class="blob-text">
+        <span class="bt-name">призма</span>
+        <span class="bt-sub">icy tower</span>
+      </div>
+    </a>
+
+  </div>
+</div>
+
+<style>
+  #fanMenu {
+    position: fixed;
+    bottom: 22px; right: 24px;
+    z-index: 20;
+    pointer-events: auto;
+  }
+
+  #fanTrigger {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.13);
+    color: rgba(255,255,255,0.32);
+    padding: 6px 12px;
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 10px; letter-spacing: 0.26em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: color 0.2s, border-color 0.2s;
+    display: flex; align-items: center; gap: 6px;
+  }
+  #fanTrigger kbd {
+    color: rgba(255,255,255,0.55);
+    border: 1px solid rgba(255,255,255,0.18);
+    padding: 1px 5px; border-radius: 2px;
+    font: inherit; font-size: 9px;
+  }
+  #fanTrigger:hover,
+  #fanMenu.open #fanTrigger { color: #f0d8a8; border-color: rgba(240,216,168,0.35); }
+  #fanMenu.open #fanTrigger kbd { color: #f0d8a8; border-color: rgba(240,216,168,0.35); }
+
+  /* ── список блобов ─────────────────────────────────────────────────── */
+  #fanBlobs {
+    position: fixed;
+    right: 18px;
+    top: 50%;
+    transform: translateY(-50%) translateX(calc(100% + 20px));
+    opacity: 0;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    transition:
+      transform 0.5s cubic-bezier(0.22, 0.9, 0.2, 1.08),
+      opacity 0.32s ease;
+  }
+  #fanMenu.open #fanBlobs {
+    transform: translateY(-50%) translateX(0);
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* ── отдельный блоб ────────────────────────────────────────────────── */
+  .blob-item {
+    position: relative;
+    width: 150px; height: 94px;
+    cursor: pointer;
+    text-decoration: none;
+    display: block;
+  }
+  .blob-item.disabled { cursor: default; pointer-events: none; }
+
+  /* кружки, слитые через goo-filter — золотистая заливка */
+  .blob-goo {
+    position: absolute;
+    inset: 0;
+    filter: url('#goo');
+  }
+  .bc {
+    position: absolute;
+    border-radius: 50%;
+    background: #c8a86e; /* матовое золото */
+    transition: background 0.2s;
+  }
+  .blob-item:not(.disabled):hover .bc { background: #f0d8a8; }
+  .blob-item.disabled .bc { background: rgba(120, 110, 90, 0.35); }
+
+  /* текст — поверх кружков, в центре блоба */
+  .blob-text {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    pointer-events: none;
+  }
+  .bt-name {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 11px; font-weight: 700;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: #040408;
+    line-height: 1;
+    transition: color 0.2s;
+  }
+  .bt-sub {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 8px; font-weight: 400;
+    letter-spacing: 0.18em;
+    text-transform: lowercase;
+    color: rgba(4,4,8,0.6);
+    line-height: 1;
+  }
+  .blob-item.disabled .bt-name { color: rgba(255,255,255,0.28); }
+  .blob-item.disabled .bt-sub  { color: rgba(255,255,255,0.16); }
+</style>
+
+<script>
+  (function () {
+    const menu    = document.getElementById("fanMenu");
+    const trigger = document.getElementById("fanTrigger");
+    trigger.addEventListener("click", () => menu.classList.toggle("open"));
+    document.addEventListener("keydown", e => {
+      if (e.code === "Tab") { e.preventDefault(); menu.classList.toggle("open"); }
+      if (e.code === "Escape") menu.classList.remove("open");
+    });
+    document.addEventListener("click", e => {
+      if (!menu.contains(e.target)) menu.classList.remove("open");
+    });
+  })();
+</script>
+</body>
+</html>
