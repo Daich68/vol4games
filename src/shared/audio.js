@@ -60,6 +60,26 @@ export function creak() {
   o.start(t0); o.stop(t0 + 0.55);
 }
 
+// Светлый «дзинь» — колокольная нота при матче. semis сдвигает высоту
+// (для нарастающих каскадов), vol — громкость. Триангл + октавный обертон.
+export function chime(semis = 0, vol = 0.22) {
+  const c = getCtx(); if (!c) return;
+  const t0 = c.currentTime;
+  const base = 523.25 * Math.pow(2, semis / 12);   // от C5 вверх
+  for (let i = 0; i < 2; i++) {
+    const o = c.createOscillator();
+    o.type = i === 0 ? "triangle" : "sine";
+    o.frequency.setValueAtTime(base * (i === 0 ? 1 : 2), t0);
+    const g = c.createGain();
+    const v = vol * (i === 0 ? 1 : 0.4);
+    g.gain.setValueAtTime(0, t0);
+    g.gain.linearRampToValueAtTime(v, t0 + 0.008);
+    g.gain.exponentialRampToValueAtTime(0.0008, t0 + 0.5);
+    o.connect(g).connect(c.destination);
+    o.start(t0); o.stop(t0 + 0.55);
+  }
+}
+
 // Гул обвала — длинный затухающий лоупасс-шум.
 export function rumble() {
   const c = getCtx(); if (!c) return;

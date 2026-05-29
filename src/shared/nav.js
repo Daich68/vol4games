@@ -14,6 +14,17 @@ export function bindBackLink(selector = "#back") {
   if (el) el.href = MAP_URL;
 }
 
+// ── имя игрока (для таблицы лидеров) ───────────────────────────────────────
+const NAME_KEY = "vol4_player";
+
+export function getPlayerName() {
+  try { return localStorage.getItem(NAME_KEY) || ""; } catch (e) { return ""; }
+}
+
+export function setPlayerName(name) {
+  try { localStorage.setItem(NAME_KEY, String(name).trim().slice(0, 16)); } catch (e) {}
+}
+
 const KEY = (game) => `vol4_${game}_done`;
 
 export function markDone(game) {
@@ -31,6 +42,20 @@ export function clearDone(game) {
   try { localStorage.removeItem(KEY(game)); } catch (e) {}
 }
 
+// Сбрасывает весь прогресс по vol4-играм (всё что начинается с vol4_).
+export function clearAllProgress() {
+  try {
+    const keys = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith("vol4_") && k !== NAME_KEY) keys.push(k);
+    }
+    keys.forEach(k => localStorage.removeItem(k));
+  } catch (e) {}
+}
+// Удобный доступ из консоли при разработке.
+if (typeof window !== "undefined") window.__vol4_resetProgress = clearAllProgress;
+
 // Показывает экран «уже пройдено» поверх UI игры.
 // Возвращает true если игра пройдена (чтобы можно было пропустить инициализацию).
 export function showCompleted(game, title = "") {
@@ -43,7 +68,7 @@ export function showCompleted(game, title = "") {
     "pointer-events:auto",
   ].join(";");
   d.innerHTML = `
-    <div class="t-label" style="color:var(--c-accent,#f0d8a8)">пройдено</div>
+    <div class="t-label" style="color:var(--c-accent,#e8ecf5)">пройдено</div>
     <div class="t-display" style="font-size:clamp(22px,4vw,36px);letter-spacing:0.24em;font-weight:300;text-transform:uppercase;color:rgba(255,255,255,0.9)">${title}</div>
     <a href="${MAP_URL}" class="t-btn" style="margin-top:10px;pointer-events:auto;text-decoration:none">← карта</a>
   `;
