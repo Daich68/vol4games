@@ -8,7 +8,7 @@
 :root {
   --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
 
-  /* шкала */
+  /* шкала — базовая (десктоп) */
   --t-xs:  10px;
   --t-sm:  11px;
   --t-md:  13px;
@@ -202,3 +202,16 @@ body, button, input, textarea {
   box-shadow: 0 0 6px rgba(232, 236, 245, 0.25);
 }
 ::-webkit-scrollbar-corner        { background: transparent; }
+
+/* ── мобильная шкала шрифтов ────────────────────────────────────────────── */
+/* pointer:coarse = тач-устройство; max-width страхует планшеты */
+@media (pointer: coarse) and (max-width: 600px) {
+  :root {
+    --t-xs:  12px;   /* лейблы: 10 → 12 */
+    --t-sm:  14px;   /* маленькие значения: 11 → 14 */
+    --t-md:  16px;   /* средний текст: 13 → 16 */
+    --t-lg:  26px;   /* крупные значения HUD: 22 → 26 */
+    --t-xl:  38px;   /* дисплей-заголовок: 36 → 38 */
+    --tk-wide: 0.14em; /* чуть меньше трекинг — буквы не давят */
+  }
+}

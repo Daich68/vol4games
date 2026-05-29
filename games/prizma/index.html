@@ -265,7 +265,7 @@
   </div>
 </div>
 
-<!-- мобильные кнопки управления -->
+<!-- мобильные кнопки управления (показываются через JS при наличии touch) -->
 <div id="touch-ctrl">
   <button class="t-ctrl" id="tc-left">←</button>
   <button class="t-ctrl tc-jump" id="tc-jump">↑</button>
@@ -273,40 +273,52 @@
 </div>
 <style>
   #touch-ctrl {
-    display: none;
+    display: none;          /* JS включает если touch-устройство */
     position: fixed;
-    bottom: 14px;
+    bottom: calc(14px + env(safe-area-inset-bottom, 0px));
     left: 50%;
     transform: translateX(-50%);
     z-index: 50;
-    gap: 10px;
+    gap: 12px;
   }
-  @media (pointer: coarse) {
-    #touch-ctrl { display: flex; }
-    #hint, #back { opacity: 0.3; pointer-events: none; }
-  }
+  #touch-ctrl.visible { display: flex; }
+
+  /* на мобайле убираем клавиатурные подсказки */
+  body.is-touch #hint { display: none; }
+  body.is-touch #back { bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
+
+  /* дополнительный отступ снизу под кнопки */
+  body.is-touch .frame { padding-bottom: 96px; }
+
   .t-ctrl {
-    width: 72px; height: 60px;
-    background: rgba(232,236,245,0.06);
-    border: 1px solid rgba(232,236,245,0.18);
-    color: rgba(232,236,245,0.6);
+    width: 88px; height: 72px;
+    background: rgba(232,236,245,0.07);
+    border: 1px solid rgba(232,236,245,0.22);
+    color: rgba(232,236,245,0.65);
     font-family: var(--font-mono, monospace);
-    font-size: 20px; line-height: 1;
+    font-size: 24px; line-height: 1;
     cursor: pointer;
     touch-action: none;
     user-select: none;
     -webkit-user-select: none;
     -webkit-tap-highlight-color: transparent;
-    transition: background 0.08s, color 0.08s, border-color 0.08s;
+    transition: background 0.06s, color 0.06s, border-color 0.06s;
   }
   .t-ctrl.pressed {
-    background: rgba(232,236,245,0.18);
+    background: rgba(232,236,245,0.2);
     color: #e8ecf5;
-    border-color: rgba(232,236,245,0.45);
-    box-shadow: 0 0 12px rgba(232,236,245,0.15);
+    border-color: rgba(232,236,245,0.5);
+    box-shadow: 0 0 16px rgba(232,236,245,0.18);
   }
-  .tc-jump { width: 86px; font-size: 22px; }
+  .tc-jump { width: 104px; font-size: 26px; }
 </style>
+<script>
+  // показываем кнопки только на touch-устройствах
+  if ("ontouchstart" in window || navigator.maxTouchPoints > 0) {
+    document.body.classList.add("is-touch");
+    document.getElementById("touch-ctrl").classList.add("visible");
+  }
+</script>
 <div class="scanlines"></div>
 <script type="module" src="/src/games/prizma/main.js"></script>
 </body>
