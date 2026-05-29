@@ -265,6 +265,48 @@
   </div>
 </div>
 
+<!-- мобильные кнопки управления -->
+<div id="touch-ctrl">
+  <button class="t-ctrl" id="tc-left">←</button>
+  <button class="t-ctrl tc-jump" id="tc-jump">↑</button>
+  <button class="t-ctrl" id="tc-right">→</button>
+</div>
+<style>
+  #touch-ctrl {
+    display: none;
+    position: fixed;
+    bottom: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 50;
+    gap: 10px;
+  }
+  @media (pointer: coarse) {
+    #touch-ctrl { display: flex; }
+    #hint, #back { opacity: 0.3; pointer-events: none; }
+  }
+  .t-ctrl {
+    width: 72px; height: 60px;
+    background: rgba(232,236,245,0.06);
+    border: 1px solid rgba(232,236,245,0.18);
+    color: rgba(232,236,245,0.6);
+    font-family: var(--font-mono, monospace);
+    font-size: 20px; line-height: 1;
+    cursor: pointer;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.08s, color 0.08s, border-color 0.08s;
+  }
+  .t-ctrl.pressed {
+    background: rgba(232,236,245,0.18);
+    color: #e8ecf5;
+    border-color: rgba(232,236,245,0.45);
+    box-shadow: 0 0 12px rgba(232,236,245,0.15);
+  }
+  .tc-jump { width: 86px; font-size: 22px; }
+</style>
 <div class="scanlines"></div>
 <script type="module" src="/src/games/prizma/main.js"></script>
 </body>

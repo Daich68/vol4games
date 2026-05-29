@@ -169,6 +169,21 @@ canvas.addEventListener("mousemove", e => {
 });
 canvas.addEventListener("mouseleave", () => { hover = null; });
 
+// мобайл: touchmove → hover, touchend → click
+canvas.addEventListener("touchmove", e => {
+  e.preventDefault();
+  const t = e.changedTouches[0];
+  if (state !== "play") return;
+  const p = canvasToWorld({ clientX: t.clientX, clientY: t.clientY });
+  hover = pickItem(p.x, p.y);
+}, { passive: false });
+canvas.addEventListener("touchend", e => {
+  e.preventDefault();
+  const t = e.changedTouches[0];
+  canvas.dispatchEvent(new MouseEvent("click", { clientX: t.clientX, clientY: t.clientY, bubbles: true }));
+  hover = null;
+}, { passive: false });
+
 canvas.addEventListener("click", e => {
   ensureAudio();
   if (state !== "play") return;

@@ -510,12 +510,59 @@ window.addEventListener("keydown", e => {
 window.addEventListener("keyup",  e => keys.delete(e.code));
 window.addEventListener("blur",   () => keys.clear());
 
+// ── мобильный тач-джойстик ────────────────────────────────────────────────
+const IS_TOUCH = "ontouchstart" in window;
+let touchJoy   = null;   // { id, sx, sy, dx, dz, moved }
+
+if (IS_TOUCH) {
+  const joyRing = document.getElementById("joy-ring");
+  const joyDot  = document.getElementById("joy-dot");
+  const MAX_JOY = 52;
+
+  canvas.addEventListener("touchstart", e => {
+    if (document.body.classList.contains("preloading") || teleport) return;
+    e.preventDefault();
+    const t = e.changedTouches[0];
+    touchJoy = { id: t.identifier, sx: t.clientX, sy: t.clientY, dx: 0, dz: 0, moved: false };
+    if (joyRing) { joyRing.style.left = t.clientX + "px"; joyRing.style.top = t.clientY + "px"; joyRing.classList.add("active"); }
+  }, { passive: false });
+
+  canvas.addEventListener("touchmove", e => {
+    e.preventDefault();
+    if (!touchJoy) return;
+    const t = [...e.changedTouches].find(x => x.identifier === touchJoy.id);
+    if (!t) return;
+    const ddx = t.clientX - touchJoy.sx;
+    const ddy = t.clientY - touchJoy.sy;
+    if (Math.hypot(ddx, ddy) > 12) touchJoy.moved = true;
+    touchJoy.dx = Math.max(-1, Math.min(1, ddx / MAX_JOY));
+    touchJoy.dz = Math.max(-1, Math.min(1, ddy / MAX_JOY));
+    if (joyDot) {
+      const px = touchJoy.dx * 22, py = touchJoy.dz * 22;
+      joyDot.style.transform = `translate(calc(-50% + ${px}px), calc(-50% + ${py}px))`;
+    }
+  }, { passive: false });
+
+  canvas.addEventListener("touchend", e => {
+    e.preventDefault();
+    if (touchJoy && !touchJoy.moved && activeNode) enterNode(activeNode);
+    touchJoy = null;
+    if (joyRing) joyRing.classList.remove("active");
+    if (joyDot)  joyDot.style.transform = "translate(-50%, -50%)";
+  }, { passive: false });
+
+  // обновить подсказку
+  const hintEl = document.getElementById("hint");
+  if (hintEl) hintEl.innerHTML = "свайп · двигаться";
+}
+
 function dirFromKeys() {
   let dx = 0, dz = 0;
   if (keys.has("KeyW") || keys.has("ArrowUp"))    dz -= 1;
   if (keys.has("KeyS") || keys.has("ArrowDown"))  dz += 1;
   if (keys.has("KeyA") || keys.has("ArrowLeft"))  dx -= 1;
   if (keys.has("KeyD") || keys.has("ArrowRight")) dx += 1;
+  if (touchJoy?.moved) { dx += touchJoy.dx; dz += touchJoy.dz; }
   if (!dx && !dz) return { dx:0, dz:0, moving:false };
   const l = Math.hypot(dx, dz);
   return { dx:dx/l, dz:dz/l, moving:true };
@@ -650,7 +697,7 @@ function updateHero(dt) {
     promptEl.classList.toggle("show", hasGame);
     if (hasGame) {
       const done = isDone(near.game);
-      promptEl.textContent = done ? "пройдено" : "enter войти";
+      promptEl.textContent = done ? "пройдено" : (IS_TOUCH ? "тап · войти" : "enter войти");
       promptEl.classList.toggle("done", done);
     }
   }

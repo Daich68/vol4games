@@ -303,6 +303,17 @@ for (const b of document.querySelectorAll('[data-action="restart"]')) {
   b.addEventListener("click", () => reset());
 }
 
+// ── мобильные touch-кнопки ───────────────────────────────────────────────────
+for (const [id, code] of [["tc-left","ArrowLeft"],["tc-right","ArrowRight"],["tc-jump","Space"]]) {
+  const btn = document.getElementById(id);
+  if (!btn) continue;
+  btn.addEventListener("touchstart", e => {
+    e.preventDefault(); ensureAudio(); keys.add(code); btn.classList.add("pressed");
+  }, { passive: false });
+  btn.addEventListener("touchend",    e => { e.preventDefault(); keys.delete(code); btn.classList.remove("pressed"); }, { passive: false });
+  btn.addEventListener("touchcancel", e => { e.preventDefault(); keys.delete(code); btn.classList.remove("pressed"); }, { passive: false });
+}
+
 // ── прыжок ──────────────────────────────────────────────────────────────────
 function tryJump() {
   if (!player.onGround) return;

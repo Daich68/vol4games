@@ -757,6 +757,13 @@ canvas.addEventListener("mousemove", e => {
 });
 canvas.addEventListener("mouseleave", () => { hover = null; });
 
+// мобайл: touchend → click (offsetX/Y вычисляется браузером из clientX/Y)
+canvas.addEventListener("touchend", e => {
+  e.preventDefault();
+  const t = e.changedTouches[0];
+  canvas.dispatchEvent(new MouseEvent("click", { clientX: t.clientX, clientY: t.clientY, bubbles: true }));
+}, { passive: false });
+
 canvas.addEventListener("click", async e => {
   if (busy || gameOver || won) return;
   ensureAudio();
