@@ -7,46 +7,259 @@
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body {
-    width: 100%; height: 100%; background: #040408; overflow: hidden;
+    width: 100%; height: 100%; overflow: hidden;
+    background:
+      radial-gradient(120% 80% at 50% -10%, #0a0a14 0%, #050509 45%, #030308 100%);
     color: #fff;
   }
-  /* font-family из type.css (через soon.js → import) */
-  #ui { position: fixed; inset: 0; pointer-events: none; }
-  #title {
-    position: absolute; top: 22px; left: 24px;
-    font-size: 11px; font-weight: 600;
-    letter-spacing: 0.34em; text-transform: uppercase;
-    color: rgba(255,255,255,0.45);
+
+  .frame {
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    height: 100vh;
+    width: min(58vh, 100vw);
+    display: flex; flex-direction: column;
+    padding: 46px 16px 56px;
   }
-  #back {
-    position: absolute; bottom: 22px; right: 24px;
-    font-size: 10px; letter-spacing: 0.18em;
-    color: rgba(255,255,255,0.32); text-decoration: none;
-    pointer-events: auto;
+
+  /* ── HUD ──────────────────────────────────────────────────────────────── */
+  #hud { flex: 0 0 auto; }
+  #topbar {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    align-items: end;
+    gap: 8px;
+    padding-bottom: 11px;
+    border-bottom: 1px solid var(--c-rule);
+  }
+  #streak.hot { color: var(--c-accent); text-shadow: var(--c-glow); }
+
+  /* ── карточка загадки ──────────────────────────────────────────────────── */
+  #riddle {
+    flex: 0 0 auto;
+    position: relative;
+    margin: 14px 0 10px;
+    padding: 14px 18px;
+    background: rgba(232,236,245,0.035);
+    border: 1px solid var(--c-rule);
+    color: var(--c-value);
+    font-size: clamp(11px, 1.5vh, 13px);
+    line-height: 1.7em;
+    letter-spacing: 0.03em;
+    white-space: pre-wrap;
+    text-align: center;
+    min-height: 84px;
+    display: flex; align-items: center; justify-content: center;
+    transition: border-color 0.25s, background 0.25s;
+  }
+  #riddle::before {
+    content: "досье № —";
+    position: absolute; top: -7px; left: 12px;
+    padding: 0 6px;
+    background: #05050a;
+    color: var(--c-accent-dim);
+    font-size: var(--t-xs); letter-spacing: var(--tk-wide); text-transform: uppercase;
+  }
+  #riddle.flash-wrong {
+    border-color: rgba(217,106,106,0.6);
+    background: rgba(80,20,20,0.18);
+  }
+  #riddle.flash-right {
+    border-color: var(--c-accent);
+    background: rgba(40,52,76,0.32);
+  }
+
+  /* ── сцена ─────────────────────────────────────────────────────────────── */
+  #stage {
+    flex: 1 1 auto; min-height: 0;
+    position: relative;
+    border: 1px solid var(--c-rule);
+    background: radial-gradient(circle at 50% 32%, rgba(24,30,46,0.45), rgba(4,4,9,0.92));
+  }
+  #c {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    display: block;
+    cursor: crosshair;
+  }
+  #dots {
+    position: absolute; inset: 0;
+    pointer-events: none; z-index: 1;
+    background-image: radial-gradient(circle at center, #15151f 0.6px, transparent 1px);
+    background-size: 3.5px 3.5px;
+    mix-blend-mode: multiply;
+    opacity: 0.5;
+  }
+  .corner {
+    position: absolute; z-index: 2;
+    font-size: 13px; line-height: 1;
+    color: var(--c-accent-dim);
+    pointer-events: none;
+    text-shadow: 0 0 8px rgba(232,236,245,0.25);
+  }
+  .corner.tl { top: -7px;    left: -6px;  }
+  .corner.tr { top: -7px;    right: -6px; }
+  .corner.bl { bottom: -7px; left: -6px;  }
+  .corner.br { bottom: -7px; right: -6px; }
+
+  /* ── блокнот ───────────────────────────────────────────────────────────── */
+  #notebook {
+    flex: 0 0 auto;
+    position: relative;
+    margin-top: 12px;
+    padding: 10px 14px;
+    background: rgba(255,255,255,0.025);
+    border: 1px solid var(--c-rule);
+    color: var(--c-muted);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    line-height: 1.5em;
+    text-transform: lowercase;
+    min-height: 30px;
+    display: flex; align-items: center; gap: 10px;
+    flex-wrap: wrap;
+  }
+  #notebook::before {
+    content: "блокнот";
+    position: absolute; top: -7px; left: 12px;
+    padding: 0 6px;
+    background: #05050a;
+    color: var(--c-accent-dim);
+    font-size: var(--t-xs); letter-spacing: var(--tk-wide); text-transform: uppercase;
+  }
+  #notebook .nb-item {
+    color: var(--c-accent);
+    font-weight: 500;
+    letter-spacing: 0.18em;
+  }
+  #notebook .nb-empty { color: rgba(255,255,255,0.22); font-style: italic; }
+
+  /* ── chrome ────────────────────────────────────────────────────────────── */
+  #title { position: fixed; top: 20px; left: 22px; z-index: 40; }
+  #hint  { position: fixed; bottom: 20px; left: 22px; z-index: 40; }
+  #back  {
+    position: fixed; bottom: 20px; right: 22px; z-index: 40;
+    text-decoration: none; color: var(--c-muted);
+    font-size: var(--t-xs); letter-spacing: var(--tk-wide); text-transform: uppercase;
+    transition: color 0.2s, text-shadow 0.2s;
+  }
+  #back:hover { color: var(--c-accent); text-shadow: var(--c-glow); }
+
+  /* ── оверлей (терминальная карточка) ───────────────────────────────────── */
+  .overlay {
+    position: fixed; inset: 0; z-index: 60;
+    background: rgba(4, 4, 9, 0.88);
+    backdrop-filter: blur(7px);
+    -webkit-backdrop-filter: blur(7px);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.6s;
+    padding: 28px;
+  }
+  .overlay.show { opacity: 1; pointer-events: auto; }
+  .ov-card {
+    position: relative;
+    display: flex; flex-direction: column; align-items: center;
+    gap: 15px;
+    padding: 38px 40px;
+    max-width: min(92vw, 460px);
+    border: 1px solid var(--c-rule);
+    background: rgba(6, 6, 12, 0.55);
+  }
+  .cn {
+    position: absolute; font-size: 15px; line-height: 1;
+    color: var(--c-accent-dim);
+    text-shadow: 0 0 10px rgba(232,236,245,0.3);
+    pointer-events: none;
+  }
+  .cn.tl { top: -8px; left: -7px; }
+  .cn.tr { top: -8px; right: -7px; }
+  .cn.bl { bottom: -8px; left: -7px; }
+  .cn.br { bottom: -8px; right: -7px; }
+  .ov-meta {
+    color: var(--c-accent-dim);
+    font-size: var(--t-xs); letter-spacing: var(--tk-mega);
     text-transform: uppercase;
+  }
+  .ov-card .t-display { text-align: center; }
+  .ov-stats {
+    font-size: var(--t-xs); letter-spacing: var(--tk-wide);
+    text-transform: uppercase; color: var(--c-accent);
+    font-variant-numeric: tabular-nums; text-align: center;
+  }
+  .ov-poem {
+    color: var(--c-value);
+    font-size: clamp(10px, 1.3vh, 12px);
+    line-height: 1.8em; letter-spacing: 0.04em;
+    max-height: 44vh; overflow-y: auto;
+    text-align: center; max-width: 38em;
+    white-space: pre-wrap;
+    padding: 6px 10px;
+    border-top: 1px solid var(--c-rule);
+    border-bottom: 1px solid var(--c-rule);
+  }
+  .ov-back {
+    margin-top: 2px;
+    text-decoration: none; color: var(--c-muted);
+    font-size: var(--t-xs); letter-spacing: var(--tk-wide); text-transform: uppercase;
     transition: color 0.2s;
   }
-  #back:hover { color: #f0d8a8; }
-  #soon {
-    position: absolute; left: 50%; top: 50%;
-    transform: translate(-50%, -50%); text-align: center;
-  }
-  #soon .big {
-    font-size: 14px; letter-spacing: 0.32em; opacity: 0.85;
-    text-transform: uppercase;
-  }
-  #soon .sub {
-    margin-top: 18px;
-    font-size: 10px; letter-spacing: 0.18em; opacity: 0.4;
-    line-height: 1.8em;
-  }
+  .ov-back:hover { color: var(--c-accent); }
 </style>
 </head>
 <body>
-<div id="ui">
-  <div id="title">vol4 · НЭНСИ ДРЮ</div>
-  <a id="back" href="/">← КАРТА</a>
+<div class="frame">
+  <header id="hud">
+    <div id="topbar">
+      <div class="t-stat">
+        <div class="t-label">загадка</div>
+        <div class="t-value" id="riddle-num">1 / 6</div>
+      </div>
+      <div class="t-stat center">
+        <div class="t-label">очки</div>
+        <div class="t-value accent" id="score">00000</div>
+      </div>
+      <div class="t-stat end">
+        <div class="t-label">серия</div>
+        <div class="t-value" id="streak">—</div>
+      </div>
+    </div>
+  </header>
+
+  <div id="riddle"></div>
+
+  <section id="stage">
+    <canvas id="c"></canvas>
+    <div id="dots"></div>
+    <span class="corner tl">┌</span>
+    <span class="corner tr">┐</span>
+    <span class="corner bl">└</span>
+    <span class="corner br">┘</span>
+  </section>
+
+  <div id="notebook">
+    <span class="nb-empty">блокнот пуст</span>
+  </div>
 </div>
+
+<div id="title" class="t-mark">vol4 · НЭНСИ ДРЮ</div>
+<div id="hint"  class="t-hint arrow">клик · найди предмет загадки · серия множит очки</div>
+<a   id="back"  href="/">← карта</a>
+
+<div id="winOverlay" class="overlay">
+  <div class="ov-card">
+    <span class="cn tl">┌</span><span class="cn tr">┐</span>
+    <span class="cn bl">└</span><span class="cn br">┘</span>
+    <div class="ov-meta">блокнот заполнен</div>
+    <div class="t-display" style="color: var(--c-accent);">все смерти найдены</div>
+    <div class="ov-stats" id="winStats">ОЧКОВ 0 · ЛУЧШАЯ СЕРИЯ ×1 · 0:00</div>
+    <div class="ov-poem" id="winPoem"></div>
+    <a class="t-btn" href="/" style="text-decoration:none">← на карту</a>
+  </div>
+</div>
+
+<div class="scanlines"></div>
 <script type="module" src="/src/games/nancy-drew/main.js"></script>
 </body>
 </html>

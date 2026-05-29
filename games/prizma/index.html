@@ -7,10 +7,13 @@
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body {
-    width: 100%; height: 100%; background: #040408; overflow: hidden;
+    width: 100%; height: 100%; overflow: hidden;
+    background:
+      radial-gradient(120% 80% at 50% -10%, #0a0a14 0%, #050509 45%, #030308 100%);
     color: #fff;
   }
 
+  /* портретная рамка-«терминал» по центру экрана */
   .frame {
     position: fixed;
     top: 50%; left: 50%;
@@ -18,135 +21,251 @@
     height: 100vh;
     width: min(58vh, 100vw);
     display: flex; flex-direction: column;
-    padding: 50px 18px;
+    padding: 46px 18px 40px;
   }
+
+  /* ── HUD: приборная панель ─────────────────────────────────────────────── */
+  #hud { flex: 0 0 auto; }
 
   #topbar {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
     align-items: end;
-    margin-bottom: 14px;
-    padding-bottom: 12px;
-    border-bottom: 1px solid rgba(255,255,255,0.08);
-    flex: 0 0 auto;
     gap: 8px;
   }
 
-  #stage { flex: 1 1 auto; min-height: 0; display: flex; position: relative; }
+  #windbar {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+    margin-top: 12px;
+    padding-top: 11px;
+    border-top: 1px solid var(--c-rule);
+  }
+  .wb-grp { display: inline-flex; align-items: baseline; gap: 8px; min-width: 0; }
+  .w-cap {
+    font-size: var(--t-xs);
+    letter-spacing: var(--tk-wide);
+    text-transform: uppercase;
+    color: var(--c-label);
+  }
+  #windMeter {
+    font-size: var(--t-sm);
+    letter-spacing: 0.18em;
+    color: var(--c-value);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    text-shadow: 0 0 10px rgba(232,236,245,0.18);
+  }
+  #orbMeter {
+    font-size: var(--t-sm);
+    letter-spacing: 0.16em;
+    color: var(--c-accent);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    text-shadow: var(--c-glow);
+  }
+
+  /* ── сцена: канвас в кристаллической рамке ──────────────────────────────── */
+  #stage {
+    flex: 1 1 auto; min-height: 0;
+    position: relative;
+    margin-top: 16px;
+    border: 1px solid var(--c-rule);
+  }
   #c {
-    flex: 1 1 auto;
-    width: 100%; height: 100%;
-    display: block; min-height: 0;
-    image-rendering: pixelated;
-  }
-
-  /* wind streaks layer: visual reinforcement of "когда дует ветер" */
-  #wind {
     position: absolute; inset: 0;
-    pointer-events: none; overflow: hidden;
-    mix-blend-mode: screen;
+    width: 100%; height: 100%;
+    display: block;
+    image-rendering: auto;   /* гладкая отрисовка призмы (было pixelated) */
   }
 
-  /* poem strip — текущий стих этажа */
+  /* халфтон-текстура поверх канваса — экран множит свет в точечную сетку */
+  #dots {
+    position: absolute; inset: 0;
+    pointer-events: none; z-index: 1;
+    background-image: radial-gradient(circle at center, #15151f 0.6px, transparent 1px);
+    background-size: 3.5px 3.5px;
+    mix-blend-mode: multiply;
+    opacity: 0.55;
+  }
+
+  /* угловые скобки рамки */
+  .corner {
+    position: absolute; z-index: 2;
+    font-size: 13px; line-height: 1;
+    color: var(--c-accent-dim);
+    pointer-events: none;
+    text-shadow: 0 0 8px rgba(232,236,245,0.25);
+  }
+  .corner.tl { top: -7px;    left: -6px;  }
+  .corner.tr { top: -7px;    right: -6px; }
+  .corner.bl { bottom: -7px; left: -6px;  }
+  .corner.br { bottom: -7px; right: -6px; }
+
+  /* строфа стиха — снизу сцены */
   #stanza {
-    position: absolute;
+    position: absolute; z-index: 2;
     left: 50%; bottom: 16px;
-    transform: translateX(-50%);
+    transform: translateX(-50%) translateY(6px);
     width: 90%;
     text-align: center;
-    color: rgba(255,255,255,0.78);
+    color: var(--c-value);
     font-size: clamp(10px, 1.4vh, 13px);
-    line-height: 1.6em;
+    line-height: 1.65em;
     letter-spacing: 0.04em;
     opacity: 0;
     transition: opacity 0.7s ease-out, transform 0.7s;
-    text-shadow: 0 1px 3px rgba(0,0,0,0.95);
+    text-shadow: 0 1px 4px rgba(0,0,0,0.95), 0 0 14px rgba(0,0,0,0.8);
     pointer-events: none;
     white-space: pre-wrap;
   }
-  #stanza.show { opacity: 0.88; }
+  #stanza.show { opacity: 0.9; transform: translateX(-50%) translateY(0); }
 
-  #title { position: absolute; top: 18px; left: 18px; }
-  #hint  { position: absolute; bottom: 18px; left: 18px; }
+  /* угловые подписи экрана */
+  #title { position: fixed; top: 20px; left: 22px; z-index: 40; }
+  #hint  { position: fixed; bottom: 20px; left: 22px; z-index: 40; }
   #back  {
-    position: absolute; bottom: 18px; right: 18px;
+    position: fixed; bottom: 20px; right: 22px; z-index: 40;
+    text-decoration: none; color: var(--c-muted);
+    font-size: var(--t-xs); letter-spacing: var(--tk-wide); text-transform: uppercase;
+    transition: color 0.2s, text-shadow 0.2s;
+  }
+  #back:hover { color: var(--c-accent); text-shadow: var(--c-glow); }
+
+  /* ── оверлеи (терминальные карточки) ────────────────────────────────────── */
+  .overlay {
+    position: fixed; inset: 0; z-index: 60;
+    background: rgba(4, 4, 9, 0.84);
+    backdrop-filter: blur(7px);
+    -webkit-backdrop-filter: blur(7px);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.6s;
+  }
+  .overlay.show { opacity: 1; pointer-events: auto; }
+
+  .ov-card {
+    position: relative;
+    display: flex; flex-direction: column; align-items: center;
+    gap: 16px;
+    padding: 40px 44px;
+    max-width: min(92vw, 460px);
+    border: 1px solid var(--c-rule);
+    background: rgba(6, 6, 12, 0.55);
+  }
+  /* четыре угла рамки-терминала */
+  .ov-card::before, .ov-card::after,
+  .ov-card > .cn { pointer-events: none; }
+  .cn {
+    position: absolute; font-size: 15px; line-height: 1;
+    color: var(--c-accent-dim);
+    text-shadow: 0 0 10px rgba(232,236,245,0.3);
+  }
+  .cn.tl { top: -8px; left: -7px; }
+  .cn.tr { top: -8px; right: -7px; }
+  .cn.bl { bottom: -8px; left: -7px; }
+  .cn.br { bottom: -8px; right: -7px; }
+
+  .ov-meta {
+    color: var(--c-accent-dim);
+    font-size: var(--t-xs); letter-spacing: var(--tk-mega);
+    text-transform: uppercase;
+  }
+  .ov-meta.danger { color: var(--c-danger); }
+  .ov-card .t-display { text-align: center; }
+  .ov-sub {
+    color: var(--c-label); font-size: var(--t-md);
+    letter-spacing: var(--tk-norm); text-align: center;
+    line-height: 1.7em; max-width: 26em;
+  }
+  .ov-who {
+    font-size: var(--t-xs); letter-spacing: var(--tk-wide);
+    text-transform: uppercase; color: var(--c-muted);
+  }
+  .ov-who #winName { color: var(--c-accent); }
+  .ov-poem {
+    color: var(--c-value);
+    font-size: clamp(10px, 1.3vh, 12px);
+    line-height: 1.75em; letter-spacing: 0.04em;
+    max-height: 42vh; overflow-y: auto;
+    text-align: center; max-width: 36em;
+    white-space: pre-wrap;
+    padding: 4px 6px;
+    border-top: 1px solid var(--c-rule);
+    border-bottom: 1px solid var(--c-rule);
+  }
+  .ov-back {
+    margin-top: 2px;
     text-decoration: none; color: var(--c-muted);
     font-size: var(--t-xs); letter-spacing: var(--tk-wide); text-transform: uppercase;
     transition: color 0.2s;
   }
-  #back:hover { color: var(--c-accent); }
-
-  /* overlays */
-  .overlay {
-    position: fixed; inset: 0;
-    background: rgba(4, 4, 8, 0.86);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    gap: 20px;
-    opacity: 0; pointer-events: none;
-    transition: opacity 0.6s;
-    z-index: 10;
-  }
-  .overlay.show { opacity: 1; pointer-events: auto; }
-  .overlay .ov-meta { color: var(--c-muted); font-size: var(--t-xs); letter-spacing: var(--tk-wide); text-transform: uppercase; }
-  .overlay .ov-sub  { color: var(--c-label); font-size: var(--t-md);  letter-spacing: var(--tk-norm); text-align: center; line-height: 1.7em; max-width: 28em; margin-bottom: 8px; }
-  .overlay .ov-poem {
-    color: rgba(255,255,255,0.78);
-    font-size: clamp(10px, 1.3vh, 12px);
-    line-height: 1.7em;
-    letter-spacing: 0.04em;
-    max-height: 50vh; overflow-y: auto;
-    text-align: center;
-    max-width: 40em;
-    white-space: pre-wrap;
-    padding: 0 20px;
-  }
+  .ov-back:hover { color: var(--c-accent); }
 </style>
 </head>
 <body>
 <div class="frame">
-  <div id="topbar">
-    <div class="t-stat">
-      <div class="t-label">этаж</div>
-      <div class="t-value" id="floor">0</div>
+  <header id="hud">
+    <div id="topbar">
+      <div class="t-stat">
+        <div class="t-label">этаж</div>
+        <div class="t-value" id="floor">0</div>
+      </div>
+      <div class="t-stat center">
+        <div class="t-label">очки</div>
+        <div class="t-value accent" id="score">0</div>
+      </div>
+      <div class="t-stat end">
+        <div class="t-label">комбо</div>
+        <div class="t-value" id="combo">—</div>
+      </div>
     </div>
-    <div class="t-stat center">
-      <div class="t-label">ветер</div>
-      <div class="t-value accent" id="wind-val">тихо</div>
+    <div id="windbar">
+      <span class="wb-grp"><span class="w-cap">ветер</span><span id="windMeter">▮▯▯▯ тихо</span></span>
+      <span class="wb-grp"><span class="w-cap">осколки</span><span id="orbMeter">✦ 0</span></span>
     </div>
-    <div class="t-stat end">
-      <div class="t-label">цель</div>
-      <div class="t-value" id="goal">13</div>
-    </div>
-  </div>
-  <div id="stage">
+  </header>
+
+  <section id="stage">
     <canvas id="c"></canvas>
-    <div id="wind"></div>
+    <div id="dots"></div>
+    <span class="corner tl">┌</span>
+    <span class="corner tr">┐</span>
+    <span class="corner bl">└</span>
+    <span class="corner br">┘</span>
     <div id="stanza"></div>
-  </div>
+  </section>
 </div>
 
 <div id="title" class="t-mark">vol4 · ПРИЗМА</div>
-<div id="hint"  class="t-hint arrow">← → бежать · SPACE прыжок</div>
+<div id="hint"  class="t-hint arrow">← → разбег · SPACE прыжок · ESC карта</div>
 <a   id="back"  href="/">← карта</a>
 
 <div id="winOverlay" class="overlay">
-  <div class="ov-meta">вершина</div>
-  <div class="t-display" style="color: var(--c-accent);">пагода сокровищ</div>
-  <div class="ov-sub">обратный отсчёт окончен</div>
-  <div class="ov-poem" id="winPoem"></div>
-  <button class="t-btn" data-action="restart">ещё раз</button>
+  <div class="ov-card">
+    <span class="cn tl">┌</span><span class="cn tr">┐</span>
+    <span class="cn bl">└</span><span class="cn br">┘</span>
+    <div class="ov-meta">▲ вершина</div>
+    <div class="t-display" style="color: var(--c-accent);">пагода сокровищ</div>
+    <div class="ov-sub">обратный отсчёт окончен</div>
+    <div class="ov-who">взошёл&nbsp;·&nbsp;<span id="winName">—</span></div>
+    <div class="ov-poem" id="winPoem"></div>
+    <a class="t-btn" href="/" style="text-decoration:none">← на карту</a>
+  </div>
 </div>
 
 <div id="loseOverlay" class="overlay">
-  <div class="ov-meta">падение</div>
-  <div class="t-display">ветер сильнее</div>
-  <div class="ov-sub" id="loseSub">не доросло</div>
-  <button class="t-btn" data-action="restart">с начала</button>
+  <div class="ov-card">
+    <span class="cn tl">┌</span><span class="cn tr">┐</span>
+    <span class="cn bl">└</span><span class="cn br">┘</span>
+    <div class="ov-meta danger">▼ падение</div>
+    <div class="t-display">ветер сильнее</div>
+    <div class="ov-sub" id="loseSub">не доросло</div>
+    <button class="t-btn" data-action="restart">с начала</button>
+    <a class="ov-back" href="/">← карта</a>
+  </div>
 </div>
 
+<div class="scanlines"></div>
 <script type="module" src="/src/games/prizma/main.js"></script>
 </body>
 </html>

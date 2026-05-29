@@ -5,50 +5,74 @@
 <title>vol4games</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  html, body { width: 100%; height: 100%; background: #040408; overflow: hidden; }
+  html, body {
+    width: 100%; height: 100%; background: #050507; overflow: hidden;
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+  }
   canvas { display: block; }
 
   #ui {
     position: fixed; inset: 0;
     pointer-events: none;
   }
+  /* терминальная шапка: статусная строка */
   #title {
-    position: absolute; top: 22px; left: 24px;
-    font-size: 11px; font-weight: 600;
-    letter-spacing: 0.34em; text-transform: uppercase;
-    color: rgba(255, 255, 255, 0.45);
+    position: absolute; top: 20px; left: 24px;
+    font-size: 11px; font-weight: 500;
+    letter-spacing: 0.22em; text-transform: uppercase;
+    color: rgba(232, 236, 245, 0.5);
     line-height: 1;
   }
-  #title .dim { color: rgba(255, 255, 255, 0.25); }
+  #title::before { content: "┌ "; color: rgba(232, 236, 245, 0.3); }
+  #title::after  { content: " ▓"; color: rgba(232, 236, 245, 0.85);
+    animation: t-blink 1.1s steps(1) infinite; }
+  #title .dim { color: rgba(232, 236, 245, 0.28); }
+  @keyframes t-blink { 0%, 50% { opacity: 1; } 50.01%, 100% { opacity: 0; } }
 
   #hint {
-    position: absolute; bottom: 22px; left: 24px;
-    font-size: 10px; letter-spacing: 0.18em;
-    color: rgba(255, 255, 255, 0.28);
+    position: absolute; bottom: 20px; left: 24px;
+    font-size: 10px; letter-spacing: 0.16em;
+    color: rgba(232, 236, 245, 0.44);
     text-transform: uppercase;
   }
+  #hint::before { content: "› "; color: rgba(232, 236, 245, 0.45); }
   #hint kbd {
-    color: rgba(255, 255, 255, 0.65);
-    border: 1px solid rgba(255, 255, 255, 0.18);
+    color: rgba(232, 236, 245, 0.75);
+    border: 1px solid rgba(232, 236, 245, 0.22);
     padding: 1px 5px;
     margin: 0 2px;
     font: inherit;
-    border-radius: 2px;
     font-size: 9px;
   }
 
   #prompt {
     position: absolute; left: 50%; bottom: 56px;
     transform: translateX(-50%);
-    font-size: 12px; letter-spacing: 0.24em;
-    color: #f0d8a8; text-transform: uppercase;
+    font-size: 12px; letter-spacing: 0.22em;
+    color: #e8ecf5; text-transform: uppercase;
     opacity: 0; transition: opacity 0.2s;
+    text-shadow: 0 0 14px rgba(232, 236, 245, 0.4);
   }
-  #prompt::before { content: "[\00a0"; opacity: 0.5; }
-  #prompt::after  { content: "\00a0]"; opacity: 0.5; }
+  #prompt::before { content: "› "; opacity: 0.55; }
+  #prompt::after  { content: " ▓"; animation: t-blink 1s steps(1) infinite; }
   #prompt.show { opacity: 0.95; }
-  #prompt.done { color: rgba(255,255,255,0.35); }
-  #prompt.done::before, #prompt.done::after { display: none; }
+  #prompt.done { color: rgba(232,236,245,0.4); text-shadow: none; }
+  #prompt.done::before { content: "× "; opacity: 0.55; }
+  #prompt.done::after { display: none; }
+
+  /* CRT-слой: сканлайны + виньетка */
+  #crt {
+    position: fixed; inset: 0; pointer-events: none; z-index: 12;
+    background: repeating-linear-gradient(
+      to bottom,
+      rgba(0,0,0,0)   0px, rgba(0,0,0,0)   2px,
+      rgba(0,0,0,0.18) 3px, rgba(0,0,0,0.18) 4px);
+  }
+  #crt::after {
+    content: ""; position: absolute; inset: 0;
+    background: radial-gradient(ellipse at center,
+      rgba(0,0,0,0) 52%, rgba(0,0,0,0.5) 100%);
+  }
 
   /* ── node labels = BOSS REVEAL ─────────────────────────────────────
      Далеко — едва заметная маркировка. Подходишь — имя разворачивается
@@ -59,8 +83,8 @@
     text-align: center;
     white-space: nowrap;
     transform: translate(-50%, 0);
-    opacity: 0.5;
-    color: #4a4a58;
+    opacity: 0.7;
+    color: #888898;
     pointer-events: none;
     transition:
       transform 0.5s cubic-bezier(0.2, 0.7, 0.2, 1),
@@ -88,9 +112,16 @@
     overflow: hidden;
     transition: opacity 0.45s, max-height 0.45s, margin-top 0.45s, color 0.4s;
   }
-  .nlabel.has-game            { color: #7a7a8a; opacity: 0.78; }
-  .nlabel.done                { color: #f0d8a8; opacity: 1; }
-  .nlabel.done .title         { color: #f0d8a8; }
+  .nlabel.has-game            { color: #d0d4e4; opacity: 1; }
+  .nlabel.has-game .title     {
+    text-shadow:
+      0 0 14px rgba(4,4,8,0.95),
+      0 0 6px rgba(4,4,8,0.95),
+      0 0 20px rgba(232,236,245,0.28),
+      0 1px 2px rgba(0,0,0,0.95);
+  }
+  .nlabel.done                { color: #e8ecf5; opacity: 1; }
+  .nlabel.done .title         { color: #e8ecf5; }
 
   /* BOSS-режим — нода активна. Лейбл уезжает над нодой, под ним —
      горизонтальный затемнённый баннер с золотыми рамками. */
@@ -124,8 +155,8 @@
     bottom: 0;
     height: 1px;
     background: linear-gradient(to right,
-      transparent, rgba(240, 216, 168, 0.55) 25%,
-      rgba(240, 216, 168, 0.55) 75%, transparent);
+      transparent, rgba(232, 236, 245, 0.55) 25%,
+      rgba(232, 236, 245, 0.55) 75%, transparent);
     z-index: -1;
   }
   .nlabel.near .title {
@@ -133,7 +164,7 @@
     font-weight: 700;
     letter-spacing: 0.36em;
     text-shadow:
-      0 0 26px rgba(240, 216, 168, 0.45),
+      0 0 26px rgba(232, 236, 245, 0.45),
       0 1px 1px rgba(0, 0, 0, 0.9);
   }
   .nlabel.near .title::before,
@@ -141,7 +172,7 @@
     content: "──";
     display: inline-block;
     margin: 0 18px;
-    color: rgba(240, 216, 168, 0.65);
+    color: rgba(232, 236, 245, 0.65);
     letter-spacing: -0.05em;
     vertical-align: middle;
     transform: translateY(-3px);
@@ -150,30 +181,389 @@
     opacity: 0.85;
     max-height: 20px;
     margin-top: 10px;
-    color: #f0d8a8;
+    color: #e8ecf5;
     font-size: 10px;
     letter-spacing: 0.28em;
     text-transform: lowercase;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85);
   }
-  .nlabel.near.done .title { color: #f0d8a8; }
+  .nlabel.near.done .title { color: #e8ecf5; }
 
   /* верхняя линия — отзеркаленный ::after через дополнительный псевдо
      невозможен; делаем через box-shadow на ::before */
   .nlabel.near::before {
     box-shadow:
-      inset 0 1px 0 rgba(240, 216, 168, 0),
-      0 -1px 0 rgba(240, 216, 168, 0);
+      inset 0 1px 0 rgba(232, 236, 245, 0),
+      0 -1px 0 rgba(232, 236, 245, 0);
   }
+
+  /* ── анимации плашек ──────────────────────────────────────────────── */
+
+  /* idle: лёгкое дыхание opacity */
+  @keyframes nlabel-breathe {
+    0%, 100% { opacity: 0.75; }
+    50%       { opacity: 1.0;  }
+  }
+  /* idle: пульс свечения текста */
+  @keyframes nlabel-glow-pulse {
+    0%, 100% {
+      text-shadow:
+        0 0 14px rgba(4,4,8,.95), 0 0 6px rgba(4,4,8,.95),
+        0 0 16px rgba(232,236,245,.12), 0 1px 2px rgba(0,0,0,.95);
+    }
+    50% {
+      text-shadow:
+        0 0 14px rgba(4,4,8,.95), 0 0 6px rgba(4,4,8,.95),
+        0 0 34px rgba(232,236,245,.50), 0 1px 2px rgba(0,0,0,.95);
+    }
+  }
+  /* near: световая полоса скользит по баннеру */
+  @keyframes banner-scan {
+    0%        { background-position: -80% center, 0 0; }
+    100%      { background-position: 180% center, 0 0; }
+  }
+  /* near: мигание тире-декораций по бокам */
+  @keyframes dash-flicker {
+    0%, 92%, 100% { opacity: 0.65; }
+    94%, 98%      { opacity: 0.2;  }
+    96%           { opacity: 0.9;  }
+  }
+
+  /* применяем к has-game с разными фазами */
+  .nlabel.has-game           { animation: nlabel-breathe 3.4s ease-in-out infinite; }
+  .nlabel.has-game .title    { animation: nlabel-glow-pulse 3.4s ease-in-out infinite; }
+  .nlabel:nth-child(2)       { animation-delay: 0.85s; }
+  .nlabel:nth-child(2) .title{ animation-delay: 0.85s; }
+  .nlabel:nth-child(3)       { animation-delay: 1.7s;  }
+  .nlabel:nth-child(3) .title{ animation-delay: 1.7s;  }
+  .nlabel:nth-child(4)       { animation-delay: 2.55s; }
+  .nlabel:nth-child(4) .title{ animation-delay: 2.55s; }
+
+  /* near — отменяем breathe, добавляем скан по баннеру */
+  .nlabel.near { animation: none; }
+  .nlabel.near .title {
+    animation: nlabel-glow-pulse 2.2s ease-in-out infinite;
+  }
+  .nlabel.near::before {
+    /* светлая сканирующая полоса поверх тёмного баннера */
+    background:
+      linear-gradient(90deg, transparent 0%, rgba(232,236,245,0.055) 50%, transparent 100%) no-repeat center,
+      linear-gradient(to right,
+        transparent 0%, rgba(4,4,8,.88) 22%,
+        rgba(4,4,8,.92) 50%, rgba(4,4,8,.88) 78%, transparent 100%);
+    background-size: 55% 100%, 100% 100%;
+    animation: banner-scan 3.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  .nlabel.near .title::before,
+  .nlabel.near .title::after {
+    animation: dash-flicker 5s ease-in-out infinite;
+  }
+  .nlabel.near .title::after { animation-delay: 0.4s; }
 </style>
 </head>
-<body>
+<body class="preloading">
+
+<!-- ── прелоудер + ввод имени ─────────────────────────────────────────────── -->
+<div id="preloader">
+  <div class="pl-inner">
+    <div class="pl-mark">vol4 <span>·</span> games</div>
+    <div class="pl-bloom" aria-hidden="true">
+      <span class="pl-ring"></span>
+      <span class="pl-ring"></span>
+      <span class="pl-ring"></span>
+      <span class="pl-core"></span>
+    </div>
+    <div class="pl-status" id="plStatus">загрузка мира</div>
+
+    <div class="pl-panel" id="plPanel">
+      <div class="pl-flabel" id="plLabel">имя для таблицы лидеров</div>
+      <div class="pl-name" id="plNameOut"></div>
+      <div class="pl-kbd" id="plKbd"></div>
+      <div class="pl-keyhint">
+        <kbd>↑ ↓ ← →</kbd> буквы &nbsp; <kbd>ENTER</kbd> выбрать &nbsp; <span class="pl-ok">✓</span> готово
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  #preloader {
+    position: fixed; inset: 0; z-index: 100;
+    background: #050507;
+    display: flex; align-items: center; justify-content: center;
+    font-family: ui-monospace, "JetBrains Mono", monospace;
+    transition: opacity 0.7s ease;
+  }
+  #preloader.done { opacity: 0; pointer-events: none; }
+  /* CRT-сканлайны поверх содержимого прелоудера */
+  #preloader::after {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background:
+      repeating-linear-gradient(to bottom,
+        rgba(0,0,0,0) 0px, rgba(0,0,0,0) 2px,
+        rgba(0,0,0,0.20) 3px, rgba(0,0,0,0.20) 4px),
+      radial-gradient(ellipse at center,
+        rgba(0,0,0,0) 50%, rgba(0,0,0,0.55) 100%);
+  }
+
+  .pl-inner {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 26px;
+  }
+  .pl-mark {
+    font-size: 11px; font-weight: 600;
+    letter-spacing: 0.40em; text-transform: uppercase;
+    color: rgba(255,255,255,0.45);
+  }
+  .pl-mark span { color: rgba(255,255,255,0.22); }
+
+  /* ── телепорт-блум: пунктирные кольца расходятся от светящегося ядра ──── */
+  .pl-bloom {
+    position: relative;
+    width: 116px; height: 116px;
+    display: flex; align-items: center; justify-content: center;
+    transition: transform 0.6s ease, opacity 0.6s ease;
+  }
+  .pl-ring {
+    position: absolute; width: 100%; height: 100%;
+    border: 1.5px dotted rgba(232,236,245,0.8);
+    border-radius: 50%;
+    opacity: 0;
+    animation: plBloom 2.1s cubic-bezier(0.2, 0.7, 0.2, 1) infinite;
+  }
+  .pl-ring:nth-child(2) { animation-delay: 0.7s; }
+  .pl-ring:nth-child(3) { animation-delay: 1.4s; }
+  @keyframes plBloom {
+    0%   { transform: scale(0.05); opacity: 0; }
+    14%  { opacity: 0.95; }
+    100% { transform: scale(1); opacity: 0; }
+  }
+  .pl-core {
+    width: 9px; height: 9px; border-radius: 50%;
+    background: #e8ecf5;
+    box-shadow: 0 0 18px 5px rgba(232,236,245,0.55);
+    animation: plCore 2.1s ease-in-out infinite;
+  }
+  @keyframes plCore {
+    0%, 100% { transform: scale(0.6); opacity: 0.65; }
+    50%      { transform: scale(1.35); opacity: 1; }
+  }
+  /* при готовности блум уменьшается, уступая место клавиатуре */
+  #preloader.ready .pl-bloom { transform: scale(0.46); opacity: 0.6; margin-bottom: -28px; }
+
+  .pl-status {
+    font-size: 10px; letter-spacing: 0.30em; text-transform: uppercase;
+    color: rgba(255,255,255,0.3);
+    min-height: 1em;
+    transition: color 0.4s;
+  }
+  #preloader.ready .pl-status { color: var(--c-accent, #e8ecf5); }
+
+  /* ── панель ввода имени — скрыта до готовности ────────────────────────── */
+  .pl-panel {
+    display: flex; flex-direction: column; align-items: center; gap: 14px;
+    opacity: 0; transform: translateY(14px);
+    pointer-events: none;
+    max-height: 0; overflow: hidden;
+    transition: opacity 0.55s ease, transform 0.55s ease, max-height 0.6s ease, margin-top 0.5s;
+    margin-top: 0;
+  }
+  #preloader.ready .pl-panel {
+    opacity: 1; transform: translateY(0);
+    pointer-events: auto;
+    max-height: 420px; margin-top: 6px;
+  }
+
+  .pl-flabel {
+    font-size: 9px; letter-spacing: 0.26em; text-transform: uppercase;
+    color: rgba(255,255,255,0.35);
+  }
+
+  /* введённое имя + мигающий каретка */
+  .pl-name {
+    font-size: 22px; letter-spacing: 0.22em;
+    color: #e8ecf5; text-transform: uppercase;
+    min-height: 1.4em;
+    display: flex; align-items: center;
+    text-shadow: 0 0 18px rgba(232,236,245,0.35);
+  }
+  .pl-caret {
+    display: inline-block; width: 11px; height: 21px;
+    background: rgba(232,236,245,0.8); margin-left: 4px;
+    animation: plCaret 0.9s steps(1) infinite;
+  }
+  @keyframes plCaret { 0%, 50% { opacity: 1; } 50.01%, 100% { opacity: 0; } }
+
+  /* ── RPG-таблица клавиатуры ───────────────────────────────────────────── */
+  .pl-kbd {
+    display: flex; flex-direction: column; gap: 5px;
+    padding: 14px;
+    border: 1px solid rgba(232,236,245,0.18);
+    background: rgba(232,236,245,0.03);
+  }
+  .pl-krow { display: flex; gap: 5px; justify-content: center; }
+  .pl-key {
+    width: 28px; height: 28px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 500;
+    color: rgba(255,255,255,0.55);
+    border: 1px solid transparent;
+    cursor: pointer; user-select: none;
+    transition: color 0.12s, background 0.12s, box-shadow 0.12s;
+  }
+  .pl-key.special { width: auto; padding: 0 10px; color: rgba(232,236,245,0.7); font-size: 13px; }
+  .pl-key:hover { color: #e8ecf5; }
+  .pl-key.sel {
+    color: #040408; background: #e8ecf5; border-color: #e8ecf5;
+    box-shadow: 0 0 16px rgba(232,236,245,0.5);
+  }
+
+  .pl-keyhint {
+    font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase;
+    color: rgba(255,255,255,0.3);
+  }
+  .pl-keyhint kbd {
+    color: rgba(255,255,255,0.6);
+    border: 1px solid rgba(255,255,255,0.18);
+    padding: 1px 5px; border-radius: 2px; font: inherit; font-size: 9px;
+  }
+  .pl-keyhint .pl-ok { color: #e8ecf5; }
+</style>
+
+<script>
+  (function () {
+    const NAME_KEY = "vol4_player";
+    const MAXLEN   = 16;
+    const pre      = document.getElementById("preloader");
+
+    // ── пропуск прелоудера при возврате из игры ──────────────────────────
+    {
+      let _s = ""; try { _s = localStorage.getItem(NAME_KEY) || ""; } catch (e) {}
+      const _fromSite = !!document.referrer && (() => {
+        try { return new URL(document.referrer).origin === location.origin; } catch { return false; }
+      })();
+      if (_s && _fromSite) {
+        pre.classList.add("done");
+        document.body.classList.remove("preloading");
+        setTimeout(() => { if (pre.parentNode) pre.remove(); }, 750);
+        return;
+      }
+    }
+
+    const statusEl = document.getElementById("plStatus");
+    const labelEl  = document.getElementById("plLabel");
+    const nameOut  = document.getElementById("plNameOut");
+    const kbdEl    = document.getElementById("plKbd");
+
+    // ── раскладка таблицы (Phantasy Star-style) ──
+    const ROWS = [
+      "АБВГДЕЁЖЗИ".split(""),
+      "ЙКЛМНОПРСТ".split(""),
+      "УФХЦЧШЩЪЫЬ".split(""),
+      "ЭЮЯ0123456".split(""),
+      ["7", "8", "9", "␣", "⌫", "✓"],
+    ];
+    const SPECIAL = { "␣": "space", "⌫": "del", "✓": "ok" };
+
+    let entered = "";
+    let cur = { r: 0, c: 0 };
+    const cells = [];
+
+    // строим сетку
+    ROWS.forEach((row, r) => {
+      const rowEl = document.createElement("div");
+      rowEl.className = "pl-krow";
+      cells[r] = [];
+      row.forEach((tok, c) => {
+        const el = document.createElement("div");
+        el.className = "pl-key" + (SPECIAL[tok] ? " special" : "");
+        el.textContent = tok;
+        el.addEventListener("click", () => { cur = { r, c }; renderSel(); activate(); });
+        rowEl.appendChild(el);
+        cells[r][c] = el;
+      });
+      kbdEl.appendChild(rowEl);
+    });
+
+    function renderSel() {
+      cells.forEach(row => row.forEach(el => el.classList.remove("sel")));
+      const el = cells[cur.r] && cells[cur.r][cur.c];
+      if (el) el.classList.add("sel");
+    }
+    function renderName() {
+      nameOut.textContent = entered;
+      const caret = document.createElement("span");
+      caret.className = "pl-caret";
+      nameOut.appendChild(caret);
+    }
+    function move(dc, dr) {
+      if (dr) cur.r = Math.max(0, Math.min(ROWS.length - 1, cur.r + dr));
+      cur.c = Math.max(0, Math.min(ROWS[cur.r].length - 1, cur.c + dc));
+      renderSel();
+    }
+    function add(ch)  { if (entered.length < MAXLEN) { entered += ch; renderName(); } }
+    function erase()  { entered = entered.slice(0, -1); renderName(); }
+    function activate() {
+      const tok = ROWS[cur.r][cur.c];
+      if (tok === "✓") return confirmName();
+      if (tok === "⌫") return erase();
+      if (tok === "␣") return add(" ");
+      add(tok);
+    }
+    function confirmName() {
+      const name = (entered.trim() || "детектив").slice(0, MAXLEN);
+      try { localStorage.setItem(NAME_KEY, name); } catch (e) {}
+      pre.classList.add("done");
+      document.body.classList.remove("preloading");
+      setTimeout(() => pre.remove(), 800);
+    }
+
+    document.addEventListener("keydown", e => {
+      if (!pre.classList.contains("ready") || pre.classList.contains("done")) return;
+      switch (e.key) {
+        case "ArrowUp":    e.preventDefault(); move(0, -1); break;
+        case "ArrowDown":  e.preventDefault(); move(0,  1); break;
+        case "ArrowLeft":  e.preventDefault(); move(-1, 0); break;
+        case "ArrowRight": e.preventDefault(); move( 1, 0); break;
+        case "Enter":
+        case " ":          e.preventDefault(); activate(); break;
+        case "Backspace":  e.preventDefault(); erase(); break;
+      }
+    });
+
+    let saved = "";
+    try { saved = localStorage.getItem(NAME_KEY) || ""; } catch (e) {}
+
+    function reveal() {
+      if (saved) {
+        labelEl.textContent = "с возвращением — подтверди или измени";
+        entered = saved.slice(0, MAXLEN);
+        statusEl.textContent = saved;
+      } else {
+        statusEl.textContent = "кто ведёт расследование?";
+      }
+      renderName();
+      renderSel();
+      pre.classList.add("ready");
+    }
+
+    // минимальное время показа загрузки (анимация телепорта)
+    const MIN = 1700, t0 = performance.now();
+    function finishLoad() {
+      setTimeout(reveal, Math.max(0, MIN - (performance.now() - t0)));
+    }
+    if (document.readyState === "complete") finishLoad();
+    else window.addEventListener("load", finishLoad);
+  })();
+</script>
+
 <canvas id="c"></canvas>
 <div id="ui">
   <div id="title">vol4 <span class="dim">·</span> games</div>
   <div id="hint"><kbd>WASD</kbd> двигаться <kbd>ENTER</kbd> войти</div>
   <div id="prompt">enter войти</div>
 </div>
+<div id="crt"></div>
 <div id="allDoneOverlay" style="
   position:fixed;inset:0;
   background:rgba(4,4,8,0.88);
@@ -184,10 +574,10 @@
   z-index:30;
   font-family:'JetBrains Mono',ui-monospace,monospace;
 ">
-  <div style="font-size:10px;letter-spacing:0.34em;text-transform:uppercase;color:rgba(240,216,168,0.7)">завершено</div>
-  <div style="font-size:clamp(24px,5vw,42px);font-weight:300;letter-spacing:0.28em;text-transform:uppercase;color:#f0d8a8;text-shadow:0 0 40px rgba(240,216,168,0.3)">все стихи прочитаны</div>
+  <div style="font-size:10px;letter-spacing:0.34em;text-transform:uppercase;color:rgba(232,236,245,0.7)">завершено</div>
+  <div style="font-size:clamp(24px,5vw,42px);font-weight:300;letter-spacing:0.28em;text-transform:uppercase;color:#e8ecf5;text-shadow:0 0 40px rgba(232,236,245,0.3)">все стихи прочитаны</div>
   <div style="font-size:11px;letter-spacing:0.16em;color:rgba(255,255,255,0.38);line-height:1.9em;text-align:center;max-width:32em;margin-top:4px">
-    птицы · сталагмит · призма
+    птицы · сталагмит · призма · нэнси дрю
   </div>
 </div>
 <style>
@@ -196,70 +586,39 @@
 
 <script type="module" src="/src/map/main.js"></script>
 
-<!-- ── SVG goo-filter (скрытый) ──────────────────────────────────────── -->
-<svg style="position:absolute;width:0;height:0;overflow:hidden">
-  <defs>
-    <filter id="goo" x="-40%" y="-40%" width="180%" height="180%">
-      <feGaussianBlur in="SourceGraphic" stdDeviation="9" result="blur"/>
-      <feColorMatrix in="blur" mode="matrix"
-        values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 22 -11" result="goo"/>
-    </filter>
-  </defs>
-</svg>
-
-<!-- ── метабол-меню уровней ──────────────────────────────────────────── -->
+<!-- ── терминальная таблица уровней ──────────────────────────────────────── -->
 <div id="fanMenu">
   <button id="fanTrigger"><kbd>TAB</kbd> уровни</button>
-  <div id="fanBlobs">
-
-    <a class="blob-item" href="/games/birds/">
-      <div class="blob-goo">
-        <div class="bc" style="width:72px;height:72px;top:8px;left:8px"></div>
-        <div class="bc" style="width:58px;height:58px;top:4px;left:62px"></div>
-        <div class="bc" style="width:48px;height:48px;top:34px;left:36px"></div>
-      </div>
-      <div class="blob-text">
-        <span class="bt-name">птицы</span>
-        <span class="bt-sub">match-3</span>
-      </div>
+  <div id="fanPanel">
+    <div class="fp-head">уровни</div>
+    <a class="fp-row" href="/games/birds/">
+      <span class="fp-idx">01</span>
+      <span class="fp-sep">│</span>
+      <span class="fp-name">ПТИЦЫ</span>
+      <span class="fp-genre">match-3</span>
+      <span class="fp-chk" id="fpck-birds">·</span>
     </a>
-
-    <a class="blob-item" href="/games/nancy-drew/">
-      <div class="blob-goo">
-        <div class="bc" style="width:64px;height:64px;top:10px;left:4px"></div>
-        <div class="bc" style="width:56px;height:56px;top:6px;left:56px"></div>
-        <div class="bc" style="width:52px;height:52px;top:28px;left:74px"></div>
-      </div>
-      <div class="blob-text">
-        <span class="bt-name">нэнси дрю</span>
-        <span class="bt-sub">hidden object</span>
-      </div>
+    <a class="fp-row" href="/games/stalagmit/">
+      <span class="fp-idx">02</span>
+      <span class="fp-sep">│</span>
+      <span class="fp-name">СТАЛАГМИТ</span>
+      <span class="fp-genre">tower bloxx</span>
+      <span class="fp-chk" id="fpck-stalagmit">·</span>
     </a>
-
-    <a class="blob-item" href="/games/stalagmit/">
-      <div class="blob-goo">
-        <div class="bc" style="width:60px;height:60px;top:6px;left:30px"></div>
-        <div class="bc" style="width:52px;height:52px;top:30px;left:8px"></div>
-        <div class="bc" style="width:52px;height:52px;top:30px;left:60px"></div>
-      </div>
-      <div class="blob-text">
-        <span class="bt-name">сталагмит</span>
-        <span class="bt-sub">tower bloxx</span>
-      </div>
+    <a class="fp-row" href="/games/nancy-drew/">
+      <span class="fp-idx">03</span>
+      <span class="fp-sep">│</span>
+      <span class="fp-name">НЭНСИ ДРЮ</span>
+      <span class="fp-genre">hidden object</span>
+      <span class="fp-chk" id="fpck-nancy-drew">·</span>
     </a>
-
-    <a class="blob-item" href="/games/prizma/">
-      <div class="blob-goo">
-        <div class="bc" style="width:62px;height:62px;top:10px;left:14px"></div>
-        <div class="bc" style="width:48px;height:48px;top:6px;left:60px"></div>
-        <div class="bc" style="width:40px;height:40px;top:38px;left:48px"></div>
-      </div>
-      <div class="blob-text">
-        <span class="bt-name">призма</span>
-        <span class="bt-sub">icy tower</span>
-      </div>
+    <a class="fp-row" href="/games/prizma/">
+      <span class="fp-idx">04</span>
+      <span class="fp-sep">│</span>
+      <span class="fp-name">ПРИЗМА</span>
+      <span class="fp-genre">icy tower</span>
+      <span class="fp-chk" id="fpck-prizma">·</span>
     </a>
-
   </div>
 </div>
 
@@ -286,97 +645,96 @@
   #fanTrigger kbd {
     color: rgba(255,255,255,0.55);
     border: 1px solid rgba(255,255,255,0.18);
-    padding: 1px 5px; border-radius: 2px;
+    padding: 1px 5px;
     font: inherit; font-size: 9px;
   }
   #fanTrigger:hover,
-  #fanMenu.open #fanTrigger { color: #f0d8a8; border-color: rgba(240,216,168,0.35); }
-  #fanMenu.open #fanTrigger kbd { color: #f0d8a8; border-color: rgba(240,216,168,0.35); }
+  #fanMenu.open #fanTrigger { color: #e8ecf5; border-color: rgba(232,236,245,0.35); }
+  #fanMenu.open #fanTrigger kbd { color: #e8ecf5; border-color: rgba(232,236,245,0.35); }
 
-  /* ── список блобов ─────────────────────────────────────────────────── */
-  #fanBlobs {
+  /* ── выдвижная панель ─────────────────────────────────────────────── */
+  #fanPanel {
     position: fixed;
-    right: 18px;
-    top: 50%;
-    transform: translateY(-50%) translateX(calc(100% + 20px));
-    opacity: 0;
-    pointer-events: none;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    transition:
-      transform 0.5s cubic-bezier(0.22, 0.9, 0.2, 1.08),
-      opacity 0.32s ease;
+    right: 18px; top: 50%;
+    transform: translateY(-50%) translateX(calc(100% + 32px));
+    opacity: 0; pointer-events: none;
+    transition: transform 0.38s cubic-bezier(0.22, 0.9, 0.2, 1.04), opacity 0.26s;
+    background: rgba(5,5,7,0.96);
+    border: 1px solid rgba(232,236,245,0.16);
+    backdrop-filter: blur(8px);
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    min-width: 290px;
   }
-  #fanMenu.open #fanBlobs {
+  #fanMenu.open #fanPanel {
     transform: translateY(-50%) translateX(0);
-    opacity: 1;
-    pointer-events: auto;
+    opacity: 1; pointer-events: auto;
   }
 
-  /* ── отдельный блоб ────────────────────────────────────────────────── */
-  .blob-item {
-    position: relative;
-    width: 150px; height: 94px;
-    cursor: pointer;
+  .fp-head {
+    font-size: 9px; letter-spacing: 0.34em; text-transform: uppercase;
+    color: rgba(232,236,245,0.28);
+    padding: 13px 16px 11px;
+    border-bottom: 1px solid rgba(232,236,245,0.08);
+  }
+  .fp-head::before { content: "› "; color: rgba(232,236,245,0.45); }
+
+  .fp-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 16px;
     text-decoration: none;
-    display: block;
+    color: rgba(232,236,245,0.50);
+    font-size: 10px;
+    border-bottom: 1px solid rgba(232,236,245,0.06);
+    transition: background 0.13s, color 0.13s;
   }
-  .blob-item.disabled { cursor: default; pointer-events: none; }
+  .fp-row:last-child { border-bottom: none; }
+  .fp-row:hover {
+    background: rgba(232,236,245,0.06);
+    color: #e8ecf5;
+  }
+  .fp-row:hover .fp-idx   { color: rgba(232,236,245,0.45); }
+  .fp-row:hover .fp-genre { color: rgba(232,236,245,0.55); }
+  .fp-row.done            { color: rgba(232,236,245,0.72); }
+  .fp-row.done .fp-chk    { color: #e8ecf5; }
 
-  /* кружки, слитые через goo-filter — золотистая заливка */
-  .blob-goo {
-    position: absolute;
-    inset: 0;
-    filter: url('#goo');
+  .fp-idx {
+    font-size: 9px; color: rgba(232,236,245,0.20);
+    min-width: 18px; transition: color 0.13s;
   }
-  .bc {
-    position: absolute;
-    border-radius: 50%;
-    background: #c8a86e; /* матовое золото */
-    transition: background 0.2s;
-  }
-  .blob-item:not(.disabled):hover .bc { background: #f0d8a8; }
-  .blob-item.disabled .bc { background: rgba(120, 110, 90, 0.35); }
-
-  /* текст — поверх кружков, в центре блоба */
-  .blob-text {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 3px;
-    pointer-events: none;
-  }
-  .bt-name {
-    font-family: "JetBrains Mono", ui-monospace, monospace;
+  .fp-sep { color: rgba(232,236,245,0.12); }
+  .fp-name {
     font-size: 11px; font-weight: 700;
-    letter-spacing: 0.24em;
-    text-transform: uppercase;
-    color: #040408;
-    line-height: 1;
-    transition: color 0.2s;
+    letter-spacing: 0.22em; text-transform: uppercase;
+    flex: 1;
   }
-  .bt-sub {
-    font-family: "JetBrains Mono", ui-monospace, monospace;
-    font-size: 8px; font-weight: 400;
-    letter-spacing: 0.18em;
-    text-transform: lowercase;
-    color: rgba(4,4,8,0.6);
-    line-height: 1;
+  .fp-genre {
+    font-size: 9px; letter-spacing: 0.10em; text-transform: lowercase;
+    color: rgba(232,236,245,0.28); transition: color 0.13s;
   }
-  .blob-item.disabled .bt-name { color: rgba(255,255,255,0.28); }
-  .blob-item.disabled .bt-sub  { color: rgba(255,255,255,0.16); }
+  .fp-chk {
+    font-size: 11px; min-width: 14px; text-align: center;
+    color: rgba(232,236,245,0.18); transition: color 0.13s;
+  }
 </style>
 
 <script>
   (function () {
     const menu    = document.getElementById("fanMenu");
     const trigger = document.getElementById("fanTrigger");
+
+    // отмечаем пройденные игры
+    [["birds","fpck-birds"],["stalagmit","fpck-stalagmit"],
+     ["nancy-drew","fpck-nancy-drew"],["prizma","fpck-prizma"]].forEach(([game, id]) => {
+      const done = localStorage.getItem(`vol4_${game}_done`) === "true";
+      const chk  = document.getElementById(id);
+      if (!chk) return;
+      chk.textContent = done ? "✓" : "·";
+      if (done) { chk.classList.add("done"); chk.closest(".fp-row").classList.add("done"); }
+    });
+
     trigger.addEventListener("click", () => menu.classList.toggle("open"));
     document.addEventListener("keydown", e => {
+      if (document.body.classList.contains("preloading")) return;
       if (e.code === "Tab") { e.preventDefault(); menu.classList.toggle("open"); }
       if (e.code === "Escape") menu.classList.remove("open");
     });

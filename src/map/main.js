@@ -4,7 +4,7 @@ import * as THREE from "three";
 import { EffectComposer }     from "three/examples/jsm/postprocessing/EffectComposer.js";
 import { RenderPass }         from "three/examples/jsm/postprocessing/RenderPass.js";
 import { OutputPass }         from "three/examples/jsm/postprocessing/OutputPass.js";
-import { isDone }             from "../shared/nav.js";
+import { isDone, clearAllProgress } from "../shared/nav.js";
 import { createHero, HERO_FIELD_RADIUS_PX } from "../shared/hero.js";
 import { createHalftonePass } from "../shared/halftone.js";
 
@@ -42,12 +42,253 @@ composer.addPass(new OutputPass());
 const NODES = [
   { id: "n1", x:  -2.4, z:  3.0,  label: "СТАЛАГМИТ", sub: "али алиев · tower bloxx",        game: "stalagmit"  },
   { id: "n2", x: -16.0, z: -6.5,  label: "НЭНСИ ДРЮ", sub: "милена степанян · hidden object", game: "nancy-drew" },
-  { id: "n3", x:  15.0, z: -8.0,  label: "ПТИЦЫ",     sub: "match-3",                         game: "birds"      },
+  { id: "n3", x:  15.0, z: -8.0,  label: "ПТИЦЫ",     sub: "лиза хереш · match-3",            game: "birds"      },
   { id: "n4", x:  12.5, z:  10.0, label: "ПРИЗМА",    sub: "данила кудимов · icy tower",      game: "prizma"     },
 ];
 // n1 — хаб; n2-n3 даёт внешнюю дугу, чтобы пути не пересекались крестом.
 const EDGES = [["n1","n2"],["n1","n3"],["n1","n4"],["n2","n3"]];
 const nodeById = id => NODES.find(n => n.id === id);
+
+// ── рандомизация позиций нод (каждую загрузку новая раскладка) ─────────────
+// n1 садится ближе к центру (стартовая), остальные разбрасываются с
+// гарантированным минимальным расстоянием друг от друга.
+(function randomizeNodes() {
+  const placed = [];
+  const BX = 18, BZ = 11, MIN_DIST = 11;
+  NODES.forEach((n, i) => {
+    let tries = 0, x, z;
+    do {
+      if (i === 0) {                       // старт — центральная зона
+        x = (Math.random() * 2 - 1) * 6;
+        z = (Math.random() * 2 - 1) * 4;
+      } else {
+        x = (Math.random() * 2 - 1) * BX;
+        z = (Math.random() * 2 - 1) * BZ;
+      }
+      tries++;
+    } while (tries < 300 && placed.some(p => Math.hypot(p.x - x, p.z - z) < MIN_DIST));
+    n.x = x; n.z = z;
+    placed.push({ x, z });
+  });
+})();
+
+// ── рельеф ландшафта ──────────────────────────────────────────────────────
+// fBm из синусоид — несколько октав, без внешних зависимостей.
+function terrainH(x, z) {
+  let h = 0;
+  h += Math.sin(x * 0.160 + z * 0.110 + 0.50) * 2.2;
+  h += Math.sin(x * 0.370 + z * 0.280 + 1.70) * 1.1;
+  h += Math.sin(x * 0.710 + z * 0.600 + 3.10) * 0.55;
+  h += Math.sin(x * 1.330 + z * 1.170 + 0.90) * 0.27;
+  h += Math.cos(x * 0.220 + z * 0.430 + 2.30) * 1.7;
+  h += Math.cos(x * 0.540 + z * 0.250 + 0.80) * 0.85;
+  h += Math.cos(x * 1.100 + z * 0.880 + 4.20) * 0.42;
+  h += Math.sin(x * 0.095 + z * 0.073 + 3.80) * 3.4; // длинная фоновая волна
+  h -= 2.8; // смещение: большинство рельефа ниже нулевого уровня
+
+  // выравниваем рядом с нодами — диски и герой не должны «тонуть» в холмах
+  const FLAT_R = 6.5;
+  for (const { x: nx, z: nz } of NODES) {
+    const d = Math.hypot(x - nx, z - nz);
+    if (d < FLAT_R) {
+      const s = 1 - d / FLAT_R;
+      const smooth = s * s * (3 - 2 * s);
+      h *= (1 - smooth);
+    }
+  }
+  return h;
+}
+
+{
+  // плоскость покрывает всё игровое поле + запас
+  const geo = new THREE.PlaneGeometry(90, 68, 160, 120);
+  geo.rotateX(-Math.PI / 2);
+  const pa = geo.attributes.position;
+  const ca = new Float32Array(pa.count * 3);
+  let yMin = Infinity, yMax = -Infinity;
+
+  // первый проход — вычисляем высоты и диапазон
+  const ys = new Float32Array(pa.count);
+  for (let i = 0; i < pa.count; i++) {
+    const y = terrainH(pa.getX(i), pa.getZ(i));
+    ys[i] = y;
+    if (y < yMin) yMin = y;
+    if (y > yMax) yMax = y;
+  }
+  const yRange = yMax - yMin || 1;
+
+  // второй проход — применяем высоты и назначаем цвет по высоте
+  for (let i = 0; i < pa.count; i++) {
+    pa.setY(i, ys[i]);
+    const t = Math.max(0, Math.min(1, (ys[i] - yMin) / yRange));
+    // тень в долинах → светлая вершина (чуть светлее — фон должен читаться)
+    ca[i * 3]     = 0.024 + t * 0.052;
+    ca[i * 3 + 1] = 0.022 + t * 0.044;
+    ca[i * 3 + 2] = 0.048 + t * 0.100;
+  }
+  geo.setAttribute("color", new THREE.BufferAttribute(ca, 3));
+  geo.computeVertexNormals();
+
+  scene.add(new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ vertexColors: true })));
+
+  // рассеянный холодный фон
+  scene.add(new THREE.AmbientLight(0x1e2030, 1));
+  // основной направленный — синий с левого бока (объекты ловят блик)
+  const sun = new THREE.DirectionalLight(0x6070c8, 9.0);
+  sun.position.set(-12, 22, 4);
+  scene.add(sun);
+  // контровый заполняющий — с противоположной стороны, чуть фиолетовый
+  const fill = new THREE.DirectionalLight(0x3a2c5e, 5.0);
+  fill.position.set(14, 10, -12);
+  scene.add(fill);
+}
+
+// ── монументы: пафосные структуры, рандомизируются каждую загрузку ─────────
+const obstacles  = []; // { x, z, r } — окружности для коллизий с героем
+const animatedOb = []; // парящие/вращающиеся элементы — обновляются в loop
+
+{
+  // ── палитра проекта: тёмный камень + холодный белый #e8ecf5 + кристалл ──
+  const stoneMat = new THREE.MeshStandardMaterial({
+    color: 0x6e6e88, roughness: 0.80, metalness: 0.14,
+    emissive: 0x12121e, emissiveIntensity: 0.6, flatShading: true,
+  });
+  const stoneDark = new THREE.MeshStandardMaterial({
+    color: 0x3c3c4e, roughness: 0.9, metalness: 0.06, flatShading: true,
+  });
+  const goldMat = new THREE.MeshStandardMaterial({
+    color: 0xe8ecf5, roughness: 0.22, metalness: 0.7,
+    emissive: 0xb0b8d0, emissiveIntensity: 2.6, flatShading: true,
+  });
+  const crystMat = new THREE.MeshStandardMaterial({
+    color: 0xb4ccee, roughness: 0.14, metalness: 0.3,
+    emissive: 0x5878c8, emissiveIntensity: 2.4, flatShading: true,
+  });
+
+  const R = (a, b) => a + Math.random() * (b - a);
+
+  // основание-постамент: гранёный диск с золотой каймой
+  function pedestal(grp, scale, sides) {
+    const base = new THREE.Mesh(
+      new THREE.CylinderGeometry(scale * 0.95, scale * 1.15, scale * 0.32, sides), stoneDark);
+    base.position.y = scale * 0.16;
+    grp.add(base);
+    const rim = new THREE.Mesh(
+      new THREE.TorusGeometry(scale * 0.98, scale * 0.05, 6, sides * 2), goldMat);
+    rim.position.y = scale * 0.32; rim.rotation.x = Math.PI / 2;
+    grp.add(rim);
+  }
+
+  // парящий гранёный сердечник + регистрация анимации
+  function floatingCore(grp, scale, y, mat, sizeF) {
+    const core = new THREE.Mesh(new THREE.OctahedronGeometry(scale * sizeF, 0), mat);
+    core.position.y = y;
+    grp.add(core);
+    animatedOb.push({ mesh: core, spin: R(0.4, 0.9) * (Math.random() < 0.5 ? -1 : 1),
+                      amp: scale * R(0.18, 0.35), spd: R(0.8, 1.4), baseY: y, ph: R(0, 6.28) });
+    return core;
+  }
+
+  // 1 ── ОБЕЛИСК: гранёный шпиль с золотым пирамидионом
+  function makeObelisk(scale) {
+    const grp = new THREE.Group();
+    pedestal(grp, scale, 4);
+    const h = scale * R(3.4, 5.2), w = scale * R(0.42, 0.6);
+    const shaft = new THREE.Mesh(new THREE.CylinderGeometry(w * 0.55, w, h, 4), stoneMat);
+    shaft.position.y = scale * 0.32 + h / 2; shaft.rotation.y = Math.PI / 4;
+    grp.add(shaft);
+    const cap = new THREE.Mesh(new THREE.ConeGeometry(w * 0.6, w * 1.3, 4), goldMat);
+    cap.position.y = scale * 0.32 + h + w * 0.55; cap.rotation.y = Math.PI / 4;
+    grp.add(cap);
+    grp.userData.r = scale * 1.15; // = радиус постамента (видимое основание)
+    return grp;
+  }
+
+  // 2 ── МЕГАЛИТЫ: кольцо наклонных плит вокруг парящего золотого ядра
+  function makeMegaliths(scale) {
+    const grp = new THREE.Group();
+    const n = 3 + Math.floor(Math.random() * 3);
+    const ring = scale * R(1.2, 1.8);
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2 + R(-0.25, 0.25);
+      const h = scale * R(1.8, 3.2);
+      const slab = new THREE.Mesh(new THREE.BoxGeometry(scale * 0.55, h, scale * 0.3), stoneDark);
+      slab.position.set(Math.cos(a) * ring, h / 2, Math.sin(a) * ring);
+      slab.rotation.y = -a + R(-0.2, 0.2);
+      slab.rotation.z = R(-0.12, 0.12);
+      grp.add(slab);
+    }
+    floatingCore(grp, scale, scale * R(1.2, 1.7), goldMat, 0.45);
+    grp.userData.r = ring + scale * 0.3; // охватывает кольцо плит
+    return grp;
+  }
+
+  // 3 ── КРИСТАЛЬНЫЙ АЛТАРЬ: пучок светящихся шпилей на постаменте
+  function makeCrystalAltar(scale) {
+    const grp = new THREE.Group();
+    pedestal(grp, scale, 6);
+    const shards = 4 + Math.floor(Math.random() * 4);
+    for (let i = 0; i < shards; i++) {
+      const h = scale * R(1.6, 3.0), rad = scale * R(0.14, 0.24);
+      const c = new THREE.Mesh(new THREE.ConeGeometry(rad, h, 4 + (Math.random() < 0.5 ? 0 : 1)), crystMat);
+      const a = Math.random() * Math.PI * 2, rr = Math.random() * scale * 0.55;
+      c.position.set(Math.cos(a) * rr, scale * 0.32 + h / 2, Math.sin(a) * rr);
+      c.rotation.set(R(-0.4, 0.4), Math.random() * 3.14, R(-0.4, 0.4));
+      grp.add(c);
+    }
+    grp.userData.r = scale * 1.15; // = радиус постамента (видимое основание)
+    return grp;
+  }
+
+  // 4 ── ПАРЯЩИЙ МОНУМЕНТ: колонна, золотое кольцо, левитирующий кристалл
+  function makeFloatingMonument(scale) {
+    const grp = new THREE.Group();
+    pedestal(grp, scale, 6);
+    const col = new THREE.Mesh(
+      new THREE.CylinderGeometry(scale * 0.45, scale * 0.62, scale * 1.5, 6), stoneMat);
+    col.position.y = scale * 0.32 + scale * 0.75;
+    grp.add(col);
+    const band = new THREE.Mesh(new THREE.TorusGeometry(scale * 0.6, scale * 0.07, 8, 20), goldMat);
+    band.position.y = scale * 0.32 + scale * 1.55; band.rotation.x = Math.PI / 2;
+    grp.add(band);
+    floatingCore(grp, scale, scale * R(2.6, 3.2), crystMat, 0.55);
+    grp.userData.r = scale * 1.15; // = радиус постамента (видимое основание)
+    return grp;
+  }
+
+  const BUILDERS = [makeObelisk, makeMegaliths, makeCrystalAltar, makeFloatingMonument];
+
+  const TARGET = 18;
+  let attempts = 0;
+  while (obstacles.length < TARGET && attempts < 900) {
+    attempts++;
+    const x = (Math.random() * 2 - 1) * 20;
+    const z = (Math.random() * 2 - 1) * 13;
+
+    // не у нод (включая старт n1) и не вплотную к другим монументам
+    let ok = true;
+    for (const n of NODES) if (Math.hypot(x - n.x, z - n.z) < 5.0) { ok = false; break; }
+    if (!ok) continue;
+    for (const o of obstacles) if (Math.hypot(x - o.x, z - o.z) < 4.2) { ok = false; break; }
+    if (!ok) continue;
+
+    const scale = R(0.7, 1.25);
+    const obj   = BUILDERS[Math.floor(Math.random() * BUILDERS.length)](scale);
+    obj.position.set(x, terrainH(x, z) - 0.1, z);
+    obj.rotation.y = Math.random() * Math.PI * 2;
+    scene.add(obj);
+    obstacles.push({ x, z, r: obj.userData.r ?? scale });
+  }
+}
+
+// анимация парящих элементов монументов
+function updateObstacles(t) {
+  for (const a of animatedOb) {
+    a.mesh.rotation.y = t * a.spin;
+    a.mesh.rotation.x = t * a.spin * 0.4;
+    a.mesh.position.y = a.baseY + Math.sin(t * a.spd + a.ph) * a.amp;
+  }
+}
 
 // светящийся диск на полу + кольцо. MeshBasic, без освещения.
 const nodeObjs = {};
@@ -113,10 +354,11 @@ function updateNodes(t, activeId) {
     const pulse = 0.85 + 0.15 * Math.sin(t * 1.9 + n.z * 0.5);
 
     if (done) {
-      ringMat.color.setRGB(1.0, 0.78, 0.32);
-      coreMat.color.setRGB(1.0, 0.85, 0.45);
-      glowMat.uniforms.col.value.setRGB(1.0, 0.78, 0.32);
-      glowMat.uniforms.intensity.value = 0.7 * pulse;
+      // пройдено — холодный белый, ровное свечение (без пульса)
+      ringMat.color.setRGB(0.82, 0.88, 1.0);
+      coreMat.color.setRGB(0.9, 0.94, 1.0);
+      glowMat.uniforms.col.value.setRGB(0.82, 0.88, 1.0);
+      glowMat.uniforms.intensity.value = 0.6;
     } else if (isActive) {
       ringMat.color.setRGB(pulse, pulse, pulse);
       coreMat.color.setRGB(pulse, pulse, pulse);
@@ -254,7 +496,14 @@ const MOVE_CODES  = new Set(["KeyW","KeyA","KeyS","KeyD","ArrowUp","ArrowDown","
 const ENTER_CODES = new Set(["Enter","KeyE","Space"]);
 
 window.addEventListener("keydown", e => {
+  if (document.body.classList.contains("preloading")) return; // прелоудер активен
   if (teleport) return; // ввод заблокирован во время телепорта
+  // Shift+R — сброс всего прогресса (для отладки/повторной игры)
+  if (e.shiftKey && e.code === "KeyR") {
+    clearAllProgress();
+    location.reload();
+    return;
+  }
   if (MOVE_CODES.has(e.code))  { keys.add(e.code); e.preventDefault(); }
   if (ENTER_CODES.has(e.code) && activeNode) enterNode(activeNode);
 });
@@ -363,8 +612,22 @@ function updateHero(dt) {
   isMoving = moving;
 
   if (moving) {
-    heroPos.x = Math.max(-22, Math.min(22, heroPos.x + dx * SPEED * dt));
-    heroPos.z = Math.max(-15, Math.min(15, heroPos.z + dz * SPEED * dt));
+    let nx = Math.max(-22, Math.min(22, heroPos.x + dx * SPEED * dt));
+    let nz = Math.max(-15, Math.min(15, heroPos.z + dz * SPEED * dt));
+    // выталкивание из препятствий (круговая коллизия)
+    const HERO_R = 0.55;
+    for (const o of obstacles) {
+      const ox = nx - o.x, oz = nz - o.z;
+      const dd = Math.hypot(ox, oz);
+      const minD = o.r + HERO_R;
+      if (dd < minD && dd > 1e-4) {
+        const push = minD - dd;
+        nx += (ox / dd) * push;
+        nz += (oz / dd) * push;
+      }
+    }
+    heroPos.x = Math.max(-22, Math.min(22, nx));
+    heroPos.z = Math.max(-15, Math.min(15, nz));
     idleTime = 0;
   } else {
     idleTime += dt;
@@ -411,6 +674,7 @@ function loop(now) {
 
   updateHero(dt);
   updateEdges(t);
+  updateObstacles(t);
   updateNodes(t, activeNode);
   updateCamera(dt);
   updateLabels(activeNode);
@@ -430,7 +694,7 @@ function loop(now) {
 requestAnimationFrame(loop);
 
 // ── проверка финала: все доступные игры пройдены ──────────────────────────
-const COMPLETABLE = ["birds", "stalagmit", "prizma"];
+const COMPLETABLE = ["birds", "stalagmit", "prizma", "nancy-drew"];
 if (COMPLETABLE.every(g => isDone(g))) {
   document.getElementById("allDoneOverlay")?.classList.add("show");
 }

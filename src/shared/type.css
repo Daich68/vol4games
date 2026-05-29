@@ -20,13 +20,17 @@
   --tk-wide: 0.18em;
   --tk-mega: 0.34em;
 
-  /* цвета */
-  --c-label:  rgba(255, 255, 255, 0.40);
-  --c-value:  rgba(255, 255, 255, 0.92);
-  --c-muted:  rgba(255, 255, 255, 0.24);
-  --c-accent: #f0d8a8;
-  --c-danger: #ff7a7a;
-  --c-rule:   rgba(255, 255, 255, 0.10);
+  /* ── палитра: холодный монохром (терминал) ──────────────────────────── */
+  --c-bg:        #050507;
+  --c-label:     rgba(226, 230, 240, 0.42);
+  --c-value:     rgba(232, 236, 245, 0.94);
+  --c-muted:     rgba(226, 230, 240, 0.26);
+  --c-accent:    #e8ecf5;                    /* было золото → холодный белый */
+  --c-accent-dim:rgba(232, 236, 245, 0.50);
+  --c-accent-bg: rgba(232, 236, 245, 0.08);
+  --c-danger:    #d96a6a;                    /* единственный сигнальный цвет — ошибка */
+  --c-rule:      rgba(226, 230, 240, 0.12);
+  --c-glow:      0 0 18px rgba(232, 236, 245, 0.35);
 }
 
 body, button, input, textarea {
@@ -120,9 +124,10 @@ body, button, input, textarea {
 .t-btn::before { content: "[\00a0"; opacity: 0.45; }
 .t-btn::after  { content: "\00a0]"; opacity: 0.45; }
 .t-btn:hover {
-  background: rgba(240, 216, 168, 0.07);
+  background: var(--c-accent-bg);
   border-color: var(--c-accent);
   color: var(--c-accent);
+  box-shadow: var(--c-glow);
 }
 .t-btn:hover::before, .t-btn:hover::after { opacity: 0.9; }
 
@@ -131,3 +136,69 @@ body, button, input, textarea {
   background: var(--c-rule);
   border: 0;
 }
+
+/* ── ретро-терминальные примитивы ───────────────────────────────────────── */
+
+/* мигающий блок-курсор */
+.t-cursor {
+  display: inline-block;
+  width: 0.6em; height: 1.05em;
+  background: var(--c-accent);
+  vertical-align: text-bottom;
+  margin-left: 0.12em;
+  animation: t-blink 1s steps(1) infinite;
+}
+@keyframes t-blink { 0%, 50% { opacity: 1; } 50.01%, 100% { opacity: 0; } }
+
+/* терминальный промпт: ведущий "›" */
+.t-prompt::before { content: "› "; color: var(--c-accent-dim); }
+
+/* сканлайны + лёгкий CRT-виньет — кладём один такой div поверх UI */
+.scanlines {
+  position: fixed; inset: 0;
+  pointer-events: none;
+  z-index: 90;
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      rgba(0,0,0,0) 0px,
+      rgba(0,0,0,0) 2px,
+      rgba(0,0,0,0.16) 3px,
+      rgba(0,0,0,0.16) 4px);
+  mix-blend-mode: multiply;
+}
+.scanlines::after {
+  content: "";
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at center,
+    rgba(0,0,0,0) 55%, rgba(0,0,0,0.42) 100%);
+}
+
+/* рамка из угловых скобок — навешивается на любой блок */
+.t-frame { position: relative; }
+.t-frame::before, .t-frame::after {
+  position: absolute;
+  color: var(--c-accent-dim);
+  font-family: var(--font-mono);
+  line-height: 1;
+  pointer-events: none;
+}
+.t-frame::before { content: "┌"; top: -2px;    left: -6px;  }
+.t-frame::after  { content: "┘"; bottom: -2px; right: -6px; }
+
+/* ── терминальный скроллбар ─────────────────────────────────────────────── */
+/* Firefox */
+* { scrollbar-width: thin; scrollbar-color: rgba(232,236,245,0.18) transparent; }
+
+/* Webkit / Blink (Chrome, Edge, Safari) */
+::-webkit-scrollbar               { width: 3px; height: 3px; }
+::-webkit-scrollbar-track         { background: transparent; }
+::-webkit-scrollbar-thumb         {
+  background: rgba(232, 236, 245, 0.18);
+  border-radius: 0;               /* острые края — терминальный стиль */
+}
+::-webkit-scrollbar-thumb:hover   {
+  background: rgba(232, 236, 245, 0.42);
+  box-shadow: 0 0 6px rgba(232, 236, 245, 0.25);
+}
+::-webkit-scrollbar-corner        { background: transparent; }

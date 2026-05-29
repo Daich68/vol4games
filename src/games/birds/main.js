@@ -1,5 +1,6 @@
 import "../../shared/type.css";
-import { showCompleted } from "../../shared/nav.js";
+import { showCompleted, markDone } from "../../shared/nav.js";
+import { ensureAudio, chime, thud, rumble } from "../../shared/audio.js";
 // Match-3 «Много снега и много птиц».
 // 5 типов фишек (снежки, воробьи, голуби, вёдра, бутоны) — образы стиха.
 // Сверху над полем — текст стиха, проявляющийся посимвольно по мере матчей.
@@ -27,6 +28,7 @@ const POEM = [
 // ── DOM ──────────────────────────────────────────────────────────────────
 const canvas    = document.getElementById("c");
 const ctx       = canvas.getContext("2d");
+const poemEl    = document.getElementById("poem");
 const poemInner = document.querySelector("#poem .inner");
 const counter   = document.getElementById("counter");
 const timerEl   = document.getElementById("timer");
@@ -34,13 +36,16 @@ const heartsEl  = document.getElementById("hearts");
 const winOv     = document.getElementById("winOverlay");
 const loseOv    = document.getElementById("loseOverlay");
 const loseSub   = document.getElementById("loseSub");
+const scoreEl   = document.getElementById("score");
+const comboEl   = document.getElementById("combo");
 
+// спаны создаются заранее, но в DOM попадают только при раскрытии —
+// иначе невидимые символы занимают место и ломают скролл.
 const charEls = [];
 for (const ch of POEM) {
   const s = document.createElement("span");
   s.textContent = ch;
   s.style.opacity = "0";
-  poemInner.appendChild(s);
   charEls.push(s);
 }
 
@@ -84,6 +89,13 @@ let timeLeft = TIME_LIMIT;
 let gameOver = false;
 let won      = false;
 
+// дофаминовый слой: очки, каскадный множитель, всплывающие баннеры, тряска.
+let score     = 0;
+let cascade   = 0;   // текущий множитель внутри серии каскадов
+let bestCombo = 0;   // лучший каскад за партию
+let banners   = [];  // всплывающие надписи на канвасе
+let shake     = 0;   // сила тряски экрана
+
 function makeGrid() {
   const g = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
   for (let r = 0; r < ROWS; r++) {
@@ -121,10 +133,13 @@ function resetGame() {
   revealed = 0;
   busy = false; selected = null; hover = null;
   lives = 3; timeLeft = TIME_LIMIT; gameOver = false; won = false;
+  score = 0; cascade = 0; bestCombo = 0; banners = []; shake = 0;
   // стих
+  poemInner.innerHTML = "";   // отвязываем все раскрытые спаны от DOM
   for (const el of charEls) { el.style.opacity = "0"; el.style.color = "#c7c7d2"; }
+  poemEl.scrollTop = 0;
   // ui
-  updateHearts(); updateTimer(); updateCounter();
+  updateHearts(); updateTimer(); updateCounter(); updateScore();
   winOv.classList.remove("show");
   loseOv.classList.remove("show");
   // плитки выезжают сверху
@@ -143,12 +158,14 @@ function resetGame() {
 // Каждый тип = три ключевых цвета (deep → base → core) для shading-ramp.
 // Сферы шейдятся попиксельно (Lambert + specular) и рисуются монохромными
 // ASCII-символами разной плотности. Спрайты пре-рендерятся один раз.
+// Холодный монохром: 5 различимых ХОЛОДНЫХ тонов (по оттенку И светлоте),
+// чтобы поле читалось, но палитра не выбивалась из стиля проекта.
 const TYPE_COL = {
-  1: { base: "#dbeafe", core: "#ffffff", deep: "#3e5c88" }, // снежок — холодно-белый
-  2: { base: "#e0b878", core: "#ffe9bb", deep: "#5a3a12" }, // воробей — тёплый коричневый
-  3: { base: "#b8a8c8", core: "#f0e0ff", deep: "#3a2548" }, // голубь — лавандово-серый (тёплый)
-  4: { base: "#4e7a6e", core: "#9cc4b8", deep: "#0e1e1a" }, // ведро — окисленный медно-зелёный
-  5: { base: "#e0a8c8", core: "#ffd4e8", deep: "#582038" }, // бутон — розово-маджента
+  1: { deep: "#2e3a56", base: "#cde0ff", core: "#ffffff" }, // снежок — ледяной белый
+  2: { deep: "#222630", base: "#7a8398", core: "#cdd4e4" }, // воробей — холодный графит
+  3: { deep: "#281e3c", base: "#9678c8", core: "#dccafa" }, // голубь — фиолет
+  4: { deep: "#0c2c34", base: "#46a0b2", core: "#b4e8f0" }, // ведро — циан-бирюза
+  5: { deep: "#162850", base: "#567cd2", core: "#b9cdfa" }, // бутон — синий
 };
 
 // Плотностная лестница ASCII — узкая, с резким переходом тень/свет.
@@ -342,6 +359,43 @@ function drawParticles(vp) {
   ctx.globalAlpha = 1;
 }
 
+// ── всплывающие баннеры (×каскад / +очки / ЛИНИЯ / ВСПЫШКА) ───────────────
+function pushBanner(text, col, big = false) {
+  const slot = banners.length % 3;
+  banners.push({ text, col, big, life: 0, ttl: 0.95, slot });
+}
+
+function updateBanners(dt) {
+  for (let i = banners.length - 1; i >= 0; i--) {
+    banners[i].life += dt;
+    if (banners[i].life >= banners[i].ttl) banners.splice(i, 1);
+  }
+}
+
+function drawBanners(vp) {
+  if (!banners.length) return;
+  ctx.save();
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  for (const b of banners) {
+    const p    = b.life / b.ttl;
+    const a    = p < 0.12 ? p / 0.12 : 1 - (p - 0.12) / 0.88;
+    const pop  = b.life < 0.12 ? 0.55 + (b.life / 0.12) * 0.45 : 1;
+    const rise = easeOutCubic(Math.min(1, p * 1.3)) * 52;
+    const size = (b.big ? 30 : 21) * pop;
+    const x = vp.ox + GRID_W * vp.s / 2;
+    const y = vp.oy + GRID_H * vp.s * 0.40 - rise + b.slot * 30;
+    ctx.globalAlpha = clamp01(a);
+    ctx.font = `bold ${Math.round(size)}px "SF Mono", ui-monospace, Menlo, monospace`;
+    ctx.fillStyle = "rgba(0,0,0,0.6)";
+    ctx.fillText(b.text, x + 1.5, y + 1.5);
+    ctx.fillStyle = b.col;
+    ctx.fillText(b.text, x, y);
+  }
+  ctx.restore();
+  ctx.globalAlpha = 1;
+}
+
 // ── утилиты тайминга ─────────────────────────────────────────────────────
 const now = () => performance.now();
 const sleep   = ms => new Promise(r => setTimeout(r, ms));
@@ -387,6 +441,8 @@ function frame() {
   if (!gameOver && !won) tickTime(dt);
   updateSnow(dt);
   updateParticles(dt);
+  updateBanners(dt);
+  if (shake > 0) shake = Math.max(0, shake - dt * 55);
   updateCamera(t);
 
   const vp = viewport();
@@ -396,6 +452,12 @@ function frame() {
   // тёмное «дно» поля — мягкое
   ctx.fillStyle = "rgba(255,255,255,0.015)";
   ctx.fillRect(vp.ox, vp.oy, vp.w, vp.h);
+
+  // тряска поля при крупных матчах — смещаем весь игровой слой
+  const shx = shake > 0 ? (Math.random() - 0.5) * shake : 0;
+  const shy = shake > 0 ? (Math.random() - 0.5) * shake : 0;
+  ctx.save();
+  ctx.translate(shx, shy);
 
   for (let r = 0; r < ROWS; r++) {
     for (let c = 0; c < COLS; c++) {
@@ -447,6 +509,9 @@ function frame() {
   }
 
   drawParticles(vp);
+  ctx.restore();
+
+  drawBanners(vp);
   requestAnimationFrame(frame);
 }
 
@@ -479,8 +544,21 @@ function updateHearts() {
 }
 
 function updateCounter() {
-  const pct = Math.round((revealed / charEls.length) * 100);
-  counter.textContent = `${pct}%`;
+  const frac = revealed / charEls.length;
+  counter.textContent = `${Math.round(frac * 100)}%`;
+  const bar = document.getElementById("poemBar");
+  if (bar) {
+    const n = 10, filled = Math.round(frac * n);
+    bar.textContent = "▮".repeat(filled) + "▯".repeat(n - filled);
+  }
+}
+
+function updateScore() {
+  if (scoreEl) scoreEl.textContent = String(score).padStart(5, "0");
+  if (comboEl) {
+    comboEl.textContent = bestCombo > 1 ? `×${bestCombo}` : "—";
+    comboEl.classList.toggle("hot", bestCombo >= 3);
+  }
 }
 
 function loseLife() {
@@ -499,15 +577,22 @@ function loseLife() {
 }
 
 // ── матчинг и каскады ────────────────────────────────────────────────────
-function findMatches() {
-  const m = new Set();
+// Возвращает массив серий длиной ≥3: { cells:[key…], len, type, dir, line }.
+// len управляет спецэффектами (4 → очистка линии, 5+ → стирание типа),
+// поэтому матчинг хранит не просто множество клеток, а сами серии.
+function findRuns() {
+  const runs = [];
   for (let r = 0; r < ROWS; r++) {
     let s = 0;
     for (let c = 1; c <= COLS; c++) {
       const here  = c < COLS ? grid[r][c] : -1;
       const there = grid[r][s];
       if (here !== there) {
-        if (there && c - s >= 3) for (let k = s; k < c; k++) m.add(r * COLS + k);
+        if (there && c - s >= 3) {
+          const cells = [];
+          for (let k = s; k < c; k++) cells.push(r * COLS + k);
+          runs.push({ cells, len: c - s, type: there, dir: "h", line: r });
+        }
         s = c;
       }
     }
@@ -518,12 +603,16 @@ function findMatches() {
       const here  = r < ROWS ? grid[r][c] : -1;
       const there = grid[s][c];
       if (here !== there) {
-        if (there && r - s >= 3) for (let k = s; k < r; k++) m.add(k * COLS + c);
+        if (there && r - s >= 3) {
+          const cells = [];
+          for (let k = s; k < r; k++) cells.push(k * COLS + c);
+          runs.push({ cells, len: r - s, type: there, dir: "v", line: c });
+        }
         s = r;
       }
     }
   }
-  return m;
+  return runs;
 }
 
 function applyGravity() {
@@ -555,19 +644,64 @@ function applyGravity() {
 
 async function resolveMatches() {
   busy = true;
-  let cycles = 0;
+  cascade = 0;
   while (true) {
-    const m = findMatches();
-    if (m.size === 0) break;
+    const runs = findRuns();
+    if (runs.length === 0) break;
+    cascade++;
+    const mult = cascade;
+
+    // Собираем клетки на удаление + определяем спецэффекты.
+    const toClear = new Set();
+    let special = "";        // "" | "line" | "wipe"
+    let wipeType = 0;
+    for (const run of runs) {
+      for (const k of run.cells) toClear.add(k);
+      if (run.len === 4) {   // 4 в ряд → сметает всю строку/столбец
+        if (!special) special = "line";
+        if (run.dir === "h") for (let c = 0; c < COLS; c++) toClear.add(run.line * COLS + c);
+        else                 for (let r = 0; r < ROWS; r++) toClear.add(r * COLS + run.line);
+      }
+      if (run.len >= 5) { special = "wipe"; wipeType = run.type; }  // 5+ → стереть весь тип
+    }
+    if (wipeType) {
+      for (let r = 0; r < ROWS; r++)
+        for (let c = 0; c < COLS; c++)
+          if (grid[r][c] === wipeType) toClear.add(r * COLS + c);
+    }
+
+    // Анимация удаления + взрывы частиц.
     const tNow = now();
-    for (const key of m) {
+    for (const key of toClear) {
       const r = (key / COLS) | 0, c = key % COLS;
       anim[r][c].removeStart = tNow;
       burstAt(r, c, grid[r][c]);
     }
-    revealChars(m.size);
+
+    // Очки: (плитки×10 + бонус за длину серий) × множитель каскада.
+    const tiles = toClear.size;
+    let lenBonus = 0;
+    for (const run of runs) lenBonus += (run.len - 2) * 15;
+    const gained = (tiles * 10 + lenBonus) * mult;
+    score += gained;
+    updateScore();
+
+    // Звук — высота ноты растёт с каждым витком каскада.
+    ensureAudio();
+    chime(Math.min(24, (mult - 1) * 2), Math.min(0.42, 0.18 + mult * 0.04));
+
+    // Баннеры + тряска.
+    const label  = special === "wipe" ? "ВСПЫШКА" : special === "line" ? "ЛИНИЯ" : "";
+    const prefix = mult >= 2 ? `×${mult}  ` : "";
+    pushBanner(`${prefix}+${gained}`, mult >= 3 || special ? "#dccafa" : "#cde0ff", mult >= 3 || !!special);
+    if (label) pushBanner(label, special === "wipe" ? "#b4e8f0" : "#cde0ff", true);
+    if (special === "wipe") { rumble(); shake = Math.max(shake, 16); }
+    else if (special === "line") shake = Math.max(shake, 9);
+    shake = Math.max(shake, 4 + mult * 1.6);
+
+    revealChars(tiles, mult);
     await sleep(300);
-    for (const key of m) {
+    for (const key of toClear) {
       const r = (key / COLS) | 0, c = key % COLS;
       grid[r][c] = 0;
       anim[r][c].removeStart = -1;
@@ -575,26 +709,36 @@ async function resolveMatches() {
     await sleep(40);
     applyGravity();
     await sleep(420);
-    cycles++;
-    if (cycles > 40) break;
+    if (cascade > 40) break;
   }
+  if (cascade > bestCombo) { bestCombo = cascade; updateScore(); }
   busy = false;
   if (revealed >= charEls.length && !won) {
     won = true;
+    markDone("birds");
+    const ws = document.getElementById("winStats");
+    if (ws) ws.textContent = `ОЧКОВ ${score} · МАКС КАСКАД ×${Math.max(1, bestCombo)}`;
+    const wp = document.getElementById("winPoem");
+    if (wp) wp.textContent = POEM;
     winOv.classList.add("show");
   }
 }
 
-function revealChars(matchCount) {
-  const want = matchCount * 3;
+function revealChars(matchCount, mult = 1) {
+  // Базовый темп замедлен (×2 вместо ×3) — партия длиннее; крупные каскады
+  // дают бонусные символы, так что мастерство всё равно ускоряет раскрытие.
+  const want = matchCount * 2 + (mult - 1) * 2;
   let done = 0;
   while (done < want && revealed < charEls.length) {
     const el = charEls[revealed++];
+    poemInner.appendChild(el);  // добавляем в DOM только сейчас
     el.style.opacity = "1";
     el.style.color = "#fff";
     if (el.textContent.trim()) done++;
   }
   updateCounter();
+  // прокрутка к последнему раскрытому символу
+  poemEl.scrollTop = poemEl.scrollHeight;
 }
 
 // ── ввод ────────────────────────────────────────────────────────────────
@@ -615,6 +759,7 @@ canvas.addEventListener("mouseleave", () => { hover = null; });
 
 canvas.addEventListener("click", async e => {
   if (busy || gameOver || won) return;
+  ensureAudio();
   const cell = cellFromEvent(e);
   if (!cell) return;
   if (!selected) { selected = cell; return; }
@@ -626,7 +771,7 @@ canvas.addEventListener("click", async e => {
     selected = null;
     await animateSwap(a, b);
     swap(a, b);
-    if (findMatches().size === 0) {
+    if (findRuns().length === 0) {
       await sleep(80);
       await animateSwap(a, b);
       swap(a, b);

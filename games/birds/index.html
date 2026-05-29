@@ -7,144 +7,76 @@
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body {
-    width: 100%; height: 100%; background: #040408; overflow: hidden;
+    width: 100%; height: 100%; overflow: hidden;
+    background:
+      radial-gradient(120% 80% at 50% -10%, #0a0a14 0%, #050509 45%, #030308 100%);
     color: #fff;
   }
 
+  /* портретная рамка-«терминал» по центру экрана */
   .frame {
     position: fixed;
     top: 50%; left: 50%;
     transform: translate(-50%, -50%);
     height: 100vh;
-    width: min(64vh, 100vw);
-    display: flex;
-    flex-direction: column;
-    padding: 56px 22px 56px;
+    width: min(62vh, 100vw);
+    display: flex; flex-direction: column;
+    padding: 46px 18px 40px;
   }
 
-  /* ── top status bar ──────────────────────────────────────────────── */
+  /* ── HUD: приборная панель ─────────────────────────────────────────────── */
+  #hud { flex: 0 0 auto; }
+
   #topbar {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
     align-items: end;
-    margin-bottom: 18px;
-    padding-bottom: 14px;
-    border-bottom: 1px solid rgba(255,255,255,0.10);
-    flex: 0 0 auto;
     gap: 8px;
   }
-  #hearts {
-    display: flex; gap: 6px;
-    font-size: 18px;
-    line-height: 1;
+  #combo.hot {
     color: var(--c-accent);
-    font-variant-numeric: tabular-nums;
-    letter-spacing: 0.1em;
-  }
-  #hearts .h { transition: opacity 0.3s, color 0.3s; }
-  #hearts .h.lost { color: rgba(255,255,255,0.18); }
-
-  /* ── контейнер канваса ───────────────────────────────────────────── */
-  #stage {
-    flex: 1 1 auto;
-    min-height: 0;
-    display: flex;
-  }
-  #c {
-    flex: 1 1 auto;
-    width: 100%;
-    height: 100%;
-    display: block;
-    min-height: 0;
+    text-shadow: var(--c-glow);
   }
 
-  /* ── chrome ──────────────────────────────────────────────────────── */
-  #title { position: absolute; top: 22px; left: 22px; }
-  #hint  { position: absolute; bottom: 22px; left: 22px; }
-  #back  {
-    position: absolute; bottom: 22px; right: 22px;
-    text-decoration: none; color: var(--c-muted);
-    font-size: var(--t-xs); letter-spacing: var(--tk-wide); text-transform: uppercase;
-    transition: color 0.2s;
+  #substat {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px;
+    margin-top: 12px;
+    padding-top: 11px;
+    border-top: 1px solid var(--c-rule);
   }
-  #back:hover { color: var(--c-accent); }
-
-  /* ── overlays ────────────────────────────────────────────────────── */
-  .overlay {
-    position: fixed; inset: 0;
-    background: rgba(4, 4, 8, 0.84);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    gap: 20px;
-    opacity: 0; pointer-events: none;
-    transition: opacity 0.6s;
-    z-index: 10;
-  }
-  .overlay.show { opacity: 1; pointer-events: auto; }
-  .overlay .ov-meta {
-    color: var(--c-muted);
+  .ss-poem { display: flex; align-items: baseline; gap: 9px; min-width: 0; }
+  .w-cap {
     font-size: var(--t-xs);
     letter-spacing: var(--tk-wide);
     text-transform: uppercase;
-  }
-  .overlay .ov-sub {
     color: var(--c-label);
-    font-size: var(--t-md);
-    letter-spacing: var(--tk-norm);
-    text-align: center; line-height: 1.6em;
-    max-width: 28em;
-    margin-bottom: 8px;
   }
-</style>
-</head>
-<body>
-<div class="frame">
-  <div id="topbar">
-    <div class="t-stat">
-      <div class="t-label">время</div>
-      <div class="t-value" id="timer">1:30</div>
-    </div>
-    <div class="t-stat center">
-      <div class="t-label">стих</div>
-      <div class="t-value accent" id="counter">0%</div>
-    </div>
-    <div class="t-stat end">
-      <div class="t-label">жизни</div>
-      <div id="hearts">
-        <span class="h">♥</span><span class="h">♥</span><span class="h">♥</span>
-      </div>
-    </div>
-  </div>
-  <div id="poem"><div class="inner"></div></div>
-  <div id="stage"><canvas id="c"></canvas></div>
-</div>
+  #poemBar {
+    font-size: var(--t-sm);
+    letter-spacing: 0.12em;
+    color: var(--c-value);
+    text-shadow: 0 0 10px rgba(232,236,245,0.18);
+  }
+  #counter {
+    font-size: var(--t-sm);
+    color: var(--c-accent);
+    font-variant-numeric: tabular-nums;
+  }
+  #hearts {
+    display: flex; gap: 6px;
+    font-size: 16px; line-height: 1;
+    color: var(--c-accent);
+    letter-spacing: 0.1em;
+  }
+  #hearts .h { transition: opacity 0.3s, color 0.3s; }
+  #hearts .h.lost { color: rgba(255,255,255,0.16); }
 
-<div id="title" class="t-mark">vol4 · птицы</div>
-<div id="hint"  class="t-hint arrow">клик · обмен соседних</div>
-<a   id="back"  href="/">← карта</a>
-
-<div id="winOverlay" class="overlay">
-  <div class="ov-meta">завершено</div>
-  <div class="t-display" style="color: var(--c-accent);">стих раскрыт</div>
-  <div class="ov-sub">так как видят, что не должны</div>
-  <button class="t-btn" data-action="restart">сыграть ещё</button>
-</div>
-
-<div id="loseOverlay" class="overlay">
-  <div class="ov-meta">конец</div>
-  <div class="t-display">смерть несезонна</div>
-  <div class="ov-sub" id="loseSub">стих не дочитан</div>
-  <button class="t-btn" data-action="restart">с начала</button>
-</div>
-
-<style>
-  /* poem strip — внутри frame, чтобы иметь доступ к --c-* переменным */
+  /* ── полоса стиха — проявляется посимвольно ─────────────────────────────── */
   #poem {
     flex: 0 0 auto;
-    min-height: 22%;
-    max-height: 24%;
+    min-height: 19%;
+    max-height: 21%;
     overflow: hidden;
     color: var(--c-label);
     font-size: clamp(11px, 1.5vh, 14px);
@@ -152,14 +84,200 @@
     letter-spacing: 0.04em;
     white-space: pre-wrap;
     text-align: center;
-    padding: 8px 4px;
-    margin-bottom: 16px;
+    padding: 10px 4px 8px;
+    margin-top: 14px;
     display: flex; align-items: center; justify-content: center;
   }
   #poem .inner { width: 100%; }
   #poem span { transition: opacity 0.6s ease-out, color 0.6s; }
-</style>
 
+  /* ── сцена: канвас в кристаллической рамке ──────────────────────────────── */
+  #stage {
+    flex: 1 1 auto; min-height: 0;
+    position: relative;
+    margin-top: 6px;
+    border: 1px solid var(--c-rule);
+  }
+  #c {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    display: block;
+    image-rendering: auto;
+  }
+
+  /* халфтон-текстура поверх канваса */
+  #dots {
+    position: absolute; inset: 0;
+    pointer-events: none; z-index: 1;
+    background-image: radial-gradient(circle at center, #15151f 0.6px, transparent 1px);
+    background-size: 3.5px 3.5px;
+    mix-blend-mode: multiply;
+    opacity: 0.5;
+  }
+
+  /* угловые скобки рамки */
+  .corner {
+    position: absolute; z-index: 2;
+    font-size: 13px; line-height: 1;
+    color: var(--c-accent-dim);
+    pointer-events: none;
+    text-shadow: 0 0 8px rgba(232,236,245,0.25);
+  }
+  .corner.tl { top: -7px;    left: -6px;  }
+  .corner.tr { top: -7px;    right: -6px; }
+  .corner.bl { bottom: -7px; left: -6px;  }
+  .corner.br { bottom: -7px; right: -6px; }
+
+  /* угловые подписи экрана */
+  #title { position: fixed; top: 20px; left: 22px; z-index: 40; }
+  #hint  { position: fixed; bottom: 20px; left: 22px; z-index: 40; }
+  #back  {
+    position: fixed; bottom: 20px; right: 22px; z-index: 40;
+    text-decoration: none; color: var(--c-muted);
+    font-size: var(--t-xs); letter-spacing: var(--tk-wide); text-transform: uppercase;
+    transition: color 0.2s, text-shadow 0.2s;
+  }
+  #back:hover { color: var(--c-accent); text-shadow: var(--c-glow); }
+
+  /* ── оверлеи (терминальные карточки) ────────────────────────────────────── */
+  .overlay {
+    position: fixed; inset: 0; z-index: 60;
+    background: rgba(4, 4, 9, 0.84);
+    backdrop-filter: blur(7px);
+    -webkit-backdrop-filter: blur(7px);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.6s;
+  }
+  .overlay.show { opacity: 1; pointer-events: auto; }
+
+  .ov-card {
+    position: relative;
+    display: flex; flex-direction: column; align-items: center;
+    gap: 15px;
+    padding: 38px 44px;
+    max-width: min(92vw, 460px);
+    border: 1px solid var(--c-rule);
+    background: rgba(6, 6, 12, 0.55);
+  }
+  .cn {
+    position: absolute; font-size: 15px; line-height: 1;
+    color: var(--c-accent-dim);
+    text-shadow: 0 0 10px rgba(232,236,245,0.3);
+    pointer-events: none;
+  }
+  .cn.tl { top: -8px; left: -7px; }
+  .cn.tr { top: -8px; right: -7px; }
+  .cn.bl { bottom: -8px; left: -7px; }
+  .cn.br { bottom: -8px; right: -7px; }
+
+  .ov-meta {
+    color: var(--c-accent-dim);
+    font-size: var(--t-xs); letter-spacing: var(--tk-mega);
+    text-transform: uppercase;
+  }
+  .ov-meta.danger { color: var(--c-danger); }
+  .ov-card .t-display { text-align: center; }
+  .ov-stats {
+    font-size: var(--t-xs); letter-spacing: var(--tk-wide);
+    text-transform: uppercase; color: var(--c-accent);
+    font-variant-numeric: tabular-nums;
+  }
+  .ov-sub {
+    color: var(--c-label); font-size: var(--t-md);
+    letter-spacing: var(--tk-norm); text-align: center;
+    line-height: 1.7em; max-width: 26em;
+  }
+  .ov-poem {
+    color: var(--c-value);
+    font-size: clamp(10px, 1.3vh, 12px);
+    line-height: 1.75em; letter-spacing: 0.04em;
+    max-height: 38vh; overflow-y: auto;
+    text-align: center; max-width: 36em;
+    white-space: pre-wrap;
+    padding: 6px 6px;
+    border-top: 1px solid var(--c-rule);
+    border-bottom: 1px solid var(--c-rule);
+  }
+  .ov-back {
+    margin-top: 2px;
+    text-decoration: none; color: var(--c-muted);
+    font-size: var(--t-xs); letter-spacing: var(--tk-wide); text-transform: uppercase;
+    transition: color 0.2s;
+  }
+  .ov-back:hover { color: var(--c-accent); }
+</style>
+</head>
+<body>
+<div class="frame">
+  <header id="hud">
+    <div id="topbar">
+      <div class="t-stat">
+        <div class="t-label">время</div>
+        <div class="t-value" id="timer">1:30</div>
+      </div>
+      <div class="t-stat center">
+        <div class="t-label">очки</div>
+        <div class="t-value accent" id="score">00000</div>
+      </div>
+      <div class="t-stat end">
+        <div class="t-label">каскад</div>
+        <div class="t-value" id="combo">—</div>
+      </div>
+    </div>
+    <div id="substat">
+      <div class="ss-poem">
+        <span class="w-cap">стих</span>
+        <span id="poemBar">▯▯▯▯▯▯▯▯▯▯</span>
+        <span id="counter">0%</span>
+      </div>
+      <div id="hearts">
+        <span class="h">♥</span><span class="h">♥</span><span class="h">♥</span>
+      </div>
+    </div>
+  </header>
+
+  <div id="poem"><div class="inner"></div></div>
+
+  <section id="stage">
+    <canvas id="c"></canvas>
+    <div id="dots"></div>
+    <span class="corner tl">┌</span>
+    <span class="corner tr">┐</span>
+    <span class="corner bl">└</span>
+    <span class="corner br">┘</span>
+  </section>
+</div>
+
+<div id="title" class="t-mark">vol4 · ПТИЦЫ</div>
+<div id="hint"  class="t-hint arrow">клик · обмен соседних · серии 4 и 5 — спецудары</div>
+<a   id="back"  href="/">← карта</a>
+
+<div id="winOverlay" class="overlay">
+  <div class="ov-card">
+    <span class="cn tl">┌</span><span class="cn tr">┐</span>
+    <span class="cn bl">└</span><span class="cn br">┘</span>
+    <div class="ov-meta">завершено</div>
+    <div class="t-display" style="color: var(--c-accent);">стих раскрыт</div>
+    <div class="ov-stats" id="winStats">ОЧКОВ 0 · МАКС КАСКАД ×1</div>
+    <div class="ov-poem" id="winPoem"></div>
+    <a class="t-btn" href="/" style="text-decoration:none">← на карту</a>
+  </div>
+</div>
+
+<div id="loseOverlay" class="overlay">
+  <div class="ov-card">
+    <span class="cn tl">┌</span><span class="cn tr">┐</span>
+    <span class="cn bl">└</span><span class="cn br">┘</span>
+    <div class="ov-meta danger">конец</div>
+    <div class="t-display">смерть несезонна</div>
+    <div class="ov-sub" id="loseSub">стих не дочитан</div>
+    <button class="t-btn" data-action="restart">с начала</button>
+    <a class="ov-back" href="/">← карта</a>
+  </div>
+</div>
+
+<div class="scanlines"></div>
 <script type="module" src="/src/games/birds/main.js"></script>
 </body>
 </html>
