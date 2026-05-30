@@ -328,7 +328,14 @@ addEventListener("keydown", e => {
   if (e.code === "Space" || e.code === "Enter") { onPrimary(); e.preventDefault(); }
   if (e.code === "KeyR" && state === "gameover") reset();
 });
-addEventListener("click", onPrimary);
+// iOS Safari не шлёт `click` по не-интерактивным элементам (canvas/div) без
+// cursor:pointer — из-за этого тап «сбросить блок» не срабатывал. Pointer-
+// события приходят с любого элемента; ссылки/кнопки пропускаем, чтобы не
+// перехватывать «← карта» и кнопки оверлеев.
+addEventListener("pointerdown", e => {
+  if (e.target.closest && e.target.closest("a, button")) return;
+  onPrimary();
+});
 
 // ── update ───────────────────────────────────────────────────────────────
 function update(dt) {
