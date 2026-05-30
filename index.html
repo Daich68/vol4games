@@ -21,7 +21,9 @@
   }
   /* терминальная шапка: статусная строка */
   #title {
-    position: absolute; top: 20px; left: 24px;
+    position: absolute;
+    top: calc(20px + env(safe-area-inset-top, 0px));
+    left: calc(24px + env(safe-area-inset-left, 0px));
     font-size: 11px; font-weight: 500;
     letter-spacing: 0.22em; text-transform: uppercase;
     color: rgba(232, 236, 245, 0.5);

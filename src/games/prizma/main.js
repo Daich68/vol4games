@@ -1024,7 +1024,7 @@ function render() {
     ctx.fillStyle = `rgba(232,236,245,${0.32 + 0.12 * Math.sin(time * 3)})`;
     ctx.font = "9px 'JetBrains Mono', monospace";
     ctx.textAlign = "center";
-    ctx.fillText("← → разбег · ПРОБЕЛ прыжок · ✦ собирай · скип = комбо", VW / 2, VH - 18);
+    ctx.fillText("← → разбег · SPACE прыжок · ✦ собирай · скип = комбо", VW / 2, VH - 18);
   }
 }
 

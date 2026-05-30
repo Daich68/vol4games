@@ -24,7 +24,7 @@
   --c-bg:        #050507;
   --c-label:     rgba(226, 230, 240, 0.42);
   --c-value:     rgba(232, 236, 245, 0.94);
-  --c-muted:     rgba(226, 230, 240, 0.26);
+  --c-muted:     rgba(226, 230, 240, 0.36);
   --c-accent:    #e8ecf5;                    /* было золото → холодный белый */
   --c-accent-dim:rgba(232, 236, 245, 0.50);
   --c-accent-bg: rgba(232, 236, 245, 0.08);
@@ -44,6 +44,23 @@ body, button, input, textarea {
 /* ── мобайл: гасим pull-to-refresh / rubber-band и подсветку тапов ──────── */
 html, body { overscroll-behavior: none; }
 * { -webkit-tap-highlight-color: transparent; }
+
+/* ── доступность: видимый фокус с клавиатуры ───────────────────────────── */
+a:focus-visible,
+button:focus-visible,
+.t-btn:focus-visible {
+  outline: 1px solid var(--c-accent-dim);
+  outline-offset: 2px;
+}
+.t-btn:focus-visible {
+  color: var(--c-accent);
+  text-shadow: var(--c-glow);
+}
+
+/* ── узкие НЕ-тач окна: гасим подсказку, чтобы не сталкивалась с «← карта» ─ */
+@media (max-width: 430px) and (pointer: fine) {
+  #hint { display: none; }
+}
 
 /* ── атомарные классы ─────────────────────────────────────────────────── */
 

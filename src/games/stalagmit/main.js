@@ -5,6 +5,7 @@
 // длины L болтается блок. Угол θ(t) = AMP·sin(ω·t). При дропе у блока
 // есть угловая скорость → горизонтальная и вертикальная компоненты
 // начальной скорости. Чем дальше от центра качания, тем медленнее блок.
+import "../../shared/type.css";
 import * as THREE from "three";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
 import { RenderPass }     from "three/examples/jsm/postprocessing/RenderPass.js";
@@ -15,6 +16,8 @@ import { backToMap, markDone, bindBackLink, showCompleted } from "../../shared/n
 import { createHalftonePass }                from "../../shared/halftone.js";
 
 bindBackLink();
+
+const IS_TOUCH = "ontouchstart" in window || navigator.maxTouchPoints > 0;
 
 // ── canvas / sizing ──────────────────────────────────────────────────────
 const canvas = document.getElementById("c");
@@ -406,7 +409,8 @@ function update(dt) {
     }
     if (performance.now() - collapseStart > 2400) {
       state = "gameover";
-      setStatus(`БАШНЯ ОБРУШИЛАСЬ<span class="sub">построено: ${dropped} из ${GOAL}<br>[ ENTER / R ] заново · [ ESC ] на карту</span>`);
+      const retryHint = IS_TOUCH ? "тап — заново · ← карта" : "[ ENTER / R ] заново · [ ESC ] на карту";
+      setStatus(`БАШНЯ ОБРУШИЛАСЬ<span class="sub">построено: ${dropped} из ${GOAL}<br>${retryHint}</span>`);
     }
   }
 
@@ -574,7 +578,8 @@ function showPoem() {
   }
   poemEl.innerHTML = `${body}<span class="sig">${sig}</span>`;
   setTimeout(() => poemEl.classList.add("show"), 600);
-  setTimeout(() => setStatus(`<span class="sub">[ ENTER / CLICK ] вернуться на карту</span>`), 8500);
+  const backHint = IS_TOUCH ? "тап — вернуться на карту" : "[ ENTER / CLICK ] вернуться на карту";
+  setTimeout(() => setStatus(`<span class="sub">${backHint}</span>`), 8500);
 }
 
 // ── resize ───────────────────────────────────────────────────────────────

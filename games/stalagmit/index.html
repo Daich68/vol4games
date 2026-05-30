@@ -7,88 +7,142 @@
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body {
-    width: 100%; height: 100%; background: #000; overflow: hidden;
-    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    width: 100%; height: 100%; overflow: hidden;
+    background:
+      radial-gradient(120% 80% at 50% -10%, #0a0a14 0%, #050509 45%, #030308 100%);
     color: #fff;
   }
 
-  /* портретный канвас в центре экрана: «как на мобилке».
-     На широких экранах — letterbox. На вертикальных мобилках — fullscreen. */
-  #c {
-    display: block;
+  /* портретная рамка-«терминал» по центру экрана (как в остальных играх) */
+  .frame {
     position: fixed;
     top: 50%; left: 50%;
     transform: translate(-50%, -50%);
     height: 100vh;
     width: min(58vh, 100vw);
+  }
+  #c {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    display: block;
     background: #000;
   }
-
-  /* UI: тоже в той же портретной рамке */
-  #ui {
-    position: fixed;
-    top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
-    height: 100vh;
-    width: min(58vh, 100vw);
+  /* кристаллическая рамка сцены */
+  #frameBorder {
+    position: absolute; inset: 0;
+    border: 1px solid var(--c-rule);
+    pointer-events: none; z-index: 2;
+  }
+  .corner {
+    position: absolute; z-index: 3;
+    font-size: 13px; line-height: 1;
+    color: var(--c-accent-dim);
     pointer-events: none;
+    text-shadow: 0 0 8px rgba(232,236,245,0.25);
   }
-  #ui > * { position: absolute; }
+  .corner.tl { top: -7px;    left: -6px;  }
+  .corner.tr { top: -7px;    right: -6px; }
+  .corner.bl { bottom: -7px; left: -6px;  }
+  .corner.br { bottom: -7px; right: -6px; }
 
-  #title    { top: 18px; left: 22px; font-size: 10px; letter-spacing: 0.22em; color: #fff; opacity: 0.45; }
-  #counter  { top: 18px; right: 22px; font-size: 11px; letter-spacing: 0.2em;  color: #fff; opacity: 0.7; }
-  #hint     { bottom: 18px; left: 22px; font-size: 9px;  letter-spacing: 0.14em; color: #fff; opacity: 0.22; }
-  #back {
-    bottom: calc(18px + env(safe-area-inset-bottom, 0px)); right: 22px; font-size: 9px; letter-spacing: 0.18em;
-    color: #fff; opacity: 0.45; text-decoration: none; pointer-events: auto;
+  /* ── угловые подписи экрана ─────────────────────────────────────────────── */
+  #title   { position: fixed; top: 20px; left: 22px; z-index: 40; }
+  #counter {
+    position: fixed; top: 20px; right: 22px; z-index: 40;
+    font-size: var(--t-sm);
+    letter-spacing: 0.2em;
+    color: var(--c-accent);
+    font-variant-numeric: tabular-nums;
+    text-shadow: 0 0 10px rgba(232,236,245,0.18);
   }
-  #back:hover { opacity: 1; }
+  #hint  { position: fixed; bottom: 20px; left: 22px; z-index: 40; }
+  #back  {
+    position: fixed; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); right: 22px; z-index: 40;
+    text-decoration: none; color: var(--c-muted);
+    font-size: var(--t-xs); letter-spacing: var(--tk-wide); text-transform: uppercase;
+    pointer-events: auto;
+    transition: color 0.2s, text-shadow 0.2s;
+  }
+  #back:hover { color: var(--c-accent); text-shadow: var(--c-glow); }
 
+  /* ── статус: терминальная карточка (победа/поражение) ───────────────────── */
   #status {
-    left: 50%; top: 38%;
+    position: fixed; left: 50%; top: 42%;
     transform: translate(-50%, -50%);
-    font-size: 14px; letter-spacing: 0.22em;
-    color: #fff; text-transform: uppercase;
-    text-align: center; opacity: 0;
-    transition: opacity 0.4s;
-    width: 90%;
+    z-index: 50;
+    max-width: min(86vw, 420px);
+    padding: 30px 34px;
+    border: 1px solid var(--c-rule);
+    background: rgba(6, 6, 12, 0.72);
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    font-size: var(--t-lg); font-weight: 300;
+    letter-spacing: var(--tk-wide);
+    color: var(--c-value); text-transform: uppercase;
+    text-align: center; line-height: 1.25;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.5s;
   }
+  #status::before, #status::after {
+    position: absolute; font-size: 15px; line-height: 1;
+    color: var(--c-accent-dim);
+    text-shadow: 0 0 10px rgba(232,236,245,0.3);
+  }
+  #status::before { content: "┌"; top: -8px;    left: -7px;  }
+  #status::after  { content: "┘"; bottom: -8px; right: -7px; }
   #status .sub {
-    display: block; margin-top: 12px; font-size: 9px; color: #888;
-    letter-spacing: 0.16em; line-height: 1.6em;
+    display: block; margin-top: 16px;
+    font-size: var(--t-xs); color: var(--c-muted);
+    letter-spacing: var(--tk-wide); line-height: 1.7em;
+    text-transform: uppercase;
   }
   #status.show { opacity: 1; }
 
+  /* ── финальный стих — проявляется поверх башни ──────────────────────────── */
   #poem {
-    left: 50%; top: 50%;
+    position: fixed; left: 50%; top: 50%;
     transform: translate(-50%, -50%);
-    width: 80%;
-    color: #ddd; font-size: 11px; line-height: 1.75em;
+    z-index: 45;
+    width: 80%; max-width: 34em;
+    color: var(--c-value);
+    font-size: clamp(11px, 1.5vh, 13px); line-height: 1.85em;
     letter-spacing: 0.04em;
-    white-space: pre-wrap;
+    white-space: pre-wrap; text-align: center;
     opacity: 0; transition: opacity 1.2s;
-    text-shadow: 0 0 12px rgba(0,0,0,0.9);
+    text-shadow: 0 0 12px rgba(0,0,0,0.95), 0 1px 4px rgba(0,0,0,0.9);
   }
-  #poem.show { opacity: 0.9; }
-  #poem .sig { display: block; margin-top: 1.6em; opacity: 0.55; font-size: 9px; }
+  #poem.show { opacity: 0.92; }
+  #poem .sig {
+    display: block; margin-top: 1.6em;
+    opacity: 0.6; font-size: var(--t-xs); color: var(--c-muted);
+    letter-spacing: var(--tk-wide);
+  }
 </style>
 </head>
 <body>
-<canvas id="c"></canvas>
-<div id="ui">
-  <div id="title">vol4 · СТАЛАГМИТ</div>
-  <div id="counter">000 / 020</div>
-  <div id="hint">SPACE — сбросить · ESC — назад</div>
-  <a id="back" href="/">← КАРТА</a>
-  <div id="status"></div>
-  <div id="poem"></div>
+<div class="frame">
+  <canvas id="c"></canvas>
+  <div id="frameBorder"></div>
+  <span class="corner tl">┌</span>
+  <span class="corner tr">┐</span>
+  <span class="corner bl">└</span>
+  <span class="corner br">┘</span>
 </div>
+
+<div id="title" class="t-mark">vol4 · СТАЛАГМИТ</div>
+<div id="counter">000 / 010</div>
+<div id="hint" class="t-hint arrow">SPACE сбросить · ESC карта</div>
+<a   id="back" href="/">← карта</a>
+
+<div id="status"></div>
+<div id="poem"></div>
+
+<div class="scanlines"></div>
 
 <script>
   // на тач-устройствах механика «сбросить блок» = тап по экрану (обрабатывается в main.js через click)
   if ("ontouchstart" in window || navigator.maxTouchPoints > 0) {
     var _h = document.getElementById("hint");
-    if (_h) _h.textContent = "тап — сбросить блок";
+    if (_h) _h.textContent = "тап · сбросить блок";
   }
 </script>
 <script type="module" src="/src/games/stalagmit/main.js"></script>
