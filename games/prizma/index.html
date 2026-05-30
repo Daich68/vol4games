@@ -19,6 +19,7 @@
     top: 50%; left: 50%;
     transform: translate(-50%, -50%);
     height: 100vh;
+    height: 100dvh;                 /* учитываем плавающий URL-бар Safari */
     width: min(58vh, 100vw);
     display: flex; flex-direction: column;
     padding: 46px 18px 40px;
@@ -265,52 +266,81 @@
   </div>
 </div>
 
-<!-- мобильные кнопки управления (показываются через JS при наличии touch) -->
+<!-- мобильное управление: джойстик (разбег) + кнопка прыжка -->
 <div id="touch-ctrl">
-  <button class="t-ctrl" id="tc-left">←</button>
-  <button class="t-ctrl tc-jump" id="tc-jump">↑</button>
-  <button class="t-ctrl" id="tc-right">→</button>
+  <div id="joystick"><div id="joyKnob"></div></div>
+  <button id="tc-jump">↑</button>
 </div>
 <style>
   #touch-ctrl {
     display: none;          /* JS включает если touch-устройство */
     position: fixed;
-    bottom: calc(14px + env(safe-area-inset-bottom, 0px));
-    left: 50%;
-    transform: translateX(-50%);
+    left: 0; right: 0;
+    bottom: calc(20px + env(safe-area-inset-bottom, 0px));
     z-index: 50;
-    gap: 12px;
+    padding-left:  calc(24px + env(safe-area-inset-left, 0px));
+    padding-right: calc(24px + env(safe-area-inset-right, 0px));
+    align-items: center; justify-content: space-between;
+    pointer-events: none;   /* ловят только дочерние контролы */
   }
   #touch-ctrl.visible { display: flex; }
+  #joystick, #tc-jump { pointer-events: auto; }
 
-  /* на мобайле убираем клавиатурные подсказки */
-  body.is-touch #hint { display: none; }
-  body.is-touch #back { bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
+  /* на мобайле прячем клавиатурные подписи */
+  body.is-touch #hint  { display: none; }
+  body.is-touch #title { display: none; }
+  body.is-touch #back  { bottom: calc(18px + env(safe-area-inset-bottom, 0px)); }
+  /* место снизу под джойстик, чтобы сцена не пряталась под пальцами */
+  body.is-touch .frame { padding-bottom: calc(176px + env(safe-area-inset-bottom, 0px)); }
 
-  /* дополнительный отступ снизу под кнопки */
-  body.is-touch .frame { padding-bottom: 96px; }
+  /* ── джойстик разбега ── */
+  #joystick {
+    position: relative;
+    width: 132px; height: 132px;
+    border-radius: 50%;
+    border: 1px solid rgba(232,236,245,0.18);
+    background: radial-gradient(circle at 50% 50%, rgba(232,236,245,0.05), rgba(232,236,245,0.015));
+    touch-action: none; user-select: none; -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #joystick::before {       /* горизонтальная риска-направляющая */
+    content: ""; position: absolute; top: 50%; left: 16%; right: 16%;
+    height: 1px; background: rgba(232,236,245,0.12); transform: translateY(-0.5px);
+  }
+  #joyKnob {
+    position: absolute; left: 50%; top: 50%;
+    width: 58px; height: 58px; margin: -29px 0 0 -29px;
+    border-radius: 50%;
+    border: 1px solid rgba(232,236,245,0.4);
+    background: rgba(232,236,245,0.14);
+    box-shadow: 0 0 18px rgba(232,236,245,0.12);
+    transition: transform 0.1s ease-out, background 0.1s;
+    will-change: transform;
+  }
+  #joystick.active #joyKnob {
+    background: rgba(232,236,245,0.26);
+    border-color: rgba(232,236,245,0.6);
+    transition: background 0.1s;   /* при перетаскивании ручка идёт мгновенно */
+  }
 
-  .t-ctrl {
-    width: 88px; height: 72px;
+  /* ── кнопка прыжка ── */
+  #tc-jump {
+    width: 104px; height: 104px;
+    border-radius: 50%;
     background: rgba(232,236,245,0.07);
     border: 1px solid rgba(232,236,245,0.22);
     color: rgba(232,236,245,0.65);
     font-family: var(--font-mono, monospace);
-    font-size: 24px; line-height: 1;
-    cursor: pointer;
-    touch-action: none;
-    user-select: none;
-    -webkit-user-select: none;
+    font-size: 30px; line-height: 1;
+    touch-action: none; user-select: none; -webkit-user-select: none;
     -webkit-tap-highlight-color: transparent;
     transition: background 0.06s, color 0.06s, border-color 0.06s;
   }
-  .t-ctrl.pressed {
+  #tc-jump.pressed {
     background: rgba(232,236,245,0.2);
-    color: #e8ecf5;
-    border-color: rgba(232,236,245,0.5);
+    color: #e8ecf5; border-color: rgba(232,236,245,0.5);
     box-shadow: 0 0 16px rgba(232,236,245,0.18);
   }
-  .tc-jump { width: 104px; font-size: 26px; }
 </style>
 <script>
   // показываем кнопки только на touch-устройствах

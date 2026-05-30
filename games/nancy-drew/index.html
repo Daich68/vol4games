@@ -18,6 +18,7 @@
     top: 50%; left: 50%;
     transform: translate(-50%, -50%);
     height: 100vh;
+    height: 100dvh;                 /* учитываем плавающий URL-бар Safari */
     width: min(58vh, 100vw);
     display: flex; flex-direction: column;
     padding: 46px 18px 40px;
@@ -145,6 +146,16 @@
     transition: color 0.2s, text-shadow 0.2s;
   }
   #back:hover { color: var(--c-accent); text-shadow: var(--c-glow); }
+
+  /* ── мобайл: рамка во весь экран — плавающие подписи накладываются ──────── */
+  @media (pointer: coarse) {
+    #title, #hint { display: none; }
+    .frame {
+      padding-top: calc(env(safe-area-inset-top, 0px) + 16px);
+      padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 26px);
+    }
+    #back { bottom: calc(10px + env(safe-area-inset-bottom, 0px)); }
+  }
 
   /* ── оверлей (терминальная карточка) ───────────────────────────────────── */
   .overlay {

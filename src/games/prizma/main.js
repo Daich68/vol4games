@@ -284,6 +284,7 @@ function reset() {
 }
 
 // ── ввод ──────────────────────────────────────────────────────────────────
+const IS_TOUCH = "ontouchstart" in window || navigator.maxTouchPoints > 0;
 const LEFT_KEYS  = ["ArrowLeft",  "KeyA"];
 const RIGHT_KEYS = ["ArrowRight", "KeyD"];
 const JUMP_KEYS  = ["Space", "ArrowUp", "KeyW"];
@@ -303,15 +304,60 @@ for (const b of document.querySelectorAll('[data-action="restart"]')) {
   b.addEventListener("click", () => reset());
 }
 
-// ── мобильные touch-кнопки ───────────────────────────────────────────────────
-for (const [id, code] of [["tc-left","ArrowLeft"],["tc-right","ArrowRight"],["tc-jump","Space"]]) {
-  const btn = document.getElementById(id);
-  if (!btn) continue;
-  btn.addEventListener("touchstart", e => {
-    e.preventDefault(); ensureAudio(); keys.add(code); btn.classList.add("pressed");
+// ── мобильное управление: джойстик разбега + кнопка прыжка ───────────────────
+// джойстик ведёт ручку за пальцем по горизонтали и переводит смещение в
+// дискретные ArrowLeft/ArrowRight (физика разбега та же, что с клавиатуры).
+const joy  = document.getElementById("joystick");
+const knob = document.getElementById("joyKnob");
+if (joy && knob) {
+  const R = 40;        // максимальный вынос ручки, px
+  const DEAD = 0.3;    // мёртвая зона (доля от R)
+  let joyId = null;
+
+  function applyDir(nx) {
+    keys.delete("ArrowLeft"); keys.delete("ArrowRight");
+    if (nx > DEAD)       keys.add("ArrowRight");
+    else if (nx < -DEAD) keys.add("ArrowLeft");
+  }
+  function moveKnob(clientX) {
+    const rect = joy.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    let dx = Math.max(-R, Math.min(R, clientX - cx));
+    knob.style.transform = `translateX(${dx}px)`;
+    applyDir(dx / R);
+  }
+  function releaseJoy() {
+    joyId = null;
+    joy.classList.remove("active");
+    knob.style.transform = "";
+    keys.delete("ArrowLeft"); keys.delete("ArrowRight");
+  }
+  joy.addEventListener("touchstart", e => {
+    e.preventDefault(); ensureAudio();
+    const t = e.changedTouches[0];
+    joyId = t.identifier;
+    joy.classList.add("active");
+    moveKnob(t.clientX);
   }, { passive: false });
-  btn.addEventListener("touchend",    e => { e.preventDefault(); keys.delete(code); btn.classList.remove("pressed"); }, { passive: false });
-  btn.addEventListener("touchcancel", e => { e.preventDefault(); keys.delete(code); btn.classList.remove("pressed"); }, { passive: false });
+  joy.addEventListener("touchmove", e => {
+    e.preventDefault();
+    for (const t of e.changedTouches) if (t.identifier === joyId) { moveKnob(t.clientX); break; }
+  }, { passive: false });
+  const endJoy = e => {
+    for (const t of e.changedTouches) if (t.identifier === joyId) { e.preventDefault(); releaseJoy(); break; }
+  };
+  joy.addEventListener("touchend", endJoy, { passive: false });
+  joy.addEventListener("touchcancel", endJoy, { passive: false });
+}
+
+const jumpBtn = document.getElementById("tc-jump");
+if (jumpBtn) {
+  jumpBtn.addEventListener("touchstart", e => {
+    e.preventDefault(); ensureAudio(); keys.add("Space"); jumpBtn.classList.add("pressed");
+  }, { passive: false });
+  const endJump = e => { e.preventDefault(); keys.delete("Space"); jumpBtn.classList.remove("pressed"); };
+  jumpBtn.addEventListener("touchend",    endJump, { passive: false });
+  jumpBtn.addEventListener("touchcancel", endJump, { passive: false });
 }
 
 // ── прыжок ──────────────────────────────────────────────────────────────────
@@ -1024,7 +1070,10 @@ function render() {
     ctx.fillStyle = `rgba(232,236,245,${0.32 + 0.12 * Math.sin(time * 3)})`;
     ctx.font = "9px 'JetBrains Mono', monospace";
     ctx.textAlign = "center";
-    ctx.fillText("← → разбег · SPACE прыжок · ✦ собирай · скип = комбо", VW / 2, VH - 18);
+    ctx.fillText(
+      IS_TOUCH ? "джойстик — разбег · ↑ прыжок · ✦ собирай · скип = комбо"
+               : "← → разбег · SPACE прыжок · ✦ собирай · скип = комбо",
+      VW / 2, VH - 18);
   }
 }
 

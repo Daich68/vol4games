@@ -743,11 +743,13 @@ function revealChars(matchCount, mult = 1) {
 
 // ── ввод ────────────────────────────────────────────────────────────────
 function cellFromEvent(e) {
-  // offsetX/Y у трансформированного элемента возвращает координаты в его
-  // нетрансформированной системе — браузер инвертирует CSS-камеру за нас.
+  // координаты считаем от getBoundingClientRect: clientX/Y есть и у реального
+  // клика, и у тача — в отличие от offsetX/Y, который не вычисляется у
+  // синтетических событий (из-за чего тапы на iOS «не срабатывали»).
   const vp = viewport();
-  const x = e.offsetX - vp.ox;
-  const y = e.offsetY - vp.oy;
+  const rect = canvas.getBoundingClientRect();
+  const x = (e.clientX - rect.left) - vp.ox;
+  const y = (e.clientY - rect.top)  - vp.oy;
   if (x < 0 || y < 0 || x >= GRID_W * vp.s || y >= GRID_H * vp.s) return null;
   return { r: (y / (CELL * vp.s)) | 0, c: (x / (CELL * vp.s)) | 0 };
 }
