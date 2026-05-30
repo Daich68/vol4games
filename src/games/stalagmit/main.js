@@ -288,6 +288,7 @@ function reset() {
   updateCounter();
   setStatus("");
   poemEl.classList.remove("show");
+  document.body.classList.remove("finale");
 }
 
 function spawnBlock() {
@@ -583,10 +584,28 @@ function showPoem() {
       break;
     }
   }
-  poemEl.innerHTML = `${body}<span class="sig">${sig}</span>`;
+  poemEl.innerHTML = `<div class="poem-body">${body}<span class="sig">${sig}</span></div>`;
+  document.body.classList.add("finale");      // башня → задний план, подписи гаснут
+  requestAnimationFrame(fitPoem);             // ужимаем кегль под высоту кадра
   setTimeout(() => poemEl.classList.add("show"), 600);
   const backHint = IS_TOUCH ? "тап — вернуться на карту" : "[ ENTER / CLICK ] вернуться на карту";
   setTimeout(() => setStatus(`<span class="sub">${backHint}</span>`), 8500);
+}
+
+// ужимаем стих по кеглю, пока он не влезет в кадр целиком — без скролла
+function fitPoem() {
+  const inner = poemEl.querySelector(".poem-body");
+  if (!inner) return;
+  const cs = getComputedStyle(poemEl);
+  const avail = poemEl.clientHeight
+    - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+  let fs = 13;
+  inner.style.fontSize = fs + "px";
+  let guard = 0;
+  while (inner.scrollHeight > avail && fs > 7 && guard++ < 60) {
+    fs -= 0.4;
+    inner.style.fontSize = fs + "px";
+  }
 }
 
 // ── resize ───────────────────────────────────────────────────────────────
@@ -599,6 +618,7 @@ function resize() {
   camera.top = WORLD_HALF_H; camera.bottom = -WORLD_HALF_H;
   camera.updateProjectionMatrix();
   halftonePass.uniforms.resolution.value.set(CW(), CH());
+  if (state === "finale") fitPoem();
 }
 window.addEventListener("resize", resize);
 

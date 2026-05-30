@@ -109,25 +109,53 @@
   }
   #status.show { opacity: 1; }
 
-  /* ── финальный стих — проявляется поверх башни ──────────────────────────── */
+  /* ── финальный стих — встроен в композицию ──────────────────────────────
+     башня гаснет до призрачной фактуры, стих занимает весь кадр колонкой
+     по центру (без коробки и без скролла; JS ужимает кегль под высоту). */
   #poem {
-    position: fixed; left: 50%; top: 50%;
-    transform: translate(-50%, -50%);
+    position: fixed; inset: 0;
     z-index: 45;
-    width: 80%; max-width: 34em;
+    display: flex; align-items: center; justify-content: center;
+    padding:
+      calc(env(safe-area-inset-top, 0px) + 54px)
+      24px
+      calc(env(safe-area-inset-bottom, 0px) + 48px);
+    opacity: 0; pointer-events: none;
+    transition: opacity 1.2s ease-out;
+  }
+  #poem.show { opacity: 1; }
+  .poem-body {
+    width: 100%; max-width: 32em;
     color: var(--c-value);
-    font-size: clamp(11px, 1.5vh, 13px); line-height: 1.85em;
+    font-size: 13px; line-height: 1.85em;   /* стартовый кегль; JS ужмёт под кадр */
     letter-spacing: 0.04em;
     white-space: pre-wrap; text-align: center;
-    opacity: 0; transition: opacity 1.2s;
-    text-shadow: 0 0 12px rgba(0,0,0,0.95), 0 1px 4px rgba(0,0,0,0.9);
+    text-shadow: 0 0 14px rgba(3,3,8,0.96), 0 1px 5px rgba(3,3,8,0.92);
   }
-  #poem.show { opacity: 0.92; }
-  #poem .sig {
-    display: block; margin-top: 1.6em;
-    opacity: 0.6; font-size: var(--t-xs); color: var(--c-muted);
+  .poem-body .sig {
+    display: block; margin-top: 1.7em;
+    opacity: 0.6; font-size: 0.82em; color: var(--c-muted);
     letter-spacing: var(--tk-wide);
   }
+
+  /* в финале башня уходит на задний план, служебные подписи гаснут */
+  #c { transition: opacity 1.4s ease-out; }
+  #counter { transition: opacity 1s ease-out; }
+  body.finale #c { opacity: 0.16; }
+  body.finale #counter, body.finale #hint { opacity: 0; }
+
+  /* в финале статус — не карточка, а тихая строка у нижнего края */
+  body.finale #status {
+    top: auto;
+    bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+    left: 50%; transform: translate(-50%, 0);
+    max-width: none; padding: 0;
+    border: none; background: none;
+    backdrop-filter: none; -webkit-backdrop-filter: none;
+    font-size: var(--t-xs); font-weight: 400; color: var(--c-muted);
+  }
+  body.finale #status::before, body.finale #status::after { content: none; }
+  body.finale #status .sub { margin-top: 0; }
 </style>
 </head>
 <body>
