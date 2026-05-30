@@ -41,6 +41,10 @@ body, button, input, textarea {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* ── мобайл: гасим pull-to-refresh / rubber-band и подсветку тапов ──────── */
+html, body { overscroll-behavior: none; }
+* { -webkit-tap-highlight-color: transparent; }
+
 /* ── атомарные классы ─────────────────────────────────────────────────── */
 
 .t-label {

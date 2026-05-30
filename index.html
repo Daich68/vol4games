@@ -2,12 +2,16 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>vol4games</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body {
     width: 100%; height: 100%; background: #050507; overflow: hidden;
     font-family: "JetBrains Mono", ui-monospace, monospace;
+    overscroll-behavior: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: none;            /* джойстик управляет касанием — без зума/скролла */
   }
   canvas { display: block; }
 
@@ -280,7 +284,9 @@
       <div class="pl-name" id="plNameOut"></div>
       <div class="pl-kbd" id="plKbd"></div>
       <div class="pl-keyhint">
-        <kbd>↑ ↓ ← →</kbd> буквы &nbsp; <kbd>ENTER</kbd> выбрать &nbsp; <span class="pl-ok">✓</span> готово
+        <span class="kb-only"><kbd>↑ ↓ ← →</kbd> буквы &nbsp; <kbd>ENTER</kbd> выбрать &nbsp;</span>
+        <span class="touch-only">нажимай буквы &nbsp;</span>
+        <span class="pl-ok">✓</span> готово
       </div>
     </div>
   </div>
@@ -428,6 +434,26 @@
     padding: 1px 5px; border-radius: 2px; font: inherit; font-size: 9px;
   }
   .pl-keyhint .pl-ok { color: #e8ecf5; }
+
+  /* keyhint: разные подсказки для клавиатуры и тача */
+  .pl-keyhint .touch-only { display: none; }
+
+  /* ── touch: крупные клавиши, влезающие по ширине телефона ────────────── */
+  @media (pointer: coarse) {
+    .pl-keyhint .kb-only    { display: none; }
+    .pl-keyhint .touch-only { display: inline; }
+  }
+  @media (pointer: coarse) and (max-width: 600px) {
+    .pl-kbd  { padding: 10px; gap: 6px; }
+    .pl-krow { gap: 4px; }
+    .pl-key  {
+      width: clamp(26px, 8vw, 34px); height: 42px;
+      font-size: 17px;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .pl-key.special { width: auto; padding: 0 9px; font-size: 15px; }
+    .pl-name { font-size: 26px; }
+  }
 </style>
 
 <script>
@@ -609,7 +635,8 @@
 
   /* на мобайле скрываем клавиатурные подсказки */
   @media (pointer: coarse) {
-    #hint kbd { display: none; }
+    #hint kbd        { display: none; }
+    #fanTrigger kbd  { display: none; }
   }
 </style>
 

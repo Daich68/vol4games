@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>сталагмит — vol4games</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -39,7 +39,7 @@
   #counter  { top: 18px; right: 22px; font-size: 11px; letter-spacing: 0.2em;  color: #fff; opacity: 0.7; }
   #hint     { bottom: 18px; left: 22px; font-size: 9px;  letter-spacing: 0.14em; color: #fff; opacity: 0.22; }
   #back {
-    bottom: 18px; right: 22px; font-size: 9px; letter-spacing: 0.18em;
+    bottom: calc(18px + env(safe-area-inset-bottom, 0px)); right: 22px; font-size: 9px; letter-spacing: 0.18em;
     color: #fff; opacity: 0.45; text-decoration: none; pointer-events: auto;
   }
   #back:hover { opacity: 1; }
@@ -84,6 +84,13 @@
   <div id="poem"></div>
 </div>
 
+<script>
+  // на тач-устройствах механика «сбросить блок» = тап по экрану (обрабатывается в main.js через click)
+  if ("ontouchstart" in window || navigator.maxTouchPoints > 0) {
+    var _h = document.getElementById("hint");
+    if (_h) _h.textContent = "тап — сбросить блок";
+  }
+</script>
 <script type="module" src="/src/games/stalagmit/main.js"></script>
 </body>
 </html>

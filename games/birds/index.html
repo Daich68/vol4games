@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>птицы — vol4games</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -132,7 +132,7 @@
   #title { position: fixed; top: 20px; left: 22px; z-index: 40; }
   #hint  { position: fixed; bottom: 20px; left: 22px; z-index: 40; }
   #back  {
-    position: fixed; bottom: 20px; right: 22px; z-index: 40;
+    position: fixed; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); right: 22px; z-index: 40;
     text-decoration: none; color: var(--c-muted);
     font-size: var(--t-xs); letter-spacing: var(--tk-wide); text-transform: uppercase;
     transition: color 0.2s, text-shadow 0.2s;
