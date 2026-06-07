@@ -31,7 +31,7 @@ const loseSub   = document.getElementById("loseSub");
 
 // ── константы мира ───────────────────────────────────────────────────────
 const VW = 360, VH = 640;
-const TOP_FLOOR  = 64;          // длинный подъём — десятки прыжков до вершины
+const TOP_FLOOR  = 40;          // подъём короче — выровнен по времени с другими играми
 const FLOOR_GAP  = 70;
 const GROUND_Y   = 70;
 const PLAYER_W   = 16, PLAYER_H = 24;
@@ -49,9 +49,9 @@ const ROT_PER_VX           = 0.022;
 // камера
 const CAM_PLAYER_FRAC = 0.55;
 const CAM_FOLLOW_K    = 6.0;
-const AUTO_SCROLL_DELAY = 9;
-const AUTO_SCROLL_BASE  = 22;
-const AUTO_SCROLL_RAMP   = 0.035;
+const AUTO_SCROLL_DELAY = 11;
+const AUTO_SCROLL_BASE  = 20;
+const AUTO_SCROLL_RAMP   = 0.025;
 
 // комбо
 const COMBO_TIMEOUT  = 2.6;
@@ -107,11 +107,11 @@ const STANZAS = {
 // между которыми лежат десятки обычных ледяных уступов.
 const MILESTONES = [
   [1,         STANZAS[1]],
-  [11,        STANZAS[3]],
-  [22,        STANZAS[5]],
-  [33,        STANZAS[7]],
-  [44,        STANZAS[9]],
-  [54,        STANZAS[11]],
+  [7,         STANZAS[3]],
+  [14,        STANZAS[5]],
+  [21,        STANZAS[7]],
+  [28,        STANZAS[9]],
+  [34,        STANZAS[11]],
   [TOP_FLOOR, STANZAS[13]],   // вершина = победа
 ];
 const MILESTONE_MAP    = new Map(MILESTONES);
@@ -198,9 +198,9 @@ function buildTower() {
     if (streak <= 0) { side = -side; streak = 1 + Math.floor(Math.random() * 3); }
     streak--;
 
-    // дистанция растёт с высотой — честный, но нарастающий разрыв
-    const maxShift = ms ? 72 : 88 + diffT * 56;          // ~88 внизу → ~144 наверху
-    const minShift = ms ? 24 : 34;
+    // дистанция растёт с высотой — честный, но мягкий разрыв
+    const maxShift = ms ? 72 : 80 + diffT * 36;          // ~80 внизу → ~116 наверху
+    const minShift = ms ? 24 : 30;
     let cx = prevCx + side * (minShift + Math.random() * (maxShift - minShift));
 
     // отражение от стен
