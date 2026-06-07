@@ -680,12 +680,86 @@
   </div>
 </div>
 
+<!-- ── таблица лидеров ────────────────────────────────────────────────────── -->
+<div id="lbMenu">
+  <button id="lbTrigger"><kbd>L</kbd> рекорды</button>
+  <div id="lbPanel">
+    <div class="lp-head">таблица лидеров</div>
+    <div class="lp-tabs">
+      <button class="lp-tab" data-game="birds">птицы</button>
+      <button class="lp-tab" data-game="prizma">призма</button>
+    </div>
+    <div class="lp-list" id="lbList"><div class="lp-empty">загрузка…</div></div>
+    <div class="lp-foot" id="lbFoot"></div>
+  </div>
+</div>
+
 <style>
   #fanMenu {
     position: fixed;
     bottom: 22px; right: 24px;
     z-index: 20;
     pointer-events: auto;
+  }
+
+  /* ── таблица лидеров — зеркалит стиль fanMenu, но слева ──────────────────── */
+  #lbMenu { position: fixed; bottom: 22px; left: 24px; z-index: 20; pointer-events: auto; }
+  #lbTrigger {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.13);
+    color: rgba(255,255,255,0.32);
+    padding: 6px 12px;
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 10px; letter-spacing: 0.26em; text-transform: uppercase;
+    cursor: pointer; transition: color 0.2s, border-color 0.2s;
+    display: flex; align-items: center; gap: 6px;
+  }
+  #lbTrigger kbd { color: rgba(255,255,255,0.55); border: 1px solid rgba(255,255,255,0.18); padding: 1px 5px; font: inherit; font-size: 9px; }
+  #lbTrigger:hover, #lbMenu.open #lbTrigger { color: #e8ecf5; border-color: rgba(232,236,245,0.35); }
+  #lbMenu.open #lbTrigger kbd { color: #e8ecf5; border-color: rgba(232,236,245,0.35); }
+
+  #lbPanel {
+    position: fixed; left: 18px; top: 50%;
+    transform: translateY(-50%) translateX(calc(-100% - 32px));
+    opacity: 0; pointer-events: none;
+    transition: transform 0.38s cubic-bezier(0.22, 0.9, 0.2, 1.04), opacity 0.26s;
+    width: min(86vw, 300px);
+    background: rgba(5,5,7,0.96);
+    border: 1px solid rgba(232,236,245,0.14);
+    padding: 16px 16px 14px;
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+  }
+  #lbMenu.open #lbPanel { transform: translateY(-50%) translateX(0); opacity: 1; pointer-events: auto; }
+  .lp-head { font-size: 9px; letter-spacing: 0.3em; text-transform: uppercase; color: rgba(232,236,245,0.5); margin-bottom: 12px; }
+  .lp-tabs { display: flex; gap: 8px; margin-bottom: 12px; }
+  .lp-tab {
+    flex: 1; background: transparent; cursor: pointer;
+    border: 1px solid rgba(255,255,255,0.12); color: rgba(255,255,255,0.4);
+    font-family: inherit; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase;
+    padding: 6px 0; transition: color 0.18s, border-color 0.18s, background 0.18s;
+  }
+  .lp-tab:hover { color: #e8ecf5; }
+  .lp-tab.active { color: #e8ecf5; border-color: rgba(232,236,245,0.4); background: rgba(232,236,245,0.06); }
+  .lp-list { min-height: 120px; }
+  .lp-row {
+    display: grid; grid-template-columns: 22px 1fr auto; align-items: baseline; gap: 8px;
+    padding: 4px 0; font-size: 11px; color: rgba(232,236,245,0.78);
+    border-bottom: 1px solid rgba(232,236,245,0.05);
+  }
+  .lp-row .lp-rank { color: rgba(232,236,245,0.4); font-size: 10px; text-align: right; }
+  .lp-row .lp-name { letter-spacing: 0.06em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .lp-row .lp-score { color: #e8ecf5; font-variant-numeric: tabular-nums; letter-spacing: 0.04em; }
+  .lp-row.me { color: #e8ecf5; }
+  .lp-row.me .lp-rank, .lp-row.me .lp-name { color: #e8ecf5; }
+  .lp-row.me .lp-name::after { content: " ‹ ты"; color: rgba(232,236,245,0.45); letter-spacing: 0.1em; }
+  .lp-row.top1 .lp-rank { color: #e8ecf5; }
+  .lp-empty { color: rgba(255,255,255,0.28); font-size: 10px; font-style: italic; padding: 14px 0; text-align: center; }
+  .lp-foot { margin-top: 10px; font-size: 8.5px; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(232,236,245,0.32); display: flex; justify-content: space-between; }
+  .lp-foot .lp-dot { color: rgba(120,200,140,0.7); }
+  .lp-foot .lp-dot.local { color: rgba(214,170,90,0.8); }
+
+  @media (pointer: coarse) {
+    #lbTrigger kbd { display: none; }
   }
 
   #fanTrigger {
