@@ -181,7 +181,7 @@ const ITEMS = [
   { id:"pluto",  kind:"pluto",   x:300, y:152, rot: 0,    s:0.95 },        // ← плутон
   { id:"lupa",   kind:"lupa",    x:316, y:216, rot:-0.5,  s:1.0 },         // ← лупа
   { id:"fang",   kind:"fang",    x:216, y:236, rot: 0.5,  s:1.0 },         // ← клык
-  { id:"queen",  kind:"card",    x: 84, y:320, rot:-0.12, s:1.0,  v:"queen" }, // ← дама пик
+  { id:"queen",  kind:"queen",   x: 84, y:320, rot:-0.12, s:1.0 },            // ← дама пик
   { id:"apple",  kind:"apple",   x:250, y:326, rot: 0.05, s:1.05 },        // ← яблоко
 ];
 
@@ -190,6 +190,7 @@ const HIT = {
   key:[26,12], ring:[12,12], vial:[10,20], spider:[14,12], pluto:[16,16],
   skull:[18,20], thimble:[11,13], padlock:[19,22], dagger:[10,30], beads:[18,12],
   env:[24,16], lupa:[20,20], pencil:[5,26], fang:[10,16], card:[18,25],
+  queen:[18,25],
   die:[13,13], coin:[13,13], apple:[18,18], compass:[16,16], star:[16,16],
   candle:[10,24], nail:[6,16],
 };
@@ -661,6 +662,7 @@ function drawSkull(g) {
 // маршрутизатор рисования
 const DRAW = {
   key: drawKey, ring: drawRing, padlock: drawPadlock, lupa: drawLupa, card: drawCard,
+  queen: g => drawCard(g, "queen"),
   apple: drawApple, fang: drawFang, pluto: drawPluto, env: drawEnv, dagger: drawDagger,
   die: drawDie, coin: drawCoin, compass: drawCompass, star: drawStar, candle: drawCandle,
   nail: drawNail, thimble: drawThimble, vial: drawVial, pencil: drawPencil, beads: drawBeads,
