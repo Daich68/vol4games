@@ -156,7 +156,8 @@
   }
   #nbNudge span::after { content: " ↓"; }
 
-  /* строфы внутри всплывающей страницы блокнота */
+  /* всплывающая страница блокнота — длинная проза, читаем слева */
+  #nbText { text-align: left; }
   .nb-stanza { margin-bottom: 0.95em; white-space: pre-wrap; opacity: 0; transform: translateY(3px); animation: nb-write .8s ease forwards; }
   .nb-stanza:last-child { margin-bottom: 0; }
   .nb-final { color: var(--c-accent); }
