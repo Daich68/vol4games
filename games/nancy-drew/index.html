@@ -34,66 +34,25 @@
     padding-bottom: 11px;
     border-bottom: 1px solid var(--c-rule);
   }
-  #streak.hot { color: var(--c-accent); text-shadow: var(--c-glow); }
-
-  /* ── карточка загадки ──────────────────────────────────────────────────── */
-  #riddle {
-    flex: 0 0 auto;
-    position: relative;
-    margin: 14px 0 10px;
-    padding: 14px 18px;
-    background: rgba(232,236,245,0.035);
-    border: 1px solid var(--c-rule);
-    color: var(--c-value);
-    font-size: clamp(11px, 1.5vh, 13px);
-    line-height: 1.7em;
-    letter-spacing: 0.03em;
-    white-space: pre-wrap;
-    text-align: center;
-    min-height: 84px;
-    display: flex; align-items: center; justify-content: center;
-    transition: border-color 0.25s, background 0.25s;
-  }
-  #riddle::before {
-    content: "досье № —";
-    position: absolute; top: -7px; left: 12px;
-    padding: 0 6px;
-    background: #05050a;
-    color: var(--c-accent-dim);
-    font-size: var(--t-xs); letter-spacing: var(--tk-wide); text-transform: uppercase;
-  }
-  #riddle.flash-wrong {
-    border-color: rgba(217,106,106,0.6);
-    background: rgba(80,20,20,0.18);
-  }
-  #riddle.flash-right {
-    border-color: var(--c-accent);
-    background: rgba(40,52,76,0.32);
-  }
 
   /* ── сцена ─────────────────────────────────────────────────────────────── */
   #stage {
     flex: 1 1 auto; min-height: 0;
     position: relative;
+    margin-top: 14px;
     border: 1px solid var(--c-rule);
-    background: radial-gradient(circle at 50% 32%, rgba(24,30,46,0.45), rgba(4,4,9,0.92));
+    background: #1a1206;
+    overflow: hidden;
   }
   #c {
     position: absolute; inset: 0;
     width: 100%; height: 100%;
     display: block;
     cursor: crosshair;
-  }
-  #dots {
-    position: absolute; inset: 0;
-    pointer-events: none; z-index: 1;
-    background-image: radial-gradient(circle at center, #15151f 0.6px, transparent 1px);
-    background-size: 3.5px 3.5px;
-    mix-blend-mode: multiply;
-    opacity: 0.5;
+    touch-action: manipulation;
   }
   .corner {
-    position: absolute; z-index: 2;
+    position: absolute; z-index: 4;
     font-size: 13px; line-height: 1;
     color: var(--c-accent-dim);
     pointer-events: none;
@@ -104,22 +63,68 @@
   .corner.bl { bottom: -7px; left: -6px;  }
   .corner.br { bottom: -7px; right: -6px; }
 
+  /* ── улика (загадка) — нижняя полоса поверх сцены, как в референсе ───────── */
+  #riddle {
+    position: absolute; left: 0; right: 0; bottom: 0; z-index: 3;
+    padding: 26px 16px 11px;
+    background: linear-gradient(to top, rgba(6,6,11,0.94) 38%, rgba(6,6,11,0.7) 70%, rgba(6,6,11,0));
+    color: var(--c-value);
+    font-size: clamp(10.5px, 1.42vh, 12.5px);
+    line-height: 1.62em;
+    letter-spacing: 0.02em;
+    white-space: pre-wrap;
+    text-align: center;
+    font-style: italic;
+    transition: color 0.25s;
+    pointer-events: none;
+  }
+  #riddle.flash-wrong { color: var(--c-danger); }
+  #riddle.flash-right { color: var(--c-accent); text-shadow: 0 0 14px rgba(232,236,245,0.4); }
+
+  /* кнопка-подсказка «?» — верхний правый угол сцены */
+  #hintBtn {
+    position: absolute; top: 8px; right: 8px; z-index: 5;
+    width: 30px; height: 30px;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(6,6,11,0.6);
+    border: 1px solid var(--c-rule);
+    color: var(--c-accent-dim);
+    font-family: var(--font-mono);
+    font-size: 15px; font-weight: 600;
+    cursor: pointer;
+    transition: color 0.18s, border-color 0.18s, box-shadow 0.18s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #hintBtn:hover { color: var(--c-accent); border-color: var(--c-accent-dim); box-shadow: var(--c-glow); }
+  #hintBtn:disabled { opacity: 0.28; cursor: default; box-shadow: none; }
+  #hintBtn .cd {
+    position: absolute; bottom: -1px; right: 1px;
+    font-size: 8px; letter-spacing: 0; color: var(--c-accent-dim);
+  }
+
+  /* счётчик улики в левом верхнем углу сцены */
+  #caseNo {
+    position: absolute; top: 9px; left: 10px; z-index: 5;
+    font-size: var(--t-xs); letter-spacing: var(--tk-wide); text-transform: uppercase;
+    color: var(--c-accent-dim);
+    pointer-events: none;
+  }
+
   /* ── блокнот ───────────────────────────────────────────────────────────── */
   #notebook {
     flex: 0 0 auto;
     position: relative;
     margin-top: 12px;
-    padding: 10px 14px;
+    padding: 12px 14px;
+    max-height: 19vh;
+    overflow-y: auto;
     background: rgba(255,255,255,0.025);
     border: 1px solid var(--c-rule);
-    color: var(--c-muted);
-    font-size: 10px;
-    letter-spacing: 0.12em;
-    line-height: 1.5em;
-    text-transform: lowercase;
-    min-height: 30px;
-    display: flex; align-items: center; gap: 10px;
-    flex-wrap: wrap;
+    color: var(--c-value);
+    font-size: clamp(9.5px, 1.25vh, 11px);
+    letter-spacing: 0.02em;
+    line-height: 1.62em;
+    min-height: 34px;
   }
   #notebook::before {
     content: "блокнот";
@@ -129,12 +134,15 @@
     color: var(--c-accent-dim);
     font-size: var(--t-xs); letter-spacing: var(--tk-wide); text-transform: uppercase;
   }
-  #notebook .nb-item {
-    color: var(--c-accent);
-    font-weight: 500;
-    letter-spacing: 0.18em;
-  }
   #notebook .nb-empty { color: rgba(255,255,255,0.22); font-style: italic; }
+  #notebook .nb-stanza {
+    margin-bottom: 0.6em; white-space: pre-wrap;
+    opacity: 0; transform: translateY(3px);
+    animation: nb-write 0.9s ease forwards;
+  }
+  #notebook .nb-stanza:last-child { margin-bottom: 0; }
+  #notebook .nb-final { color: var(--c-accent); }
+  @keyframes nb-write { to { opacity: 1; transform: none; } }
 
   /* ── chrome ────────────────────────────────────────────────────────────── */
   #title { position: fixed; top: 20px; left: 22px; z-index: 40; }
@@ -147,7 +155,6 @@
   }
   #back:hover { color: var(--c-accent); text-shadow: var(--c-glow); }
 
-  /* ── мобайл: рамка во весь экран — плавающие подписи накладываются ──────── */
   @media (pointer: coarse) {
     #title, #hint { display: none; }
     .frame {
@@ -224,25 +231,25 @@
   <header id="hud">
     <div id="topbar">
       <div class="t-stat">
-        <div class="t-label">загадка</div>
+        <div class="t-label">улика</div>
         <div class="t-value" id="riddle-num">1 / 6</div>
       </div>
       <div class="t-stat center">
-        <div class="t-label">очки</div>
-        <div class="t-value accent" id="score">00000</div>
+        <div class="t-label">дело</div>
+        <div class="t-value accent" style="font-size: var(--t-md); letter-spacing: var(--tk-wide);">нэнси дрю</div>
       </div>
       <div class="t-stat end">
-        <div class="t-label">серия</div>
-        <div class="t-value" id="streak">—</div>
+        <div class="t-label">найдено</div>
+        <div class="t-value" id="found-count">0 / 6</div>
       </div>
     </div>
   </header>
 
-  <div id="riddle"></div>
-
   <section id="stage">
     <canvas id="c"></canvas>
-    <div id="dots"></div>
+    <div id="caseNo">досье № 1</div>
+    <button id="hintBtn" title="подсказка — показать предмет">?</button>
+    <div id="riddle"></div>
     <span class="corner tl">┌</span>
     <span class="corner tr">┐</span>
     <span class="corner bl">└</span>
@@ -250,21 +257,21 @@
   </section>
 
   <div id="notebook">
-    <span class="nb-empty">блокнот пуст</span>
+    <span class="nb-empty">блокнот пуст — разгадай улику</span>
   </div>
 </div>
 
 <div id="title" class="t-mark">vol4 · НЭНСИ ДРЮ</div>
-<div id="hint"  class="t-hint arrow">клик · найди предмет загадки · серия множит очки</div>
+<div id="hint"  class="t-hint arrow">найди предмет улики · «?» — подсказка</div>
 <a   id="back"  href="/">← карта</a>
 
 <div id="winOverlay" class="overlay">
   <div class="ov-card">
     <span class="cn tl">┌</span><span class="cn tr">┐</span>
     <span class="cn bl">└</span><span class="cn br">┘</span>
-    <div class="ov-meta">блокнот заполнен</div>
+    <div class="ov-meta">дело закрыто</div>
     <div class="t-display" style="color: var(--c-accent);">все смерти найдены</div>
-    <div class="ov-stats" id="winStats">ОЧКОВ 0 · ЛУЧШАЯ СЕРИЯ ×1 · 0:00</div>
+    <div class="ov-stats" id="winStats"></div>
     <div class="ov-poem" id="winPoem"></div>
     <a class="t-btn" href="/" style="text-decoration:none">← на карту</a>
   </div>
