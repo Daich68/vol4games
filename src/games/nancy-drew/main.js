@@ -21,11 +21,17 @@ const riddleEl  = document.getElementById("riddle");
 const riddleN   = document.getElementById("riddle-num");
 const foundN    = document.getElementById("found-count");
 const caseNoEl  = document.getElementById("caseNo");
-const noteEl    = document.getElementById("notebook");
 const hintBtn   = document.getElementById("hintBtn");
 const winOv     = document.getElementById("winOverlay");
 const winPoem   = document.getElementById("winPoem");
 const winStats  = document.getElementById("winStats");
+// блокнот: кнопка + всплывающая страница + наводящий тост
+const notebookBtn = document.getElementById("notebookBtn");
+const nbCountEl   = document.getElementById("nbCount");
+const nbOverlay   = document.getElementById("nbOverlay");
+const nbTextEl    = document.getElementById("nbText");
+const nbCloseBtn  = document.getElementById("nbClose");
+const nbNudge     = document.getElementById("nbNudge");
 
 // ── сцена ──────────────────────────────────────────────────────────────────
 const VW = 360, VH = 440;
@@ -51,20 +57,21 @@ oc.width  = VW * SS; oc.height = VH * SS;
 const octx = oc.getContext("2d");
 
 // ── улики и привязка к частям стиха ─────────────────────────────────────────
-// порядок: яблоко → часть 1 (про яблоки/клыки), … плутон → часть 6 (про Плутон)
+// порядок улик — по ТЗ: яблоко, плутон, клык, ключ, лупа, дама пик.
+// part = индекс части стиха, которая вписывается в блокнот (стих идёт по порядку).
 const RIDDLES = [
   { answer: "apple", label: "яблоко", part: 0,
     text: "В глазнице — если повезёт,\nбывает, висит в небе на рассвете,\nа третье стукнется о лоб,\nкогда решишь ты отдохнуть под древом." },
-  { answer: "fang", label: "клык", part: 1,
-    text: "Он рыка друг, охранник языка,\nдля мягкой плоти он как нож опасен.\nБелесый царь улыбки; брат клинка,\nкогда вампир и зверь проголодались." },
-  { answer: "key", label: "ключ", part: 2,
-    text: "Им бьёт вода. О нём мечтает вор,\nзапутавшись в ворованных отмычках.\nОтвет на все загадки — тоже он\n(для этой точно ты другого не отыщешь)." },
-  { answer: "lupa", label: "лупа", part: 3,
-    text: "Аксессуар для детектива из стекла,\nс ним бабушки читают, вышивают,\nбожественную кару муравья\nв мультфильмах им же совершают." },
-  { answer: "queen", label: "дама пик", part: 4,
-    text: "Скажи её имя три раза,\nлюбовно запрячь в рукаве.\nВалет, король, туз и шестёрка —\nкого не хватило тебе?" },
-  { answer: "pluto", label: "плутон", part: 5,
+  { answer: "pluto", label: "плутон", part: 1,
     text: "Недр подземного царства ему не хватило —\nон добрался до звёздных высот.\nОко бога и римское позднее имя\nозирают ночью твой сон." },
+  { answer: "fang", label: "клык", part: 2,
+    text: "Он рыка друг, охранник языка,\nдля мягкой плоти он как нож опасен.\nБелесый царь улыбки; брат клинка,\nкогда вампир и зверь проголодались." },
+  { answer: "key", label: "ключ", part: 3,
+    text: "Им бьёт вода. О нём мечтает вор,\nзапутавшись в ворованных отмычках.\nОтвет на все загадки — тоже он\n(для этой точно ты другого не отыщешь)." },
+  { answer: "lupa", label: "лупа", part: 4,
+    text: "Аксессуар для детектива из стекла,\nс ним бабушки читают, вышивают,\nбожественную кару муравья\nв мультфильмах им же совершают." },
+  { answer: "queen", label: "дама пик", part: 5,
+    text: "Скажи её имя три раза,\nлюбовно запрячь в рукаве.\nВалет, король, туз и шестёрка —\nкого не хватило тебе?" },
 ];
 
 // семь частей стиха (шесть улик + дневник). Заполняют блокнот по мере находок.
@@ -131,6 +138,7 @@ const HIT = {
 let currentRiddle = 0;
 let foundIds      = new Set();
 let solvedKinds   = new Set();
+let collectedParts = [];        // части стиха, открытые в блокнот
 let state         = "play";
 let hover         = null;
 let particles     = [];
@@ -761,7 +769,11 @@ canvas.addEventListener("click", e => {
   if (it.kind === RIDDLES[currentRiddle].answer) onCorrect(it);
   else onWrong(p.x, p.y);
 });
-addEventListener("keydown", e => { if (e.code === "Escape") backToMap(); });
+addEventListener("keydown", e => {
+  if (e.code !== "Escape") return;
+  if (nbOverlay.classList.contains("show")) closeNotebook();
+  else backToMap();
+});
 
 hintBtn.addEventListener("click", () => {
   if (hintCd > 0 || state !== "play") return;
@@ -806,15 +818,46 @@ function updateHUD() {
   if (caseNoEl) caseNoEl.textContent = `досье № ${n}`;
   if (foundN) foundN.textContent = `${foundIds.size} / ${RIDDLES.length}`;
 }
+// ── блокнот: кнопка зовёт открыть страницу со всем собранным текстом ──────────
+let nudgeT = null;
 function appendNotebook(text) {
-  const empty = noteEl.querySelector(".nb-empty");
-  if (empty) empty.remove();
-  const div = document.createElement("div");
-  div.className = "nb-stanza";
-  div.textContent = text;
-  noteEl.appendChild(div);
-  noteEl.scrollTop = noteEl.scrollHeight;
+  collectedParts.push(text);
+  if (nbCountEl) nbCountEl.textContent = `${collectedParts.length} / 7`;
+  notebookBtn.classList.add("has-new");      // мигаем — есть свежая запись
+  showNudge();
 }
+function showNudge() {
+  if (!nbNudge) return;
+  nbNudge.classList.add("show");
+  clearTimeout(nudgeT);
+  nudgeT = setTimeout(() => nbNudge.classList.remove("show"), 4000);
+}
+function renderNotebook() {
+  if (!nbTextEl) return;
+  if (collectedParts.length === 0) {
+    nbTextEl.innerHTML = `<span class="nb-empty">страница пуста — разгадай улику на сцене</span>`;
+    return;
+  }
+  nbTextEl.innerHTML = "";
+  collectedParts.forEach((p, i) => {
+    const d = document.createElement("div");
+    d.className = "nb-stanza" + (i === 6 ? " nb-final" : "");
+    d.style.animationDelay = (i * 0.07) + "s";
+    d.textContent = p;
+    nbTextEl.appendChild(d);
+  });
+}
+function openNotebook() {
+  renderNotebook();
+  nbOverlay.classList.add("show");
+  notebookBtn.classList.remove("has-new");
+  if (nbNudge) nbNudge.classList.remove("show");
+}
+function closeNotebook() { nbOverlay.classList.remove("show"); }
+
+notebookBtn.addEventListener("click", openNotebook);
+if (nbCloseBtn) nbCloseBtn.addEventListener("click", closeNotebook);
+nbOverlay.addEventListener("click", e => { if (e.target === nbOverlay) closeNotebook(); });
 
 function spawnDissolve(it) {
   const hb = HIT[it.kind] || [14, 14];
@@ -829,12 +872,12 @@ function spawnDissolve(it) {
 function onWin() {
   state = "win";
   markDone("nancy-drew");
-  appendNotebook(POEM_PARTS[6]);
-  const last = noteEl.lastElementChild; if (last) last.classList.add("nb-final");
+  appendNotebook(POEM_PARTS[6]);              // часть 7 — дневник — вписывается в финале
   const secs = Math.round((performance.now() - startT) / 1000);
   const mm = Math.floor(secs / 60), ss = secs % 60;
   if (winStats) winStats.textContent = `улик раскрыто ${RIDDLES.length} · время ${mm}:${String(ss).padStart(2, "0")}`;
-  fetch(`${import.meta.env.BASE_URL}poems/nancy-drew.txt`).then(r => r.ok ? r.text() : "").then(t => { winPoem.textContent = t || ""; });
+  // финал = собранный игроком стих (без служебной секции «ПОДСКАЗКИ»)
+  if (winPoem) winPoem.textContent = collectedParts.join("\n\n");
   hintBtn.disabled = true;
   setTimeout(() => winOv.classList.add("show"), 900);
 }
