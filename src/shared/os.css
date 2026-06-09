@@ -1,0 +1,134 @@
+/* ─── VOL4/OS — слой «машины» ────────────────────────────────────────────
+   CRT power on/off между страницами, титульные кадры процессов,
+   построчное проявление текста. Подключается через import в os.js.
+*/
+
+/* ── CRT power on/off ────────────────────────────────────────────────────
+   Кинескоп: две чёрные шторки сходятся к центру, изображение схлопывается
+   в светящуюся линию, линия — в точку. Включение — в обратном порядке.
+   Статичное закрытое состояние (#crtFx.boot) задано инлайном в страницах,
+   чтобы не было вспышки контента до загрузки этого файла.
+*/
+#crtFx { position: fixed; inset: 0; z-index: 999; pointer-events: none; }
+#crtFx .crt-top, #crtFx .crt-bot {
+  position: absolute; left: 0; right: 0; height: 50.5%;
+  background: #000;
+}
+#crtFx .crt-top { top: 0;    transform-origin: 50% 0;    }
+#crtFx .crt-bot { bottom: 0; transform-origin: 50% 100%; }
+#crtFx .crt-line {
+  position: absolute; top: 50%; left: 0; right: 0;
+  height: 2px; margin-top: -1px;
+  background: #e8ecf5;
+  box-shadow: 0 0 26px 5px rgba(232, 236, 245, 0.65),
+              0 0 80px 18px rgba(232, 236, 245, 0.22);
+  opacity: 0;
+}
+/* до инициализации и вне переходов шторки открыты */
+#crtFx:not(.boot) .crt-top, #crtFx:not(.boot) .crt-bot { transform: scaleY(0); }
+
+/* включение: линия вспыхивает поперёк, шторки разъезжаются */
+#crtFx.on .crt-top { animation: crtOpenT 0.52s cubic-bezier(0.1, 0.65, 0.2, 1) forwards; }
+#crtFx.on .crt-bot { animation: crtOpenB 0.52s cubic-bezier(0.1, 0.65, 0.2, 1) forwards; }
+#crtFx.on .crt-line { animation: crtLineOn 0.62s ease-out forwards; }
+@keyframes crtOpenT { from { transform: scaleY(1); } to { transform: scaleY(0); } }
+@keyframes crtOpenB { from { transform: scaleY(1); } to { transform: scaleY(0); } }
+@keyframes crtLineOn {
+  0%   { opacity: 1; transform: scaleX(0.004);
+         box-shadow: 0 0 8px 2px rgba(232, 236, 245, 0.4); }
+  26%  { opacity: 1; transform: scaleX(1); }
+  100% { opacity: 0; transform: scaleX(1); }
+}
+
+/* выключение: шторки схлопываются, линия вспыхивает и гаснет в точку */
+#crtFx.off { pointer-events: auto; }   /* глушим ввод на время перехода */
+#crtFx.off .crt-top { animation: crtCloseT 0.24s cubic-bezier(0.7, 0, 0.9, 0.4) forwards; }
+#crtFx.off .crt-bot { animation: crtCloseB 0.24s cubic-bezier(0.7, 0, 0.9, 0.4) forwards; }
+#crtFx.off .crt-line { animation: crtLineOff 0.42s ease-in forwards; }
+@keyframes crtCloseT { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes crtCloseB { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes crtLineOff {
+  0%   { opacity: 0; transform: scaleX(1); }
+  45%  { opacity: 1; transform: scaleX(1); }
+  /* тень тоже гасим: при scaleX-сжатии она растягивается в вертикальный штрих */
+  100% { opacity: 0.85; transform: scaleX(0.003);
+         box-shadow: 0 0 8px 2px rgba(232, 236, 245, 0.4); }
+}
+
+/* ── титульный кадр процесса ─────────────────────────────────────────────
+   Полноэкранный опенинг игры: номер процесса, имя огромным кеглем
+   с разъезжающимся трекингом, стих/автор, строка запуска.
+*/
+#osTitle {
+  position: fixed; inset: 0; z-index: 980;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: clamp(18px, 3.4vh, 30px);
+  background: #050507;
+  padding: 24px;
+  cursor: pointer;
+  transition: opacity 0.55s ease-out;
+}
+#osTitle.hide { opacity: 0; pointer-events: none; }
+.ost-meta {
+  font-size: var(--t-xs, 10px);
+  letter-spacing: var(--tk-mega, 0.34em);
+  text-transform: uppercase;
+  color: var(--c-accent-dim, rgba(232,236,245,0.5));
+  animation: ostFade 0.7s 0.15s ease-out backwards;
+}
+.ost-name {
+  font-size: clamp(36px, 11vw, 92px);
+  font-weight: 200;
+  line-height: 1.05;
+  text-transform: uppercase;
+  text-align: center;
+  color: var(--c-value, rgba(232,236,245,0.94));
+  text-shadow: 0 0 42px rgba(232, 236, 245, 0.28);
+  white-space: nowrap;
+  animation: ostTrack 1.4s cubic-bezier(0.16, 0.8, 0.22, 1) backwards;
+}
+@keyframes ostTrack {
+  0%   { letter-spacing: 0.02em; opacity: 0; filter: blur(7px); }
+  35%  { opacity: 1; }
+  100% { letter-spacing: 0.22em; opacity: 1; filter: blur(0); }
+}
+.ost-name { letter-spacing: 0.22em; text-indent: 0.22em; /* компенсация трекинга */ }
+.ost-sub {
+  font-size: clamp(10px, 1.6vh, 12px);
+  letter-spacing: 0.2em;
+  text-transform: lowercase;
+  color: var(--c-label, rgba(226,230,240,0.42));
+  text-align: center;
+  line-height: 1.9em;
+  animation: ostFade 0.8s 0.5s ease-out backwards;
+}
+.ost-sub b { font-weight: 500; color: var(--c-muted, rgba(226,230,240,0.36)); }
+.ost-run {
+  position: absolute;
+  bottom: calc(30px + env(safe-area-inset-bottom, 0px));
+  font-size: var(--t-xs, 10px);
+  letter-spacing: var(--tk-wide, 0.18em);
+  text-transform: uppercase;
+  color: var(--c-muted, rgba(226,230,240,0.36));
+  animation: ostFade 0.6s 0.95s ease-out backwards;
+}
+.ost-run::before { content: "› "; opacity: 0.6; }
+.ost-run::after {
+  content: "▓";
+  margin-left: 7px;
+  animation: osBlink 1s steps(1) infinite;
+}
+@keyframes ostFade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes osBlink { 0%, 50% { opacity: 1; } 50.01%, 100% { opacity: 0; } }
+
+/* ── построчное проявление текста (финальные стихи) ──────────────────────
+   os.js режет текст на строки-спаны; задержки выставляются инлайном.
+*/
+.os-line {
+  display: block;
+  opacity: 0;
+  transform: translateY(5px);
+  transition: opacity 0.7s ease-out, transform 0.7s ease-out;
+}
+.os-reveal .os-line { opacity: 1; transform: none; }

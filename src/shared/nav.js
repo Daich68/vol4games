@@ -1,11 +1,12 @@
 // Навигация и состояние прогресса между картой и играми.
 // Используем import.meta.env.BASE_URL чтобы корректно работало
 // при деплое на под-путь (например /vol4/).
+import { osNavigate } from "./os.js";
 
 export const MAP_URL = import.meta.env.BASE_URL || "/";
 
 export function backToMap() {
-  location.href = MAP_URL;
+  osNavigate(MAP_URL);
 }
 
 // Привязать любой <a id="back"> к корректному URL карты.

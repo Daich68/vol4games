@@ -14,6 +14,7 @@ import { OutputPass }     from "three/examples/jsm/postprocessing/OutputPass.js"
 import { ensureAudio, thud, creak, rumble }  from "../../shared/audio.js";
 import { backToMap, markDone, bindBackLink, showCompleted } from "../../shared/nav.js";
 import { createHalftonePass }                from "../../shared/halftone.js";
+import { osPowerOn, osBindLinks, osTitleCard } from "../../shared/os.js";
 
 bindBackLink();
 
@@ -635,7 +636,10 @@ function loop(now) {
   requestAnimationFrame(loop);
 }
 
+osPowerOn();
+osBindLinks();
 if (!showCompleted("stalagmit", "сталагмит")) {
+  osTitleCard({ index: "03", title: "сталагмит", poem: "ул. подмосковный проезд, 8", author: "али алиев" });
   reset();
   requestAnimationFrame(loop);
 }

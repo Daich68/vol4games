@@ -11,6 +11,7 @@
 import "../../shared/type.css";
 import { bindBackLink, markDone, backToMap, showCompleted, getPlayerName } from "../../shared/nav.js";
 import { ensureAudio, thud, creak, chime, rumble } from "../../shared/audio.js";
+import { osPowerOn, osBindLinks, osTitleCard, osRevealLines } from "../../shared/os.js";
 
 bindBackLink();
 
@@ -637,7 +638,7 @@ function onWin() {
   if (winName) winName.textContent = (getPlayerName() || "восходящий").toLowerCase();
   fetch(`${import.meta.env.BASE_URL}poems/prizma.txt`)
     .then(r => r.ok ? r.text() : "")
-    .then(t => { winPoem.textContent = t || ""; });
+    .then(t => { winPoem.textContent = t || ""; osRevealLines(winPoem); });
   // финальный фейерверк света
   for (let i = 0; i < 5; i++) {
     setTimeout(() => addBurst(VW / 2 + (Math.random() * 2 - 1) * 80, player.y + 40, 24, 180, 1.2), i * 120);
@@ -1088,7 +1089,10 @@ function loop(now) {
 }
 
 // ── старт ──────────────────────────────────────────────────────────────────
+osPowerOn();
+osBindLinks();
 if (!showCompleted("prizma", "призма")) {
+  osTitleCard({ index: "04", title: "призма", poem: "призматическая пагода", author: "данила кудимов" });
   fitCanvas();
   reset();
   requestAnimationFrame(loop);

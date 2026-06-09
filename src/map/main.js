@@ -7,6 +7,21 @@ import { OutputPass }         from "three/examples/jsm/postprocessing/OutputPass
 import { isDone, clearAllProgress } from "../shared/nav.js";
 import { createHero, HERO_FIELD_RADIUS_PX } from "../shared/hero.js";
 import { createHalftonePass } from "../shared/halftone.js";
+import { osPowerOn, osBindLinks } from "../shared/os.js";
+
+// VOL4/OS: включение кинескопа при возврате из игры (boot-класс ставит
+// прелоудер-скрипт) и выходы в игры через выключение (ссылки меню уровней)
+osPowerOn();
+osBindLinks();
+
+// прогресс машины в заголовке: vol4://карта · N/4
+{
+  const n = ["birds", "stalagmit", "nancy-drew", "prizma"].filter(isDone).length;
+  const titleEl = document.getElementById("title");
+  if (titleEl && n > 0) {
+    titleEl.innerHTML = `vol4:<span class="dim">//</span>карта <span class="dim">· ${n}/4</span>`;
+  }
+}
 
 const W = () => window.innerWidth;
 const H = () => window.innerHeight;
@@ -697,7 +712,9 @@ function updateHero(dt) {
     promptEl.classList.toggle("show", hasGame);
     if (hasGame) {
       const done = isDone(near.game);
-      promptEl.textContent = done ? "пройдено" : (IS_TOUCH ? "тап · войти" : "enter войти");
+      promptEl.textContent = done
+        ? "процесс завершён"
+        : `запустить ${near.label.toLowerCase()}`;
       promptEl.classList.toggle("done", done);
     }
   }

@@ -168,7 +168,7 @@
   <span class="corner br">┘</span>
 </div>
 
-<div id="title" class="t-mark">vol4 · СТАЛАГМИТ</div>
+<div id="title" class="t-path">vol4:<span class="dim">//</span>сталагмит</div>
 <div id="counter">000 / 010</div>
 <div id="hint" class="t-hint arrow">SPACE сбросить · ESC карта</div>
 <a   id="back" href="/">← карта</a>
@@ -178,8 +178,19 @@
 
 <div class="scanlines"></div>
 
+<!-- CRT-кинескоп: страница включается из чёрного (логика в shared/os.js) -->
+<div id="crtFx" class="boot"><div class="crt-top"></div><div class="crt-bot"></div><div class="crt-line"></div></div>
+<style>
+  /* закрытое состояние до загрузки os.css — без вспышки контента */
+  #crtFx { position: fixed; inset: 0; z-index: 999; pointer-events: none; }
+  #crtFx .crt-top, #crtFx .crt-bot { position: absolute; left: 0; right: 0; height: 50.5%; background: #000; }
+  #crtFx .crt-top { top: 0; transform-origin: 50% 0; }
+  #crtFx .crt-bot { bottom: 0; transform-origin: 50% 100%; }
+  #crtFx .crt-line { position: absolute; top: 50%; left: 0; right: 0; height: 2px; margin-top: -1px; background: #e8ecf5; opacity: 0; }
+</style>
+
 <script>
-  // на тач-устройствах механика «сбросить блок» = тап по экрану (обрабатывается в main.js через click)
+  // на тач-устройствах механика «сбросить блок» = тап по экрану (обрабатывается в main.js через pointerdown)
   if ("ontouchstart" in window || navigator.maxTouchPoints > 0) {
     var _h = document.getElementById("hint");
     if (_h) _h.textContent = "тап · сбросить блок";

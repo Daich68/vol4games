@@ -4,6 +4,7 @@
 import "../../shared/type.css";
 import { bindBackLink, markDone, backToMap, showCompleted } from "../../shared/nav.js";
 import { ensureAudio, thud, creak, chime } from "../../shared/audio.js";
+import { osPowerOn, osBindLinks, osTitleCard, osRevealLines } from "../../shared/os.js";
 
 bindBackLink();
 
@@ -313,7 +314,7 @@ function onWin() {
     `ОЧКОВ ${score} · ЛУЧШАЯ СЕРИЯ ×${Math.max(1, bestStreak)} · ${mm}:${String(ss).padStart(2, "0")}`;
   fetch(`${import.meta.env.BASE_URL}poems/nancy-drew.txt`)
     .then(r => r.ok ? r.text() : "")
-    .then(t => { winPoem.textContent = t || ""; });
+    .then(t => { winPoem.textContent = t || ""; osRevealLines(winPoem); });
   setTimeout(() => winOv.classList.add("show"), 800);
 }
 
@@ -642,7 +643,10 @@ function loop(now) {
 }
 
 // ── старт ──────────────────────────────────────────────────────────────────
+osPowerOn();
+osBindLinks();
 if (!showCompleted("nancy-drew", "нэнси дрю")) {
+  osTitleCard({ index: "02", title: "нэнси дрю", poem: "все смерти нэнси дрю", author: "милена степанян" });
   fitCanvas();
   startT = performance.now();
   showCurrentRiddle();
