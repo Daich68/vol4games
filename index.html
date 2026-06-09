@@ -787,21 +787,25 @@
   #fanMenu.open #fanTrigger { color: #e8ecf5; border-color: rgba(232,236,245,0.35); }
   #fanMenu.open #fanTrigger kbd { color: #e8ecf5; border-color: rgba(232,236,245,0.35); }
 
-  /* ── выдвижная панель ─────────────────────────────────────────────── */
+  /* ── выпадающая панель: раскрывается вниз из триггера на рейке ────── */
   #fanPanel {
-    position: fixed;
-    right: 18px; top: 50%;
-    transform: translateY(-50%) translateX(calc(100% + 32px));
+    position: absolute;
+    top: calc(100% + 14px);
+    right: 0;
+    transform: translateY(-8px);
     opacity: 0; pointer-events: none;
-    transition: transform 0.38s cubic-bezier(0.22, 0.9, 0.2, 1.04), opacity 0.26s;
+    transition: transform 0.3s cubic-bezier(0.22, 0.9, 0.2, 1.04), opacity 0.22s;
     background: rgba(5,5,7,0.96);
     border: 1px solid rgba(232,236,245,0.16);
     backdrop-filter: blur(8px);
     font-family: "JetBrains Mono", ui-monospace, monospace;
     min-width: 290px;
+    max-height: calc(100vh - 120px);
+    max-height: calc(100dvh - 120px);
+    overflow-y: auto;
   }
   #fanMenu.open #fanPanel {
-    transform: translateY(-50%) translateX(0);
+    transform: translateY(0);
     opacity: 1; pointer-events: auto;
   }
 
