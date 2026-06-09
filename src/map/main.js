@@ -4,7 +4,8 @@ import * as THREE from "three";
 import { EffectComposer }     from "three/examples/jsm/postprocessing/EffectComposer.js";
 import { RenderPass }         from "three/examples/jsm/postprocessing/RenderPass.js";
 import { OutputPass }         from "three/examples/jsm/postprocessing/OutputPass.js";
-import { isDone, clearAllProgress } from "../shared/nav.js";
+import { isDone, clearAllProgress, getPlayerName } from "../shared/nav.js";
+import { fetchTop, LB_GAMES } from "../shared/leaderboard.js";
 import { createHero, HERO_FIELD_RADIUS_PX } from "../shared/hero.js";
 import { createHalftonePass } from "../shared/halftone.js";
 import { osPowerOn, osBindLinks } from "../shared/os.js";
@@ -762,3 +763,60 @@ const COMPLETABLE = ["birds", "stalagmit", "prizma", "nancy-drew"];
 if (COMPLETABLE.every(g => isDone(g))) {
   document.getElementById("allDoneOverlay")?.classList.add("show");
 }
+
+// ── таблица лидеров ──────────────────────────────────────────────────────────
+(function leaderboardUI() {
+  const menu    = document.getElementById("lbMenu");
+  const trigger = document.getElementById("lbTrigger");
+  const listEl  = document.getElementById("lbList");
+  const footEl  = document.getElementById("lbFoot");
+  const tabs    = [...document.querySelectorAll(".lp-tab")];
+  if (!menu || !trigger || !listEl) return;
+
+  let current = "birds";
+  let reqId = 0;
+  const esc = s => String(s).replace(/[&<>"']/g, c =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+  async function render(game) {
+    current = game;
+    tabs.forEach(t => t.classList.toggle("active", t.dataset.game === game));
+    listEl.innerHTML = `<div class="lp-empty">загрузка…</div>`;
+    footEl.textContent = "";
+    const mine = (getPlayerName() || "").trim();
+    const id = ++reqId;
+    const r = await fetchTop(game, 12);
+    if (id !== reqId) return;                 // пришёл ответ для другой вкладки — игнор
+
+    if (!r.top.length) {
+      listEl.innerHTML = `<div class="lp-empty">пока пусто — сыграй и попади сюда</div>`;
+    } else {
+      listEl.innerHTML = r.top.map((e, i) => {
+        const me = mine && e.name === mine;
+        const cls = ["lp-row", i === 0 ? "top1" : "", me ? "me" : ""].filter(Boolean).join(" ");
+        return `<div class="${cls}">`
+          + `<span class="lp-rank">${i + 1}</span>`
+          + `<span class="lp-name">${esc(e.name)}</span>`
+          + `<span class="lp-score">${e.score.toLocaleString("ru-RU")}</span></div>`;
+      }).join("");
+    }
+    const live = r.source === "server";
+    const metric = (LB_GAMES[game] && LB_GAMES[game].metric) || "очки";
+    footEl.innerHTML =
+      `<span><span class="lp-dot${live ? "" : " local"}">●</span> ${live ? "сервер" : "локально"}</span>`
+      + `<span>${metric} · всего ${r.total}</span>`;
+  }
+
+  function open()  { menu.classList.add("open"); render(current); }
+  function close() { menu.classList.remove("open"); }
+  function toggle() { menu.classList.contains("open") ? close() : open(); }
+
+  trigger.addEventListener("click", e => { e.stopPropagation(); toggle(); });
+  tabs.forEach(t => t.addEventListener("click", e => { e.stopPropagation(); render(t.dataset.game); }));
+  document.addEventListener("keydown", e => {
+    if (document.body.classList.contains("preloading")) return;
+    if (e.code === "KeyL") { e.preventDefault(); toggle(); }
+    if (e.code === "Escape") close();
+  });
+  document.addEventListener("click", e => { if (!menu.contains(e.target)) close(); });
+})();

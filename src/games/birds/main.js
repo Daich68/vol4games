@@ -2,6 +2,15 @@ import "../../shared/type.css";
 import { showCompleted, markDone } from "../../shared/nav.js";
 import { ensureAudio, chime, thud, rumble } from "../../shared/audio.js";
 import { osPowerOn, osBindLinks, osTitleCard, osRevealLines } from "../../shared/os.js";
+import { submitScore } from "../../shared/leaderboard.js";
+
+// сдать результат в таблицу лидеров и дописать место к строке статистики
+function reportScore(baseStats) {
+  submitScore("birds", score).then(r => {
+    const ws = document.getElementById("winStats");
+    if (ws && r && r.rank) ws.textContent = `${baseStats} · МЕСТО ${r.rank}`;
+  });
+}
 // Match-3 «Много снега и много птиц».
 // 5 типов фишек (снежки, воробьи, голуби, вёдра, бутоны) — образы стиха.
 // Сверху над полем — текст стиха, проявляющийся посимвольно по мере матчей.
@@ -159,14 +168,15 @@ function resetGame() {
 // Каждый тип = три ключевых цвета (deep → base → core) для shading-ramp.
 // Сферы шейдятся попиксельно (Lambert + specular) и рисуются монохромными
 // ASCII-символами разной плотности. Спрайты пре-рендерятся один раз.
-// Холодный монохром: 5 различимых ХОЛОДНЫХ тонов (по оттенку И светлоте),
-// чтобы поле читалось, но палитра не выбивалась из стиля проекта.
+// Холодный монохром: 5 РАЗЛИЧИМЫХ холодных тонов — разнесены и по светлоте,
+// и по оттенку (бел → графит → фиолет → бирюза → синий), чтобы поле читалось
+// без путаницы. Ядра держат свой оттенок даже в блике, а не уходят в белый.
 const TYPE_COL = {
-  1: { deep: "#2e3a56", base: "#cde0ff", core: "#ffffff" }, // снежок — ледяной белый
-  2: { deep: "#222630", base: "#7a8398", core: "#cdd4e4" }, // воробей — холодный графит
-  3: { deep: "#281e3c", base: "#9678c8", core: "#dccafa" }, // голубь — фиолет
-  4: { deep: "#0c2c34", base: "#46a0b2", core: "#b4e8f0" }, // ведро — циан-бирюза
-  5: { deep: "#162850", base: "#567cd2", core: "#b9cdfa" }, // бутон — синий
+  1: { deep: "#3a4a72", base: "#e8f2ff", core: "#ffffff" }, // снежок — почти белый лёд (самый светлый)
+  2: { deep: "#15171e", base: "#565d70", core: "#878fa6" }, // воробей — тёмный графит (самый тёмный)
+  3: { deep: "#2c0f44", base: "#a64de0", core: "#e3b6ff" }, // голубь — насыщенный фиолет
+  4: { deep: "#05333a", base: "#1fc2be", core: "#86f0ea" }, // ведро — яркая бирюза
+  5: { deep: "#0a1d6e", base: "#3b6bf5", core: "#9bb6ff" }, // бутон — насыщенный синий
 };
 
 // Плотностная лестница ASCII — узкая, с резким переходом тень/свет.
@@ -571,6 +581,7 @@ function loseLife() {
       ? `раскрыто ${Math.round(revealed / charEls.length * 100)}% стиха`
       : "стих не дочитан";
     loseOv.classList.add("show");
+    submitScore("birds", score);          // партия окончена — рекорд в таблицу
   } else {
     timeLeft = TIME_LIMIT;
     updateTimer();
@@ -717,11 +728,13 @@ async function resolveMatches() {
   if (revealed >= charEls.length && !won) {
     won = true;
     markDone("birds");
+    const baseStats = `ОЧКОВ ${score} · МАКС КАСКАД ×${Math.max(1, bestCombo)}`;
     const ws = document.getElementById("winStats");
-    if (ws) ws.textContent = `ОЧКОВ ${score} · МАКС КАСКАД ×${Math.max(1, bestCombo)}`;
+    if (ws) ws.textContent = baseStats;
     const wp = document.getElementById("winPoem");
     if (wp) { wp.textContent = POEM; osRevealLines(wp); }
     winOv.classList.add("show");
+    reportScore(baseStats);               // рекорд в таблицу + место в статистику
   }
 }
 
