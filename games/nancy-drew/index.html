@@ -21,26 +21,17 @@
     height: 100dvh;                 /* учитываем плавающий URL-бар Safari */
     width: min(58vh, 100vw);
     display: flex; flex-direction: column;
-    padding: 46px 18px 40px;
+    padding: 56px 18px 52px;
   }
 
-  /* ── HUD ──────────────────────────────────────────────────────────────── */
-  #hud { flex: 0 0 auto; }
-  #topbar {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    align-items: end;
-    gap: 8px;
-    padding-bottom: 11px;
-    border-bottom: 1px solid var(--c-rule);
-  }
+  /* ── HUD: счётчики уехали на рейку безеля ───────────────────────────────── */
   #streak.hot { color: var(--c-accent); text-shadow: var(--c-glow); }
 
   /* ── карточка загадки ──────────────────────────────────────────────────── */
   #riddle {
     flex: 0 0 auto;
     position: relative;
-    margin: 14px 0 10px;
+    margin: 0 0 10px;
     padding: 14px 18px;
     background: rgba(232,236,245,0.035);
     border: 1px solid var(--c-rule);
@@ -92,18 +83,6 @@
     mix-blend-mode: multiply;
     opacity: 0.5;
   }
-  .corner {
-    position: absolute; z-index: 2;
-    font-size: 13px; line-height: 1;
-    color: var(--c-accent-dim);
-    pointer-events: none;
-    text-shadow: 0 0 8px rgba(232,236,245,0.25);
-  }
-  .corner.tl { top: -7px;    left: -6px;  }
-  .corner.tr { top: -7px;    right: -6px; }
-  .corner.bl { bottom: -7px; left: -6px;  }
-  .corner.br { bottom: -7px; right: -6px; }
-
   /* ── блокнот ───────────────────────────────────────────────────────────── */
   #notebook {
     flex: 0 0 auto;
@@ -136,25 +115,13 @@
   }
   #notebook .nb-empty { color: rgba(255,255,255,0.22); font-style: italic; }
 
-  /* ── chrome ────────────────────────────────────────────────────────────── */
-  #title { position: fixed; top: 20px; left: 22px; z-index: 40; }
-  #hint  { position: fixed; bottom: 20px; left: 22px; z-index: 40; }
-  #back  {
-    position: fixed; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); right: 22px; z-index: 40;
-    text-decoration: none; color: var(--c-muted);
-    font-size: var(--t-xs); letter-spacing: var(--tk-wide); text-transform: uppercase;
-    transition: color 0.2s, text-shadow 0.2s;
-  }
-  #back:hover { color: var(--c-accent); text-shadow: var(--c-glow); }
-
-  /* ── мобайл: рамка во весь экран — плавающие подписи накладываются ──────── */
+  /* ── мобайл: путь и подсказку прячем, рейки с приборами остаются ────────── */
   @media (pointer: coarse) {
     #title, #hint { display: none; }
     .frame {
-      padding-top: calc(env(safe-area-inset-top, 0px) + 16px);
-      padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 26px);
+      padding-top: calc(env(safe-area-inset-top, 0px) + 54px);
+      padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 48px);
     }
-    #back { bottom: calc(10px + env(safe-area-inset-bottom, 0px)); }
   }
 
   /* ── оверлей (терминальная карточка) ───────────────────────────────────── */
@@ -221,32 +188,11 @@
 </head>
 <body>
 <div class="frame">
-  <header id="hud">
-    <div id="topbar">
-      <div class="t-stat">
-        <div class="t-label">загадка</div>
-        <div class="t-value" id="riddle-num">1 / 6</div>
-      </div>
-      <div class="t-stat center">
-        <div class="t-label">очки</div>
-        <div class="t-value accent" id="score">00000</div>
-      </div>
-      <div class="t-stat end">
-        <div class="t-label">серия</div>
-        <div class="t-value" id="streak">—</div>
-      </div>
-    </div>
-  </header>
-
   <div id="riddle"></div>
 
   <section id="stage">
     <canvas id="c"></canvas>
     <div id="dots"></div>
-    <span class="corner tl">┌</span>
-    <span class="corner tr">┐</span>
-    <span class="corner bl">└</span>
-    <span class="corner br">┘</span>
   </section>
 
   <div id="notebook">
@@ -254,9 +200,29 @@
   </div>
 </div>
 
-<div id="title" class="t-path">vol4:<span class="dim">//</span>нэнси-дрю</div>
-<div id="hint"  class="t-hint arrow">клик · найди предмет загадки · серия множит очки</div>
-<a   id="back"  href="/">← карта</a>
+<!-- ── приборная панель: безель + рейки с приборами ─────────────────────── -->
+<div class="os-bezel"><i>┌</i><i>┐</i><i>└</i><i>┘</i></div>
+<header class="os-rail top">
+  <div id="title" class="t-path">vol4:<span class="dim">//</span>нэнси-дрю</div>
+  <div class="os-cells">
+    <div class="t-stat">
+      <div class="t-label">загадка</div>
+      <div class="t-value" id="riddle-num">1 / 6</div>
+    </div>
+    <div class="t-stat center">
+      <div class="t-label">очки</div>
+      <div class="t-value accent" id="score">00000</div>
+    </div>
+    <div class="t-stat end">
+      <div class="t-label">серия</div>
+      <div class="t-value" id="streak">—</div>
+    </div>
+  </div>
+  <a id="back" href="/">← карта</a>
+</header>
+<div class="os-rail bot">
+  <div id="hint" class="t-hint arrow">клик · найди предмет загадки · серия множит очки</div>
+</div>
 
 <div id="winOverlay" class="overlay">
   <div class="ov-card">

@@ -22,24 +22,14 @@
     height: 100dvh;                 /* учитываем плавающий URL-бар Safari */
     width: min(58vh, 100vw);
     display: flex; flex-direction: column;
-    padding: 46px 18px 40px;
+    padding: 56px 18px 52px;
   }
 
-  /* ── HUD: приборная панель ─────────────────────────────────────────────── */
+  /* ── HUD: счётчики уехали на рейку безеля, тут остался ветер/осколки ────── */
   #hud { flex: 0 0 auto; }
-
-  #topbar {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    align-items: end;
-    gap: 8px;
-  }
 
   #windbar {
     display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
-    margin-top: 12px;
-    padding-top: 11px;
-    border-top: 1px solid var(--c-rule);
   }
   .wb-grp { display: inline-flex; align-items: baseline; gap: 8px; min-width: 0; }
   .w-cap {
@@ -89,19 +79,6 @@
     opacity: 0.55;
   }
 
-  /* угловые скобки рамки */
-  .corner {
-    position: absolute; z-index: 2;
-    font-size: 13px; line-height: 1;
-    color: var(--c-accent-dim);
-    pointer-events: none;
-    text-shadow: 0 0 8px rgba(232,236,245,0.25);
-  }
-  .corner.tl { top: -7px;    left: -6px;  }
-  .corner.tr { top: -7px;    right: -6px; }
-  .corner.bl { bottom: -7px; left: -6px;  }
-  .corner.br { bottom: -7px; right: -6px; }
-
   /* строфа стиха — снизу сцены */
   #stanza {
     position: absolute; z-index: 2;
@@ -120,17 +97,6 @@
     white-space: pre-wrap;
   }
   #stanza.show { opacity: 0.9; transform: translateX(-50%) translateY(0); }
-
-  /* угловые подписи экрана */
-  #title { position: fixed; top: 20px; left: 22px; z-index: 40; }
-  #hint  { position: fixed; bottom: 20px; left: 22px; z-index: 40; }
-  #back  {
-    position: fixed; bottom: 20px; right: 22px; z-index: 40;
-    text-decoration: none; color: var(--c-muted);
-    font-size: var(--t-xs); letter-spacing: var(--tk-wide); text-transform: uppercase;
-    transition: color 0.2s, text-shadow 0.2s;
-  }
-  #back:hover { color: var(--c-accent); text-shadow: var(--c-glow); }
 
   /* ── оверлеи (терминальные карточки) ────────────────────────────────────── */
   .overlay {
@@ -206,20 +172,6 @@
 <body>
 <div class="frame">
   <header id="hud">
-    <div id="topbar">
-      <div class="t-stat">
-        <div class="t-label">этаж</div>
-        <div class="t-value" id="floor">0</div>
-      </div>
-      <div class="t-stat center">
-        <div class="t-label">очки</div>
-        <div class="t-value accent" id="score">0</div>
-      </div>
-      <div class="t-stat end">
-        <div class="t-label">комбо</div>
-        <div class="t-value" id="combo">—</div>
-      </div>
-    </div>
     <div id="windbar">
       <span class="wb-grp"><span class="w-cap">ветер</span><span id="windMeter">▮▯▯▯ тихо</span></span>
       <span class="wb-grp"><span class="w-cap">осколки</span><span id="orbMeter">✦ 0</span></span>
@@ -229,17 +181,33 @@
   <section id="stage">
     <canvas id="c"></canvas>
     <div id="dots"></div>
-    <span class="corner tl">┌</span>
-    <span class="corner tr">┐</span>
-    <span class="corner bl">└</span>
-    <span class="corner br">┘</span>
     <div id="stanza"></div>
   </section>
 </div>
 
-<div id="title" class="t-path">vol4:<span class="dim">//</span>призма</div>
-<div id="hint"  class="t-hint arrow">← → разбег · SPACE прыжок · ESC карта</div>
-<a   id="back"  href="/">← карта</a>
+<!-- ── приборная панель: безель + рейки с приборами ─────────────────────── -->
+<div class="os-bezel"><i>┌</i><i>┐</i><i>└</i><i>┘</i></div>
+<header class="os-rail top">
+  <div id="title" class="t-path">vol4:<span class="dim">//</span>призма</div>
+  <div class="os-cells">
+    <div class="t-stat">
+      <div class="t-label">этаж</div>
+      <div class="t-value" id="floor">0</div>
+    </div>
+    <div class="t-stat center">
+      <div class="t-label">очки</div>
+      <div class="t-value accent" id="score">0</div>
+    </div>
+    <div class="t-stat end">
+      <div class="t-label">комбо</div>
+      <div class="t-value" id="combo">—</div>
+    </div>
+  </div>
+  <a id="back" href="/">← карта</a>
+</header>
+<div class="os-rail bot">
+  <div id="hint" class="t-hint arrow">← → разбег · SPACE прыжок · ESC карта</div>
+</div>
 
 <div id="winOverlay" class="overlay">
   <div class="ov-card">
@@ -286,12 +254,14 @@
   #touch-ctrl.visible { display: flex; }
   #joystick, #tc-jump { pointer-events: auto; }
 
-  /* на мобайле прячем клавиатурные подписи */
+  /* на мобайле прячем клавиатурные подписи (выход остаётся на верхней рейке) */
   body.is-touch #hint  { display: none; }
   body.is-touch #title { display: none; }
-  body.is-touch #back  { bottom: calc(18px + env(safe-area-inset-bottom, 0px)); }
-  /* место снизу под джойстик, чтобы сцена не пряталась под пальцами */
-  body.is-touch .frame { padding-bottom: calc(176px + env(safe-area-inset-bottom, 0px)); }
+  /* место под рейку сверху и джойстик снизу */
+  body.is-touch .frame {
+    padding-top: calc(54px + env(safe-area-inset-top, 0px));
+    padding-bottom: calc(176px + env(safe-area-inset-bottom, 0px));
+  }
 
   /* ── джойстик разбега ── */
   #joystick {

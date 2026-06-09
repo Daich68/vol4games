@@ -14,13 +14,16 @@
     touch-action: none;            /* мгновенный тап без задержки double-tap */
   }
 
-  /* портретная рамка-«терминал» по центру экрана (как в остальных играх) */
+  /* портретная сцена по центру, вписанная в безель приборной панели */
   .frame {
     position: fixed;
     top: 50%; left: 50%;
     transform: translate(-50%, -50%);
-    height: 100vh;
-    height: 100dvh;                 /* учитываем плавающий URL-бар Safari */
+    height: calc(100vh - 106px);
+    height: calc(100dvh
+      - (var(--os-inset-y, 26px) + 27px) * 2
+      - env(safe-area-inset-top, 0px)
+      - env(safe-area-inset-bottom, 0px));
     width: min(58vh, 100vw);
   }
   #c {
@@ -35,46 +38,9 @@
     border: 1px solid var(--c-rule);
     pointer-events: none; z-index: 2;
   }
-  .corner {
-    position: absolute; z-index: 3;
-    font-size: 13px; line-height: 1;
-    color: var(--c-accent-dim);
-    pointer-events: none;
-    text-shadow: 0 0 8px rgba(232,236,245,0.25);
-  }
-  .corner.tl { top: -7px;    left: -6px;  }
-  .corner.tr { top: -7px;    right: -6px; }
-  .corner.bl { bottom: -7px; left: -6px;  }
-  .corner.br { bottom: -7px; right: -6px; }
-
-  /* ── угловые подписи экрана ─────────────────────────────────────────────── */
-  #title   { position: fixed; top: 20px; left: 22px; z-index: 40; }
-  #counter {
-    position: fixed; top: 20px; right: 22px; z-index: 40;
-    font-size: var(--t-sm);
-    letter-spacing: 0.2em;
-    color: var(--c-accent);
-    font-variant-numeric: tabular-nums;
-    text-shadow: 0 0 10px rgba(232,236,245,0.18);
-  }
-  #hint  { position: fixed; bottom: 20px; left: 22px; z-index: 40; }
-  #back  {
-    position: fixed; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); right: 22px; z-index: 40;
-    text-decoration: none; color: var(--c-muted);
-    font-size: var(--t-xs); letter-spacing: var(--tk-wide); text-transform: uppercase;
-    pointer-events: auto;
-    transition: color 0.2s, text-shadow 0.2s;
-  }
-  #back:hover { color: var(--c-accent); text-shadow: var(--c-glow); }
-
-  /* ── мобайл: учитываем нотч/безопасные зоны; прячем декоративный заголовок ─ */
+  /* ── мобайл: прячем декоративный путь, приборы остаются на рейке ────────── */
   @media (pointer: coarse) {
     #title { display: none; }
-    #counter {
-      top: calc(20px + env(safe-area-inset-top, 0px));
-      right: calc(22px + env(safe-area-inset-right, 0px));
-    }
-    #hint { bottom: calc(14px + env(safe-area-inset-bottom, 0px)); }
   }
 
   /* ── статус: терминальная карточка (победа/поражение) ───────────────────── */
@@ -144,15 +110,16 @@
   body.finale #c { opacity: 0.16; }
   body.finale #counter, body.finale #hint { opacity: 0; }
 
-  /* в финале статус — не карточка, а тихая строка у нижнего края */
+  /* в финале статус — тихая строка-прибор на нижней линии безеля */
   body.finale #status {
     top: auto;
-    bottom: calc(14px + env(safe-area-inset-bottom, 0px));
-    left: 50%; transform: translate(-50%, 0);
-    max-width: none; padding: 0;
-    border: none; background: none;
+    bottom: calc(var(--os-inset-y, 26px) + env(safe-area-inset-bottom, 0px));
+    left: 50%; transform: translate(-50%, 50%);
+    max-width: none; padding: 4px 12px;
+    border: none; background: var(--c-bg);
     backdrop-filter: none; -webkit-backdrop-filter: none;
     font-size: var(--t-xs); font-weight: 400; color: var(--c-muted);
+    z-index: 42;
   }
   body.finale #status::before, body.finale #status::after { content: none; }
   body.finale #status .sub { margin-top: 0; }
@@ -162,16 +129,23 @@
 <div class="frame">
   <canvas id="c"></canvas>
   <div id="frameBorder"></div>
-  <span class="corner tl">┌</span>
-  <span class="corner tr">┐</span>
-  <span class="corner bl">└</span>
-  <span class="corner br">┘</span>
 </div>
 
-<div id="title" class="t-path">vol4:<span class="dim">//</span>сталагмит</div>
-<div id="counter">000 / 010</div>
-<div id="hint" class="t-hint arrow">SPACE сбросить · ESC карта</div>
-<a   id="back" href="/">← карта</a>
+<!-- ── приборная панель: безель + рейки с приборами ─────────────────────── -->
+<div class="os-bezel"><i>┌</i><i>┐</i><i>└</i><i>┘</i></div>
+<header class="os-rail top">
+  <div id="title" class="t-path">vol4:<span class="dim">//</span>сталагмит</div>
+  <div class="os-cells">
+    <div class="t-stat center">
+      <div class="t-label">блоки</div>
+      <div class="t-value accent" id="counter">000 / 010</div>
+    </div>
+  </div>
+  <a id="back" href="/">← карта</a>
+</header>
+<div class="os-rail bot">
+  <div id="hint" class="t-hint arrow">SPACE сбросить · ESC карта</div>
+</div>
 
 <div id="status"></div>
 <div id="poem"></div>

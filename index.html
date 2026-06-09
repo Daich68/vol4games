@@ -19,11 +19,8 @@
     position: fixed; inset: 0;
     pointer-events: none;
   }
-  /* терминальная шапка: путь процесса vol4://карта */
+  /* терминальная шапка: путь процесса vol4://карта (прибор на рейке) */
   #title {
-    position: absolute;
-    top: calc(20px + env(safe-area-inset-top, 0px));
-    left: calc(24px + env(safe-area-inset-left, 0px));
     font-size: 11px; font-weight: 500;
     letter-spacing: 0.12em; text-transform: lowercase;
     color: rgba(232, 236, 245, 0.55);
@@ -35,7 +32,6 @@
   @keyframes t-blink { 0%, 50% { opacity: 1; } 50.01%, 100% { opacity: 0; } }
 
   #hint {
-    position: absolute; bottom: 20px; left: 24px;
     font-size: 10px; letter-spacing: 0.16em;
     color: rgba(232, 236, 245, 0.44);
     text-transform: uppercase;
@@ -51,7 +47,8 @@
   }
 
   #prompt {
-    position: absolute; left: 50%; bottom: 56px;
+    position: absolute; left: 50%;
+    bottom: calc(var(--os-inset-y, 26px) + env(safe-area-inset-bottom, 0px) + 40px);
     transform: translateX(-50%);
     font-size: 12px; letter-spacing: 0.22em;
     color: #e8ecf5; text-transform: uppercase;
@@ -658,8 +655,14 @@
 
 <canvas id="c"></canvas>
 <div id="ui">
-  <div id="title">vol4:<span class="dim">//</span>карта</div>
-  <div id="hint"><kbd>WASD</kbd> двигаться <kbd>ENTER</kbd> войти</div>
+  <!-- приборная панель: безель + рейки -->
+  <div class="os-bezel"><i>┌</i><i>┐</i><i>└</i><i>┘</i></div>
+  <header class="os-rail top">
+    <div id="title">vol4:<span class="dim">//</span>карта</div>
+  </header>
+  <div class="os-rail bot">
+    <div id="hint"><kbd>WASD</kbd> двигаться <kbd>ENTER</kbd> войти</div>
+  </div>
   <div id="prompt">enter войти</div>
 </div>
 <!-- визуальный джойстик (мобайл) -->
@@ -752,15 +755,18 @@
 </div>
 
 <style>
+  /* меню уровней — прибор на верхней рейке справа */
   #fanMenu {
     position: fixed;
-    bottom: 22px; right: 24px;
-    z-index: 20;
+    top: calc(var(--os-inset-y, 26px) + env(safe-area-inset-top, 0px));
+    right: calc(var(--os-inset-x, 20px) + 16px + env(safe-area-inset-right, 0px));
+    transform: translateY(-50%);
+    z-index: 41;
     pointer-events: auto;
   }
 
   #fanTrigger {
-    background: transparent;
+    background: #050507;
     border: 1px solid rgba(255,255,255,0.13);
     color: rgba(255,255,255,0.32);
     padding: 6px 12px;
