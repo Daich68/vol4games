@@ -2,15 +2,6 @@ import "../../shared/type.css";
 import { showCompleted, markDone } from "../../shared/nav.js";
 import { ensureAudio, chime, thud, rumble } from "../../shared/audio.js";
 import { osPowerOn, osBindLinks, osTitleCard, osRevealLines } from "../../shared/os.js";
-import { submitScore } from "../../shared/leaderboard.js";
-
-// сдать результат в таблицу лидеров и дописать место к строке статистики
-function reportScore(baseStats) {
-  submitScore("birds", score).then(r => {
-    const ws = document.getElementById("winStats");
-    if (ws && r && r.rank) ws.textContent = `${baseStats} · МЕСТО ${r.rank}`;
-  });
-}
 // Match-3 «Много снега и много птиц».
 // 5 типов фишек (снежки, воробьи, голуби, вёдра, бутоны) — образы стиха.
 // Сверху над полем — текст стиха, проявляющийся посимвольно по мере матчей.
@@ -581,7 +572,6 @@ function loseLife() {
       ? `раскрыто ${Math.round(revealed / charEls.length * 100)}% стиха`
       : "стих не дочитан";
     loseOv.classList.add("show");
-    submitScore("birds", score);          // партия окончена — рекорд в таблицу
   } else {
     timeLeft = TIME_LIMIT;
     updateTimer();
@@ -728,13 +718,11 @@ async function resolveMatches() {
   if (revealed >= charEls.length && !won) {
     won = true;
     markDone("birds");
-    const baseStats = `ОЧКОВ ${score} · МАКС КАСКАД ×${Math.max(1, bestCombo)}`;
     const ws = document.getElementById("winStats");
-    if (ws) ws.textContent = baseStats;
+    if (ws) ws.textContent = `ОЧКОВ ${score} · МАКС КАСКАД ×${Math.max(1, bestCombo)}`;
     const wp = document.getElementById("winPoem");
     if (wp) { wp.textContent = POEM; osRevealLines(wp); }
     winOv.classList.add("show");
-    reportScore(baseStats);               // рекорд в таблицу + место в статистику
   }
 }
 

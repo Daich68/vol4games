@@ -12,7 +12,6 @@ import "../../shared/type.css";
 import { bindBackLink, markDone, backToMap, showCompleted, getPlayerName } from "../../shared/nav.js";
 import { ensureAudio, thud, creak, chime, rumble } from "../../shared/audio.js";
 import { osPowerOn, osBindLinks, osTitleCard, osRevealLines } from "../../shared/os.js";
-import { submitScore } from "../../shared/leaderboard.js";
 
 bindBackLink();
 
@@ -492,7 +491,6 @@ function update(dt) {
       ? `ни одного этажа · ${score} очков`
       : `достигнут ${topFloorReached}-й этаж · ${score} очков`;
     loseOv.classList.add("show");
-    submitScore("prizma", score);         // партия окончена — рекорд в таблицу
   }
 }
 
@@ -639,10 +637,6 @@ function onWin() {
   markDone("prizma");
   const who = (getPlayerName() || "восходящий").toLowerCase();
   if (winName) winName.textContent = who;
-  // рекорд в таблицу лидеров; как ответит сервер — припишем место
-  submitScore("prizma", score).then(r => {
-    if (winName && r && r.rank) winName.textContent = `${who} · место ${r.rank}`;
-  });
   fetch(`${import.meta.env.BASE_URL}poems/prizma.txt`)
     .then(r => r.ok ? r.text() : "")
     .then(t => { winPoem.textContent = t || ""; osRevealLines(winPoem); });
