@@ -7,7 +7,7 @@ import { OutputPass }         from "three/examples/jsm/postprocessing/OutputPass
 import { isDone, clearAllProgress } from "../shared/nav.js";
 import { createHero, HERO_FIELD_RADIUS_PX } from "../shared/hero.js";
 import { createHalftonePass } from "../shared/halftone.js";
-import { osPowerOn, osBindLinks } from "../shared/os.js";
+import { osPowerOn, osBindLinks, osNavigate } from "../shared/os.js";
 
 // VOL4/OS: включение кинескопа при возврате из игры (boot-класс ставит
 // прелоудер-скрипт) и выходы в игры через выключение (ссылки меню уровней)
@@ -757,8 +757,116 @@ function loop(now) {
 }
 requestAnimationFrame(loop);
 
-// ── проверка финала: все доступные игры пройдены ──────────────────────────
+// ── ФИНАЛ: машина дочитала четыре стиха и дописывает пятый ─────────────────
+// Центон: по строке-цитате из каждого стиха, собранные в один текст. Машина
+// (VOL4/OS), прочитав четыре голоса, становится автором закрывающей строфы.
 const COMPLETABLE = ["birds", "stalagmit", "prizma", "nancy-drew"];
-if (COMPLETABLE.every(g => isDone(g))) {
-  document.getElementById("allDoneOverlay")?.classList.add("show");
-}
+
+const CENTO = [
+  { txt: "Пагода сокровищ ведёт обратный отсчёт",        src: "призма"    },
+  { txt: "самый высокий этаж — под землёй,",             src: "нэнси дрю" },
+  { txt: "крик невольных свидетелей несезонной смерти",  src: "птицы"     },
+  { txt: "напоминает нам о тех, что ничего нет.",        src: "сталагмит" },
+];
+
+(function finaleController() {
+  const finale = document.getElementById("finale");
+  if (!finale || !COMPLETABLE.every(g => isDone(g))) return;
+
+  const host    = document.getElementById("finCento");
+  const dismiss = document.getElementById("finDismiss");
+  let timers = [];
+  const T = (fn, ms) => timers.push(setTimeout(fn, ms));
+  const clearT = () => { timers.forEach(clearTimeout); timers = []; };
+
+  function buildCento() {
+    host.innerHTML = "";
+    for (const l of CENTO) {
+      const row = document.createElement("div");
+      row.className = "fin-line";
+      row.innerHTML = `<span class="txt">${l.txt}</span><span class="src">${l.src}</span>`;
+      host.appendChild(row);
+    }
+    return [...host.children];
+  }
+
+  let running = false;   // секвенция идёт (фазы 1–2)
+  let dead    = false;   // машина выключена (фаза 4)
+
+  function start() {
+    clearT();
+    dead = false;
+    const lines = buildCento();
+    finale.className = "show";
+    finale.setAttribute("aria-hidden", "false");
+    running = true;
+    requestAnimationFrame(() => finale.classList.add("phase1"));   // схождение лучей
+    T(() => {                                                       // пятый текст
+      finale.classList.remove("phase1");
+      finale.classList.add("phase2");
+      lines.forEach((el, i) => T(() => el.classList.add("in"), 700 + i * 1200));
+      T(() => {
+        finale.classList.add("signed");
+        // дать строке «ничего нет» осесть, затем машина гаснет сама,
+        // если зритель не выключил её раньше
+        T(powerDown, 7000);
+      }, 700 + lines.length * 1200 + 500);
+    }, 3700);
+  }
+
+  function skip() {                       // показать текст сразу (нетерпеливым)
+    clearT();
+    finale.classList.remove("phase1");
+    finale.classList.add("phase2");
+    [...host.children].forEach(el => el.classList.add("in"));
+    finale.classList.add("signed");
+    T(powerDown, 7000);
+  }
+
+  // машина выключается: кинескоп схлопывается в точку → чернота → эпитафия
+  function powerDown() {
+    clearT();
+    running = false;
+    finale.classList.remove("phase1", "phase2", "signed");
+    finale.classList.add("off");
+    T(() => { finale.classList.add("dead"); dead = true; }, 1150);
+  }
+
+  // вернуться к карте (мягкое закрытие без выключения)
+  function close() {
+    clearT();
+    running = false; dead = false;
+    finale.classList.remove("show");
+    finale.setAttribute("aria-hidden", "true");
+    T(() => { finale.className = ""; }, 950);
+  }
+
+  finale.addEventListener("click", () => {
+    if (dead) return;                                  // на чёрном — только кнопки
+    if (finale.classList.contains("signed")) powerDown();
+    else if (running) skip();
+  });
+  dismiss?.addEventListener("click", e => { e.stopPropagation(); powerDown(); });
+  document.getElementById("finBack")?.addEventListener("click", e => { e.stopPropagation(); close(); });
+  document.getElementById("finRestart")?.addEventListener("click", e => {
+    e.stopPropagation();
+    clearAllProgress();                                // сбрасываем прогресс игр
+    osNavigate(location.pathname);                     // перезапуск через кинескоп
+  });
+
+  document.addEventListener("keydown", e => {
+    // F — пересмотреть финал, когда он закрыт/выключен
+    if (e.code === "KeyF" && !running && !finale.classList.contains("show")) {
+      e.preventDefault(); start(); return;
+    }
+    if (!finale.classList.contains("show") || dead) return;
+    if (e.code === "Escape" || e.code === "Enter" || e.code === "Space") {
+      e.preventDefault();
+      if (finale.classList.contains("signed")) powerDown();
+      else if (running) skip();
+    }
+  });
+
+  // дать карте включиться из кинескопа, затем запустить финал
+  setTimeout(start, 1300);
+})();
