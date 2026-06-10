@@ -87,33 +87,49 @@
     pointer-events: none;
   }
 
-  /* ── блокнот: кнопка снизу + всплывающая страница со всем текстом ───────── */
+  /* ── блокнот-кнопка: кожаная обложка с резинкой (мир сцены, не терминал) ── */
   #notebookBtn {
     flex: 0 0 auto;
     position: relative;
     margin-top: 12px;
     width: 100%;
     display: flex; align-items: center; justify-content: space-between; gap: 10px;
-    padding: 14px 16px;
-    background: rgba(255,255,255,0.025);
-    border: 1px solid var(--c-rule);
-    color: var(--c-value);
+    padding: 13px 44px 13px 16px;
+    background:
+      radial-gradient(150% 220% at 10% -20%, rgba(150,95,40,0.35), transparent 55%),
+      linear-gradient(160deg, #4a2c12, #2c1808 55%, #1c0f05);
+    border: 1px solid #120b04;
+    color: #d8c49a;
     font-family: var(--font-mono);
     font-size: var(--t-sm); font-weight: 500;
     letter-spacing: var(--tk-wide); text-transform: uppercase;
     cursor: pointer;
-    transition: border-color .2s, color .2s, background .2s, box-shadow .2s;
+    box-shadow: inset 0 1px 0 rgba(255,200,120,0.14), inset 0 0 26px rgba(0,0,0,0.55), 0 4px 14px rgba(0,0,0,0.4);
+    transition: box-shadow .2s, color .2s;
   }
-  #notebookBtn:hover { border-color: var(--c-accent-dim); color: var(--c-accent); background: var(--c-accent-bg); box-shadow: var(--c-glow); }
+  /* прошитый край обложки */
+  #notebookBtn::after {
+    content: ""; position: absolute; inset: 4px;
+    border: 1px dashed rgba(216,196,154,0.28);
+    pointer-events: none;
+  }
+  /* красная резинка-закладка */
+  #notebookBtn::before {
+    content: ""; position: absolute; top: -3px; bottom: -3px; right: 24px;
+    width: 9px;
+    background: linear-gradient(to right, #6e1a12, #a83226 45%, #5e150e);
+    box-shadow: 1px 0 5px rgba(0,0,0,0.55);
+  }
+  #notebookBtn:hover { color: #f4e2b8; box-shadow: inset 0 1px 0 rgba(255,200,120,0.2), inset 0 0 26px rgba(0,0,0,0.5), 0 0 18px rgba(255,190,90,0.16); }
   #notebookBtn .nbb-l { display: flex; align-items: center; gap: 9px; }
   #notebookBtn .nbb-l::before { content: "▤"; opacity: 0.6; }
-  #notebookBtn .nbb-r { color: var(--c-accent-dim); letter-spacing: var(--tk-norm); font-variant-numeric: tabular-nums; }
-  /* «есть новая запись» — мигает и зовёт открыть */
-  #notebookBtn.has-new { border-color: var(--c-accent); color: var(--c-accent); animation: nb-pulse 1.15s ease-in-out infinite; }
-  #notebookBtn.has-new .nbb-r { color: var(--c-accent); }
+  #notebookBtn .nbb-r { color: #b89a64; letter-spacing: var(--tk-norm); font-variant-numeric: tabular-nums; }
+  /* «есть новая запись» — тёплый пульс обложки */
+  #notebookBtn.has-new { color: #ffd9a0; animation: nb-pulse 1.15s ease-in-out infinite; }
+  #notebookBtn.has-new .nbb-r { color: #ffd9a0; }
   @keyframes nb-pulse {
-    0%, 100% { box-shadow: 0 0 0 rgba(232,236,245,0); }
-    50%      { box-shadow: 0 0 16px rgba(232,236,245,0.42); }
+    0%, 100% { box-shadow: inset 0 0 26px rgba(0,0,0,0.55), 0 0 0 rgba(255,196,110,0); }
+    50%      { box-shadow: inset 0 0 26px rgba(0,0,0,0.4), 0 0 20px rgba(255,196,110,0.45); }
   }
 
   #nbNudge {
@@ -125,34 +141,88 @@
   #nbNudge.show { opacity: 1; transform: none; }
   #nbNudge span {
     display: inline-block;
-    background: rgba(6,6,11,0.94);
-    border: 1px solid var(--c-accent);
-    color: var(--c-accent);
+    background: rgba(16,9,4,0.94);
+    border: 1px solid #caa84e;
+    color: #ffd9a0;
     font-size: var(--t-xs); letter-spacing: var(--tk-wide); text-transform: uppercase;
     padding: 7px 13px;
   }
   #nbNudge span::after { content: " ↓"; }
 
-  /* всплывающая страница блокнота — длинная проза, читаем слева */
-  #nbText { text-align: left; }
-  .nb-stanza { margin-bottom: 0.95em; white-space: pre-wrap; opacity: 0; transform: translateY(3px); animation: nb-write .8s ease forwards; }
-  .nb-stanza:last-child { margin-bottom: 0; }
-  .nb-empty { color: rgba(255,255,255,0.3); font-style: italic; }
+  /* ── страница блокнота: линованная бумага, пружина, машинопись ──────────── */
+  .nb-page {
+    position: relative;
+    width: min(92vw, 430px);
+    max-height: min(82vh, 620px);
+    display: flex; flex-direction: column;
+    padding: 22px 20px 14px 54px;
+    transform: rotate(-0.6deg);
+    background:
+      /* линии тетради (шаг = line-height записей) */
+      repeating-linear-gradient(to bottom, transparent 0 21px, rgba(80,100,150,0.20) 21px 22px),
+      /* красная вертикаль полей */
+      linear-gradient(to right, transparent 44px, rgba(170,60,40,0.32) 44px, rgba(170,60,40,0.32) 45px, transparent 45px),
+      /* бумага с возрастными пятнами */
+      radial-gradient(130% 110% at 50% 0%, #ddd0ab 0%, #d3c49c 55%, #c0ae83 100%);
+    box-shadow:
+      0 24px 60px rgba(0,0,0,0.7),
+      inset 0 0 70px rgba(110,85,40,0.28);
+    color: #2e2412;
+  }
+  /* пробитые дырки пружины */
+  .nb-page::before {
+    content: ""; position: absolute; left: 16px; top: 10px; bottom: 10px;
+    width: 14px;
+    background-image: radial-gradient(circle at 7px 13px,
+      rgba(14,8,3,0.9) 3.4px, rgba(60,42,20,0.7) 4px, transparent 5px);
+    background-size: 14px 30px;
+    background-repeat: repeat-y;
+  }
+  .nb-head {
+    font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase;
+    color: #7e2018;
+    border-bottom: 1px solid rgba(126,32,24,0.4);
+    padding-bottom: 9px; margin-bottom: 13px;
+  }
+  #nbText {
+    flex: 1 1 auto; min-height: 0; overflow-y: auto;
+    text-align: left;
+    font-size: 11px; line-height: 22px;  /* строки ложатся на линовку */
+    letter-spacing: 0.02em;
+    color: #33281a;
+    padding-right: 8px;
+    scrollbar-color: rgba(110,80,40,0.5) transparent;
+  }
+  .nb-entry-head {
+    color: #8a2a1c;
+    font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase;
+  }
+  .nb-entry-head::before { content: "— "; opacity: 0.7; }
+  .nb-stanza { margin-bottom: 22px; white-space: pre-wrap; opacity: 0; transform: translateY(3px); animation: nb-write .8s ease forwards; }
+  .nb-stanza:last-child { margin-bottom: 4px; }
+  .nb-empty { color: rgba(60,45,25,0.55); font-style: italic; }
   @keyframes nb-write { to { opacity: 1; transform: none; } }
 
-  /* финальная запись — БЛОКНОТ — выделена особо */
+  /* финальная запись — обведена красными чернилами от руки */
   .nb-final {
-    color: var(--c-accent);
-    padding: 16px 18px;
-    border: 1px solid rgba(232,236,245,0.35);
-    background: rgba(232,236,245,0.055);
-    animation: nb-write .8s ease forwards, nb-glow 2.2s ease-in-out 0.8s infinite alternate;
-    box-shadow: 0 0 0 rgba(232,236,245,0);
+    color: #1e1812;
+    padding: 10px 12px;
+    border: 1.5px solid rgba(138,42,28,0.7);
+    background: rgba(170,60,40,0.07);
+    transform: rotate(-0.4deg);
+    animation: nb-write .8s ease forwards;
   }
-  @keyframes nb-glow {
-    from { box-shadow: 0 0 6px rgba(232,236,245,0.10); border-color: rgba(232,236,245,0.25); }
-    to   { box-shadow: 0 0 22px rgba(232,236,245,0.38); border-color: rgba(232,236,245,0.65); }
+  #nbClose {
+    align-self: flex-end;
+    margin-top: 10px;
+    background: none; border: none;
+    font-family: var(--font-mono);
+    font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase;
+    color: #7e2018; cursor: pointer;
+    border-bottom: 1px solid rgba(126,32,24,0.5);
+    padding: 2px 2px 3px;
   }
+  #nbClose:hover { color: #a83226; }
 
   /* ── мобайл: путь и подсказку прячем, рейки с приборами остаются ────────── */
   @media (pointer: coarse) {
@@ -274,12 +344,10 @@
 </div>
 
 <div id="nbOverlay" class="overlay">
-  <div class="ov-card">
-    <span class="cn tl">┌</span><span class="cn tr">┐</span>
-    <span class="cn bl">└</span><span class="cn br">┘</span>
-    <div class="ov-meta">блокнот детектива</div>
-    <div class="ov-poem" id="nbText"></div>
-    <button class="t-btn" id="nbClose" type="button">закрыть</button>
+  <div class="nb-page">
+    <div class="nb-head">дело № 415 — блокнот детектива</div>
+    <div id="nbText"></div>
+    <button id="nbClose" type="button">закрыть страницу</button>
   </div>
 </div>
 

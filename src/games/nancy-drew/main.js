@@ -49,10 +49,16 @@ function fitCanvas() {
   ctx.setTransform(s * dpr, 0, 0, s * dpr, ox * dpr, oy * dpr);
   scale = s; offX = ox; offY = oy;
 }
+// канвас меняет размер и БЕЗ window.resize (подгрузка шрифта двигает кнопку
+// блокнота, перестройка флекса) — следим за самим элементом, иначе хитбоксы
+// кликов уезжают от картинки
+new ResizeObserver(() => fitCanvas()).observe(canvas);
 window.addEventListener("resize", () => { fitCanvas(); });
 
-// офскрин-кэш статичной сцены (фон + предметы); пересобираем только при находке
-const SS = 2;
+// офскрин-кэш статичной сцены (фон + предметы); пересобираем только при находке.
+// SS=1: рендерим в НАТИВНОМ низком разрешении и растягиваем с билинейным
+// сглаживанием — мягкая «замыленность» текстур как у пре-рендеров эпохи PS2.
+const SS = 1;
 const oc  = document.createElement("canvas");
 oc.width  = VW * SS; oc.height = VH * SS;
 const octx = oc.getContext("2d");
@@ -1117,7 +1123,28 @@ function lightPass(g) {
   g.globalAlpha = 1;
 }
 
-// собрать статичный кэш: фон → предметы → окклюдеры → свет
+// PS2-пас: постеризация цвета + ordered-дизеринг (Bayer 4×4).
+// Градиенты распадаются на ступени с шахматным зерном — фирменный
+// бэндинг пре-рендеров начала 2000-х.
+const BAYER = [[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]];
+function ps2Pass(g) {
+  const img = g.getImageData(0, 0, VW, VH);
+  const d = img.data;
+  const LV = 21, step = 255 / (LV - 1);          // уровней на канал
+  for (let y = 0; y < VH; y++) {
+    const br = BAYER[y & 3];
+    for (let x = 0; x < VW; x++) {
+      const i = (y * VW + x) * 4;
+      const t = (br[x & 3] / 16 - 0.5) * step;   // порог дизера
+      d[i]     = Math.round(Math.min(255, Math.max(0, d[i]     + t)) / step) * step;
+      d[i + 1] = Math.round(Math.min(255, Math.max(0, d[i + 1] + t)) / step) * step;
+      d[i + 2] = Math.round(Math.min(255, Math.max(0, d[i + 2] + t)) / step) * step;
+    }
+  }
+  g.putImageData(img, 0, 0);
+}
+
+// собрать статичный кэш: фон → предметы → окклюдеры → свет → PS2-пас
 function buildCache() {
   octx.setTransform(SS, 0, 0, SS, 0, 0);
   octx.clearRect(0, 0, VW, VH);
@@ -1130,6 +1157,7 @@ function buildCache() {
   }
   drawSceneFront(octx);
   lightPass(octx);
+  ps2Pass(octx);
 }
 
 // ── ввод ─────────────────────────────────────────────────────────────────────
@@ -1289,7 +1317,13 @@ function renderNotebook() {
     const d = document.createElement("div");
     d.className = "nb-stanza" + (i === 6 ? " nb-final" : "");
     d.style.animationDelay = (i * 0.07) + "s";
-    d.textContent = p;
+    // машинописный заголовок записи: «запись N · улика»
+    const h = document.createElement("div");
+    h.className = "nb-entry-head";
+    h.textContent = i === 6 ? `запись ${i + 1} · дневник` : `запись ${i + 1} · ${RIDDLES[i].label}`;
+    const body = document.createElement("div");
+    body.textContent = p;
+    d.appendChild(h); d.appendChild(body);
     nbTextEl.appendChild(d);
   });
 }
