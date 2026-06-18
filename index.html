@@ -320,9 +320,8 @@
       <div class="pl-name" id="plNameOut"></div>
       <div class="pl-kbd" id="plKbd"></div>
       <div class="pl-keyhint">
-        <span class="kb-only"><kbd>↑ ↓ ← →</kbd> буквы &nbsp; <kbd>ENTER</kbd> выбрать &nbsp;</span>
-        <span class="touch-only">нажимай буквы &nbsp;</span>
-        <span class="pl-ok">✓</span> готово
+        <span class="kb-only">печатай имя &nbsp; <kbd>ENTER</kbd> готово</span>
+        <span class="touch-only">нажимай буквы &nbsp; <span class="pl-ok">✓</span> готово</span>
       </div>
     </div>
   </div>
@@ -617,13 +616,17 @@
     document.addEventListener("keydown", e => {
       if (!pre.classList.contains("ready") || pre.classList.contains("done")) return;
       switch (e.key) {
-        case "ArrowUp":    e.preventDefault(); move(0, -1); break;
-        case "ArrowDown":  e.preventDefault(); move(0,  1); break;
-        case "ArrowLeft":  e.preventDefault(); move(-1, 0); break;
-        case "ArrowRight": e.preventDefault(); move( 1, 0); break;
-        case "Enter":
-        case " ":          e.preventDefault(); activate(); break;
-        case "Backspace":  e.preventDefault(); erase(); break;
+        case "ArrowUp":    e.preventDefault(); move(0, -1); return;
+        case "ArrowDown":  e.preventDefault(); move(0,  1); return;
+        case "ArrowLeft":  e.preventDefault(); move(-1, 0); return;
+        case "ArrowRight": e.preventDefault(); move( 1, 0); return;
+        case "Enter":      e.preventDefault(); confirmName(); return;  // подтвердить имя
+        case " ":          e.preventDefault(); activate();    return;  // выбрать ячейку сетки
+        case "Backspace":  e.preventDefault(); erase();       return;
+      }
+      // прямой ввод с физической клавиатуры — печатай имя как обычно
+      if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault(); add(e.key.toUpperCase());
       }
     });
 
