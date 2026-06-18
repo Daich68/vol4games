@@ -356,6 +356,83 @@ NODES.forEach(n => {
   nodeObjs[n.id] = { g, ring, ringMat, core, coreMat, glowMat, n };
 });
 
+// ── АРКА-ВЫХОД ────────────────────────────────────────────────────────────
+// Появляется, когда прочитаны все четыре стиха: врата света со ступенями
+// у дальнего края карты. Дойти + ENTER/тап → новый сеанс (сброс + рестарт).
+const GAMES_ALL    = ["birds", "stalagmit", "prizma", "nancy-drew"];
+const allGamesDone = () => GAMES_ALL.every(g => isDone(g));
+const EXIT = { id: "exit", x: 0, z: -13 };
+
+const exitObj = (function buildExit() {
+  const g = new THREE.Group();
+  g.position.set(EXIT.x, 0, EXIT.z);
+  g.visible = allGamesDone();
+
+  // свечение под вратами
+  const glowMat = new THREE.ShaderMaterial({
+    uniforms: { col: { value: new THREE.Color(0xdfe8ff) }, intensity: { value: 0 } },
+    vertexShader: `varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+    fragmentShader: `uniform vec3 col; uniform float intensity; varying vec2 vUv;
+      void main(){ float d=length(vUv-0.5)*2.0; float a=pow(1.0-smoothstep(0.0,1.0,d),1.6); gl_FragColor=vec4(col,a*intensity); }`,
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
+  });
+  const glow = new THREE.Mesh(new THREE.CircleGeometry(2.7, 48), glowMat);
+  glow.rotation.x = -Math.PI / 2; glow.position.y = 0.002;
+  g.add(glow);
+
+  // ВРАТА: две стойки + полу-арочная перемычка (читается как арка сверху)
+  const beam = () => new THREE.MeshBasicMaterial({ color: 0xffffff,
+    transparent: true, blending: THREE.AdditiveBlending, opacity: 0.9 });
+  const parts = [];
+  const postGeo = new THREE.BoxGeometry(0.2, 1.7, 0.2);
+  for (const px of [-1.2, 1.2]) {
+    const m = beam();
+    const post = new THREE.Mesh(postGeo, m);
+    post.position.set(px, 0.85, 0); g.add(post); parts.push(m);
+  }
+  const archMat = beam();                                       // полу-тор сверху
+  const arch = new THREE.Mesh(new THREE.TorusGeometry(1.2, 0.1, 12, 64, Math.PI), archMat);
+  arch.position.set(0, 1.7, 0);
+  g.add(arch); parts.push(archMat);
+  // «замковый камень» — точка на вершине арки
+  const keyMat = beam();
+  const keystone = new THREE.Mesh(new THREE.SphereGeometry(0.16, 16, 16), keyMat);
+  keystone.position.set(0, 2.9, 0); g.add(keystone); parts.push(keyMat);
+
+  // порог — мягкая светящаяся завеса между стойками
+  const thrMat = new THREE.MeshBasicMaterial({ color: 0xaec6ff, transparent: true,
+    opacity: 0, blending: THREE.AdditiveBlending, side: THREE.DoubleSide });
+  const thr = new THREE.Mesh(new THREE.PlaneGeometry(2.3, 2.6), thrMat);
+  thr.position.set(0, 1.3, -0.04); g.add(thr);
+
+  // ступени, поднимающиеся к вратам со стороны героя
+  const steps = [];
+  for (let i = 0; i < 3; i++) {
+    const m = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true,
+      blending: THREE.AdditiveBlending, opacity: 0 });
+    const step = new THREE.Mesh(new THREE.BoxGeometry(2.7 - i * 0.55, 0.07, 0.4), m);
+    step.position.set(0, 0.05 + i * 0.18, 2.0 - i * 0.62);
+    g.add(step); steps.push(m);
+  }
+
+  scene.add(g);
+  return { g, parts, glowMat, thrMat, steps, flare: 0 };
+})();
+
+function updateExit(t) {
+  const on = allGamesDone();
+  exitObj.g.visible = on;
+  if (!on) return;
+  exitObj.g.position.y = Math.sin(t * 0.8) * 0.04;
+  const pulse = 0.7 + 0.3 * Math.sin(t * 1.6);
+  const fl = exitObj.flare;                                   // буст при варпе
+  exitObj.glowMat.uniforms.intensity.value = 0.55 + 0.35 * pulse + fl * 3;
+  exitObj.parts.forEach(m => { m.opacity = Math.min(1, 0.72 + 0.22 * pulse + fl); });
+  exitObj.thrMat.opacity = 0.12 + 0.07 * Math.sin(t * 0.9) + fl * 0.85;
+  exitObj.g.scale.setScalar(1 + fl * 0.5);                    // врата «вдыхают» героя
+  exitObj.steps.forEach((m, i) => { m.opacity = 0.2 + 0.12 * Math.sin(t * 1.4 - i * 0.7); });
+}
+
 function updateNodes(t, activeId) {
   for (const o of Object.values(nodeObjs)) {
     const { g, ring, ringMat, core, coreMat, glowMat, n } = o;
@@ -584,8 +661,16 @@ function dirFromKeys() {
 }
 
 function enterNode(id) {
+  if (teleport) return;
+  if (id === "exit") {                       // войти в арку → новый сеанс
+    if (!allGamesDone()) return;
+    teleport = { t: 0, dur: 1.35, exit: true };
+    keys.clear();
+    promptEl.classList.remove("show");
+    return;
+  }
   const n = nodeById(id);
-  if (!n?.game || teleport) return;
+  if (!n?.game) return;
   if (isDone(n.game)) return; // пройдено — вход заблокирован
   teleport = { t: 0, dur: 1.15, nodeId: id, game: n.game };
   keys.clear();
@@ -603,6 +688,28 @@ function updateTeleport(dt) {
 
   const easeIn  = p * p * p;                    // 0→1, медленно→быстро
   const easeOut = 1 - Math.pow(1 - p, 3);       // 0→1, быстро→медленно
+
+  // ── варп в арку: герой входит во врата → новый сеанс ──
+  if (teleport.exit) {
+    const sx = heroPos.x + (EXIT.x - heroPos.x) * easeOut;
+    const sz = heroPos.z + (EXIT.z - heroPos.z) * easeOut;
+    hero.setPosition(sx, sz);
+    hero.group.scale.setScalar(Math.max(0.001, 1 - easeIn));
+    hero.group.position.y = easeOut * 1.2;        // поднимается в проём врат
+    exitObj.flare = easeOut;                       // врата вспыхивают (см. updateExit)
+
+    const sp = hero.getScreenPos(camera, W(), H(), 0.25);
+    halftonePass.uniforms.heroPos.value.set(sp.x, sp.y);
+    const maxR = Math.hypot(W(), H()) * 1.15;
+    halftonePass.uniforms.heroFieldR.value =
+      HERO_FIELD_RADIUS_PX + (maxR - HERO_FIELD_RADIUS_PX) * easeIn;
+
+    if (p >= 1) {
+      clearAllProgress();                          // новый сеанс с чистого листа
+      osNavigate(import.meta.env.BASE_URL || "/"); // рестарт через кинескоп
+    }
+    return;
+  }
 
   const n = nodeById(teleport.nodeId);
 
@@ -705,17 +812,27 @@ function updateHero(dt) {
     const d = Math.hypot(n.x - heroPos.x, n.z - heroPos.z);
     if (d < nearDist) { nearId = n.id; nearDist = d; }
   }
+  // открытые врата перебивают ноды (у них больший радиус активации)
+  if (allGamesDone() && Math.hypot(EXIT.x - heroPos.x, EXIT.z - heroPos.z) < 1.7) {
+    nearId = "exit";
+  }
   if (nearId !== activeNode) {
     activeNode = nearId;
-    const near = nearId ? nodeById(nearId) : null;
-    const hasGame = !!(near?.game);
-    promptEl.classList.toggle("show", hasGame);
-    if (hasGame) {
-      const done = isDone(near.game);
-      promptEl.textContent = done
-        ? "процесс завершён"
-        : `запустить ${near.label.toLowerCase()}`;
-      promptEl.classList.toggle("done", done);
+    if (nearId === "exit") {
+      promptEl.textContent = IS_TOUCH ? "тап · новый сеанс" : "enter · новый сеанс";
+      promptEl.classList.remove("done");
+      promptEl.classList.add("show");
+    } else {
+      const near = nearId ? nodeById(nearId) : null;
+      const hasGame = !!(near?.game);
+      promptEl.classList.toggle("show", hasGame);
+      if (hasGame) {
+        const done = isDone(near.game);
+        promptEl.textContent = done
+          ? "процесс завершён"
+          : `запустить ${near.label.toLowerCase()}`;
+        promptEl.classList.toggle("done", done);
+      }
     }
   }
 }
@@ -740,6 +857,7 @@ function loop(now) {
   updateEdges(t);
   updateObstacles(t);
   updateNodes(t, activeNode);
+  updateExit(t);
   updateCamera(dt);
   updateLabels(activeNode);
 
@@ -772,6 +890,10 @@ const CENTO = [
 (function finaleController() {
   const finale = document.getElementById("finale");
   if (!finale || !COMPLETABLE.every(g => isDone(g))) return;
+
+  // на пройденной карте нижний хинт ведёт к арке (ENTER снова имеет смысл)
+  const hintEl = document.getElementById("hint");
+  if (hintEl) hintEl.innerHTML = `<kbd>WASD</kbd> к арке <kbd>ENTER</kbd> новый сеанс`;
 
   const host    = document.getElementById("finCento");
   const dismiss = document.getElementById("finDismiss");
