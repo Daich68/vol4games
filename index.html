@@ -615,6 +615,9 @@
 
     document.addEventListener("keydown", e => {
       if (!pre.classList.contains("ready") || pre.classList.contains("done")) return;
+      // прелоудер модальный: гасим всплытие, иначе тот же ENTER, сняв класс
+      // preloading в confirmName(), долетит до карты и войдёт в стартовую ноду
+      e.stopPropagation();
       switch (e.key) {
         case "ArrowUp":    e.preventDefault(); move(0, -1); return;
         case "ArrowDown":  e.preventDefault(); move(0,  1); return;
