@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 120" width="200" height="120">
+<!-- BABYLAND — выражение «grimace».
+     Накладка на ПУСТОЕ лицо базы. Пять выражений нельзя генерировать: пять
+     генераций дадут пять разных девочек. Нарисованная накладка садится по
+     одному якорю (generation.face_anchor) и совпадает всегда.
+     глаза крестом, рот раскрыт зубами — единственный кадр, где кукла перестаёт быть милой -->
+<style>
+  .ln { fill: none; stroke: #43303a; stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; }
+  .eye { fill: #ffffff; stroke: #43303a; stroke-width: 5; }
+  .pup { fill: #43303a; }
+  .hi  { fill: #ffffff; }
+  .lip { fill: #e0567f; stroke: #43303a; stroke-width: 4.5; stroke-linejoin: round; }
+</style>
+<path class="ln" d="M40,10 Q62,30 84,14"/>
+  <path class="ln" d="M116,14 Q138,30 160,10"/>
+  <path class="ln" d="M46,34 L80,64 M80,34 L46,64"/>
+  <path class="ln" d="M120,34 L154,64 M154,34 L120,64"/>
+  <path class="lip" d="M74,86 Q100,78 126,86 Q126,112 100,116 Q74,112 74,86 Z"/>
+  <path class="ln" d="M80,90 L120,90 M88,90 L86,102 M100,90 L100,104 M112,90 L114,102"/>
+</svg>

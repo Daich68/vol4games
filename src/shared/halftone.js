@@ -64,7 +64,17 @@ const halftoneShader = {
         // дополнительное расширение точки внутри поля — создаёт «дыхание»
         float fieldRadius = mix(r, r * 1.35, fieldMask);
         a = 1.0 - smoothstep(fieldRadius - aa, fieldRadius + aa, dist);
-        vec3 inv = vec3(1.0) - dotCol;
+        // Прямая инверсия (1-col) верна для холодной монохромной палитры, но
+        // насыщенный цвет она уводит по тону: розовая нода DLC становилась
+        // зелёной. Для насыщенных пикселей инвертируем ЯРКОСТЬ, сохраняя тон;
+        // для обесцвеченных (вся остальная сцена) поведение прежнее.
+        float mx  = max(max(dotCol.r, dotCol.g), dotCol.b);
+        float mn  = min(min(dotCol.r, dotCol.g), dotCol.b);
+        float sat = (mx - mn) / max(mx, 0.001);
+        float l   = dot(dotCol, vec3(0.299, 0.587, 0.114));
+        vec3 invFull = vec3(1.0) - dotCol;
+        vec3 invHue  = dotCol * ((1.0 - l) / max(l, 0.001));
+        vec3 inv = mix(invFull, invHue, smoothstep(0.05, 0.28, sat));
         dotCol = mix(dotCol, inv, fieldMask);
       }
 

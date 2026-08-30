@@ -1,0 +1,372 @@
+{
+  "doll": {
+    "w": 400,
+    "h": 1200,
+    "src": "doll/base.png"
+  },
+  "slots": {
+    "hair_back": 10,
+    "body": 20,
+    "bottom": 30,
+    "top": 40,
+    "shoes": 50,
+    "face": 65,
+    "makeup": 68,
+    "hair": 70,
+    "acc": 80
+  },
+  "items": {
+    "top_ruffles": {
+      "slot": "top",
+      "z": 40,
+      "src": "items/top_ruffles.png",
+      "thumb": "items/top_ruffles.thumb.png"
+    },
+    "bot_tutu": {
+      "slot": "bottom",
+      "z": 30,
+      "src": "items/bot_tutu.png",
+      "thumb": "items/bot_tutu.thumb.png"
+    },
+    "sh_heels": {
+      "slot": "shoes",
+      "z": 50,
+      "src": "items/sh_heels.png",
+      "thumb": "items/sh_heels.thumb.png"
+    },
+    "top_hoodie_baggy": {
+      "slot": "top",
+      "z": 40,
+      "src": "items/top_hoodie_baggy.png",
+      "thumb": "items/top_hoodie_baggy.thumb.png"
+    },
+    "sh_heavy_boots": {
+      "slot": "shoes",
+      "z": 50,
+      "src": "items/sh_heavy_boots.png",
+      "thumb": "items/sh_heavy_boots.thumb.png"
+    },
+    "acc_pearls": {
+      "slot": "acc",
+      "z": 80,
+      "src": "items/acc_pearls.png",
+      "thumb": "items/acc_pearls.thumb.png"
+    },
+    "hair_blonde_curls": {
+      "slot": "hair",
+      "z": 70,
+      "src": "items/hair_blonde_curls.png",
+      "thumb": "items/hair_blonde_curls.thumb.png"
+    },
+    "hair_blonde_bows": {
+      "slot": "hair",
+      "z": 70,
+      "src": "items/hair_blonde_bows.png",
+      "thumb": "items/hair_blonde_bows.thumb.png"
+    },
+    "hair_twin_tails": {
+      "slot": "hair",
+      "z": 70,
+      "src": "items/hair_twin_tails.png",
+      "thumb": "items/hair_twin_tails.thumb.png"
+    },
+    "hair_tiara": {
+      "slot": "hair",
+      "z": 70,
+      "src": "items/hair_tiara.png",
+      "thumb": "items/hair_tiara.thumb.png"
+    },
+    "hair_pixie": {
+      "slot": "hair",
+      "z": 70,
+      "src": "items/hair_pixie.png",
+      "thumb": "items/hair_pixie.thumb.png"
+    },
+    "hair_dark_bob": {
+      "slot": "hair",
+      "z": 70,
+      "src": "items/hair_dark_bob.png",
+      "thumb": "items/hair_dark_bob.thumb.png"
+    },
+    "hair_messy_bun": {
+      "slot": "hair",
+      "z": 70,
+      "src": "items/hair_messy_bun.png",
+      "thumb": "items/hair_messy_bun.thumb.png"
+    },
+    "hair_shaved_side": {
+      "slot": "hair",
+      "z": 70,
+      "src": "items/hair_shaved_side.png",
+      "thumb": "items/hair_shaved_side.thumb.png"
+    },
+    "top_straps_bows": {
+      "slot": "top",
+      "z": 40,
+      "src": "items/top_straps_bows.png",
+      "thumb": "items/top_straps_bows.thumb.png"
+    },
+    "top_bandeau_rhine": {
+      "slot": "top",
+      "z": 40,
+      "src": "items/top_bandeau_rhine.png",
+      "thumb": "items/top_bandeau_rhine.thumb.png"
+    },
+    "top_hearts_blouse": {
+      "slot": "top",
+      "z": 40,
+      "src": "items/top_hearts_blouse.png",
+      "thumb": "items/top_hearts_blouse.thumb.png"
+    },
+    "top_crop_glitter": {
+      "slot": "top",
+      "z": 40,
+      "src": "items/top_crop_glitter.png",
+      "thumb": "items/top_crop_glitter.thumb.png"
+    },
+    "top_bolero": {
+      "slot": "top",
+      "z": 40,
+      "src": "items/top_bolero.png",
+      "thumb": "items/top_bolero.thumb.png"
+    },
+    "top_tee_oversize": {
+      "slot": "top",
+      "z": 40,
+      "src": "items/top_tee_oversize.png",
+      "thumb": "items/top_tee_oversize.thumb.png"
+    },
+    "top_track_jacket": {
+      "slot": "top",
+      "z": 40,
+      "src": "items/top_track_jacket.png",
+      "thumb": "items/top_track_jacket.thumb.png"
+    },
+    "top_mens_shirt": {
+      "slot": "top",
+      "z": 40,
+      "src": "items/top_mens_shirt.png",
+      "thumb": "items/top_mens_shirt.thumb.png"
+    },
+    "top_turtleneck": {
+      "slot": "top",
+      "z": 40,
+      "src": "items/top_turtleneck.png",
+      "thumb": "items/top_turtleneck.thumb.png"
+    },
+    "top_worn_windbrk": {
+      "slot": "top",
+      "z": 40,
+      "src": "items/top_worn_windbrk.png",
+      "thumb": "items/top_worn_windbrk.thumb.png"
+    },
+    "bot_mini_ruffles": {
+      "slot": "bottom",
+      "z": 30,
+      "src": "items/bot_mini_ruffles.png",
+      "thumb": "items/bot_mini_ruffles.thumb.png"
+    },
+    "bot_shorts_bow": {
+      "slot": "bottom",
+      "z": 30,
+      "src": "items/bot_shorts_bow.png",
+      "thumb": "items/bot_shorts_bow.thumb.png"
+    },
+    "bot_lace_skirt": {
+      "slot": "bottom",
+      "z": 30,
+      "src": "items/bot_lace_skirt.png",
+      "thumb": "items/bot_lace_skirt.thumb.png"
+    },
+    "bot_baggy_jeans": {
+      "slot": "bottom",
+      "z": 30,
+      "src": "items/bot_baggy_jeans.png",
+      "thumb": "items/bot_baggy_jeans.thumb.png"
+    },
+    "bot_sweatpants": {
+      "slot": "bottom",
+      "z": 30,
+      "src": "items/bot_sweatpants.png",
+      "thumb": "items/bot_sweatpants.thumb.png"
+    },
+    "bot_cargo_shorts": {
+      "slot": "bottom",
+      "z": 30,
+      "src": "items/bot_cargo_shorts.png",
+      "thumb": "items/bot_cargo_shorts.thumb.png"
+    },
+    "bot_long_dark": {
+      "slot": "bottom",
+      "z": 30,
+      "src": "items/bot_long_dark.png",
+      "thumb": "items/bot_long_dark.thumb.png"
+    },
+    "sh_platform": {
+      "slot": "shoes",
+      "z": 50,
+      "src": "items/sh_platform.png",
+      "thumb": "items/sh_platform.thumb.png"
+    },
+    "sh_white_boots": {
+      "slot": "shoes",
+      "z": 50,
+      "src": "items/sh_white_boots.png",
+      "thumb": "items/sh_white_boots.thumb.png"
+    },
+    "sh_ballet_bow": {
+      "slot": "shoes",
+      "z": 50,
+      "src": "items/sh_ballet_bow.png",
+      "thumb": "items/sh_ballet_bow.thumb.png"
+    },
+    "sh_sneakers": {
+      "slot": "shoes",
+      "z": 50,
+      "src": "items/sh_sneakers.png",
+      "thumb": "items/sh_sneakers.thumb.png"
+    },
+    "sh_keds": {
+      "slot": "shoes",
+      "z": 50,
+      "src": "items/sh_keds.png",
+      "thumb": "items/sh_keds.thumb.png"
+    },
+    "sh_slippers": {
+      "slot": "shoes",
+      "z": 50,
+      "src": "items/sh_slippers.png",
+      "thumb": "items/sh_slippers.thumb.png"
+    },
+    "acc_bag_bow": {
+      "slot": "acc",
+      "z": 80,
+      "src": "items/acc_bag_bow.png",
+      "thumb": "items/acc_bag_bow.thumb.png"
+    },
+    "acc_tiara": {
+      "slot": "acc",
+      "z": 80,
+      "src": "items/acc_tiara.png",
+      "thumb": "items/acc_tiara.thumb.png"
+    },
+    "acc_pearl_earrings": {
+      "slot": "acc",
+      "z": 80,
+      "src": "items/acc_pearl_earrings.png",
+      "thumb": "items/acc_pearl_earrings.thumb.png"
+    },
+    "acc_gloves": {
+      "slot": "acc",
+      "z": 80,
+      "src": "items/acc_gloves.png",
+      "thumb": "items/acc_gloves.thumb.png"
+    },
+    "acc_bracelet": {
+      "slot": "acc",
+      "z": 80,
+      "src": "items/acc_bracelet.png",
+      "thumb": "items/acc_bracelet.thumb.png"
+    },
+    "acc_choker_bow": {
+      "slot": "acc",
+      "z": 80,
+      "src": "items/acc_choker_bow.png",
+      "thumb": "items/acc_choker_bow.thumb.png"
+    },
+    "acc_fairy_wings": {
+      "slot": "acc",
+      "z": 80,
+      "src": "items/acc_fairy_wings.png",
+      "thumb": "items/acc_fairy_wings.thumb.png"
+    },
+    "acc_backpack": {
+      "slot": "acc",
+      "z": 80,
+      "src": "items/acc_backpack.png",
+      "thumb": "items/acc_backpack.thumb.png"
+    },
+    "acc_headphones": {
+      "slot": "acc",
+      "z": 80,
+      "src": "items/acc_headphones.png",
+      "thumb": "items/acc_headphones.thumb.png"
+    },
+    "acc_glasses": {
+      "slot": "acc",
+      "z": 80,
+      "src": "items/acc_glasses.png",
+      "thumb": "items/acc_glasses.thumb.png"
+    },
+    "acc_cap": {
+      "slot": "acc",
+      "z": 80,
+      "src": "items/acc_cap.png",
+      "thumb": "items/acc_cap.thumb.png"
+    },
+    "acc_plaster": {
+      "slot": "acc",
+      "z": 80,
+      "src": "items/acc_plaster.png",
+      "thumb": "items/acc_plaster.thumb.png"
+    },
+    "acc_wrench": {
+      "slot": "acc",
+      "z": 80,
+      "src": "items/acc_wrench.png",
+      "thumb": "items/acc_wrench.thumb.png"
+    },
+    "acc_eyepatch": {
+      "slot": "acc",
+      "z": 80,
+      "src": "items/acc_eyepatch.png",
+      "thumb": "items/acc_eyepatch.thumb.png"
+    },
+    "mk_natural": {
+      "slot": "makeup",
+      "z": 68,
+      "src": "makeup/mk_natural.svg",
+      "thumb": "makeup/mk_natural.svg",
+      "anchor": true
+    },
+    "mk_nude": {
+      "slot": "makeup",
+      "z": 68,
+      "src": "makeup/mk_nude.svg",
+      "thumb": "makeup/mk_nude.svg",
+      "anchor": true
+    },
+    "mk_evening": {
+      "slot": "makeup",
+      "z": 68,
+      "src": "makeup/mk_evening.svg",
+      "thumb": "makeup/mk_evening.svg",
+      "anchor": true
+    },
+    "mk_hyper": {
+      "slot": "makeup",
+      "z": 68,
+      "src": "makeup/mk_hyper.svg",
+      "thumb": "makeup/mk_hyper.svg",
+      "anchor": true
+    }
+  },
+  "faces": {
+    "frozen": "faces/frozen.svg",
+    "grimace": "faces/grimace.svg",
+    "happy": "faces/happy.svg",
+    "sad": "faces/sad.svg",
+    "worried": "faces/worried.svg"
+  },
+  "face_anchor": {
+    "x": 0.35,
+    "y": 0.093,
+    "w": 0.3,
+    "h": 0.075
+  },
+  "screamers": [
+    "screamers/scream_doll.jpg",
+    "screamers/scream_grin.jpg",
+    "screamers/scream_melt.jpg"
+  ]
+}

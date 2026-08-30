@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>BABYLAND — vol4games</title>
+</head>
+<!-- BABYLAND — DLC.
+     Общий худ vol4/OS остаётся: безель, рейки, приборы, «← карта». Розовое
+     живёт ВНУТРИ безеля — машина не притворяется чужим диском, она его
+     показывает. Приборы на верхней рейке считают то, что делает диск. -->
+<body class="bl">
+
+<!-- закрытые шторки кинескопа до первой отрисовки (как в остальных играх) -->
+<div id="crtFx" class="boot"><div class="crt-top"></div><div class="crt-bot"></div><div class="crt-line"></div></div>
+<style>
+  #crtFx { position: fixed; inset: 0; z-index: 999; pointer-events: none; }
+  #crtFx .crt-top, #crtFx .crt-bot { position: absolute; left: 0; right: 0; height: 50.5%; background: #000; }
+  #crtFx .crt-top { top: 0; transform-origin: 50% 0; }
+  #crtFx .crt-bot { bottom: 0; transform-origin: 50% 100%; }
+  #crtFx .crt-line { position: absolute; top: 50%; left: 0; right: 0; height: 2px; margin-top: -1px; background: #e8ecf5; opacity: 0; }
+  #crtFx:not(.boot) .crt-top, #crtFx:not(.boot) .crt-bot { transform: scaleY(0); }
+</style>
+
+<!-- ── приборная панель машины ──────────────────────────────────────────── -->
+<div class="os-bezel"><i>┌</i><i>┐</i><i>└</i><i>┘</i></div>
+<header class="os-rail top">
+  <div id="title" class="t-path">vol4:<span class="dim">//</span>babyland <span class="dim">◈</span></div>
+  <div class="os-cells">
+    <div class="t-stat">
+      <div class="t-label">слоты</div>
+      <div class="t-value" id="statSlots">0/6</div>
+    </div>
+    <div class="t-stat center">
+      <div class="t-label">реакция</div>
+      <div class="t-value" id="statLevel">—</div>
+    </div>
+    <div class="t-stat end">
+      <div class="t-label">цикл</div>
+      <div class="t-value" id="statCycle">0</div>
+    </div>
+  </div>
+  <a id="back" href="/">← карта</a>
+</header>
+<div class="os-rail bot">
+  <div id="hint" class="t-hint arrow">выбирай вещи · ESC карта</div>
+</div>
+
+<!-- ── чужой диск внутри безеля ─────────────────────────────────────────── -->
+<div id="blRoot">
+  <div id="blStage">
+    <!-- девочка. ГРАФИКИ ПОКА НЕТ: .bl-doll-ph — служебный плейсхолдер,
+         слои куклы встают сюда же, механика не трогается. -->
+    <div id="blGirl">
+      <!-- сюда конвейер кладёт слои куклы; пока их нет — виден плейсхолдер -->
+      <div id="blLayers"></div>
+      <div class="bl-doll-ph">
+        <div class="ph-face" id="blFace">^‿^</div>
+        <div class="ph-tag">место для графики · девочка</div>
+        <div class="ph-worn" id="blWorn"></div>
+      </div>
+    </div>
+
+    <!-- гардероб -->
+    <div id="blCloset">
+      <div id="blCats"></div>
+      <div id="blItems"></div>
+    </div>
+  </div>
+</div>
+
+<!-- субтитры стихов -->
+<div id="blSubs"></div>
+
+<!-- скример: выходит за безель, поверх приборов машины -->
+<div id="blScream" aria-hidden="true"></div>
+
+<!-- системные окна -->
+<div id="blModals"></div>
+
+<!-- ── пролог: «совершенно обычная флеш-одевалка» ────────────────────────── -->
+<div id="blPrologue" class="blScreen">
+  <div class="hello">Добро пожаловать в BABYLAND ♡</div>
+  <div class="sub">Сделай эту девочку красивой!</div>
+  <button class="bl-start" id="blStart">Играть</button>
+  <div class="credit">vol4 · дополнение · стихи — лана ленкова</div>
+</div>
+
+<!-- ── концовки ──────────────────────────────────────────────────────────── -->
+<div id="blEnding" class="blScreen hidden"></div>
+
+<script type="module" src="/src/games/babyland/main.js"></script>
+</body>
+</html>

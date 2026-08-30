@@ -7,3 +7,20 @@ dist
 .env
 .env.*
 .snap.jpg
+
+# графика BABYLAND: исходники не в репозитории (вес + лицензии),
+# собранное в public/art/ — наоборот, ездит в деплой
+art/babyland/raw/*
+!art/babyland/raw/.gitkeep
+art/babyland/work/
+art/babyland/contact-sheet.png
+
+# индекс CodeGraph — локальный инструмент, не часть проекта
+.codegraph/
+
+# разметка рига — отладочный кадр
+art/babyland/rig-debug.png
+
+# питоновский кэш конвейера
+__pycache__/
+*.pyc

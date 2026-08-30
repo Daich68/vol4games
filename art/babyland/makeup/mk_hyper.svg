@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 120" width="200" height="120">
+<!-- BABYLAND — макияж «mk_hyper». Накладка на лицо в тех же координатах, что и
+     мимика (art/babyland/faces): гипертрофированный: огромные ресницы, ярко-розовые тени, помада за краями губ, сильный контуринг — ЕДИНСТВЕННЫЙ, на котором игра засчитывается пройденной -->
+<path d="M36,28 Q62,12 88,28 Q88,46 62,48 Q36,46 36,28 Z" fill="#ff5fb0" opacity="0.85"/>
+  <path d="M112,28 Q138,12 164,28 Q164,46 138,48 Q112,46 112,28 Z" fill="#ff5fb0" opacity="0.85"/>
+  <path d="M36,24 Q62,8 88,24" stroke="#ffd9ec" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <path d="M112,24 Q138,8 164,24" stroke="#ffd9ec" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <g stroke="#2a1e26" stroke-width="5" stroke-linecap="round" fill="none">
+    <path d="M34,30 L18,18"/><path d="M36,22 L24,8"/><path d="M44,16 L38,2"/>
+    <path d="M166,30 L182,18"/><path d="M164,22 L176,8"/><path d="M156,16 L162,2"/>
+    <path d="M40,52 L30,62"/><path d="M56,56 L52,68"/>
+    <path d="M160,52 L170,62"/><path d="M144,56 L148,68"/>
+  </g>
+  <ellipse cx="40" cy="74" rx="18" ry="10" fill="#ff7ab8" opacity="0.6"/>
+  <ellipse cx="160" cy="74" rx="18" ry="10" fill="#ff7ab8" opacity="0.6"/>
+  <path d="M28,60 Q34,80 46,90" stroke="#c98a86" stroke-width="6" fill="none"
+        opacity="0.5" stroke-linecap="round"/>
+  <path d="M172,60 Q166,80 154,90" stroke="#c98a86" stroke-width="6" fill="none"
+        opacity="0.5" stroke-linecap="round"/>
+  <path d="M70,88 Q100,74 130,88 Q100,112 70,88 Z" fill="#ff2e86"
+        stroke="#c01760" stroke-width="3"/>
+  <path d="M84,84 q6,-6 10,0" stroke="#fff" stroke-width="3" fill="none" opacity="0.7"/>
+  <circle cx="52" cy="26" r="2.5" fill="#fff"/><circle cx="148" cy="26" r="2.5" fill="#fff"/>
+</svg>

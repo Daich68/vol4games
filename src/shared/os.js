@@ -62,10 +62,12 @@ export function osBindLinks() {
 // Полноэкранный опенинг: `NN · процесс` / ИМЯ / стих · автор / `запуск`.
 // Сам растворяется через `hold` мс; тап или любая клавиша — скип.
 // Ввод во время кадра не доходит до игры (capture + stopPropagation).
-export function osTitleCard({ index = "", title, author = "", poem = "", hold = 2300 } = {}) {
+// kind — чем машина считает то, что запускает: свой «процесс» или чужой
+// «носитель» (DLC). Меняется только подпись, кадр тот же.
+export function osTitleCard({ index = "", title, author = "", poem = "", hold = 2300, kind = "процесс" } = {}) {
   const el = document.createElement("div");
   el.id = "osTitle";
-  const meta = index ? `${index} · процесс` : "процесс";
+  const meta = index ? `${index} · ${kind}` : kind;
   const sub = [poem && `«${poem}»`, author && `<b>${author}</b>`].filter(Boolean).join(" · ");
   el.innerHTML = `
     <div class="ost-meta">${meta}</div>

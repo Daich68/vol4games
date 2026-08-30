@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 120" width="200" height="120">
+<!-- BABYLAND — выражение «worried».
+     Накладка на ПУСТОЕ лицо базы. Пять выражений нельзя генерировать: пять
+     генераций дадут пять разных девочек. Нарисованная накладка садится по
+     одному якорю (generation.face_anchor) и совпадает всегда.
+     зрачок уменьшен, белок открыт целиком — читается как испуг -->
+<style>
+  .ln { fill: none; stroke: #43303a; stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; }
+  .eye { fill: #ffffff; stroke: #43303a; stroke-width: 5; }
+  .pup { fill: #43303a; }
+  .hi  { fill: #ffffff; }
+  .lip { fill: #e0567f; stroke: #43303a; stroke-width: 4.5; stroke-linejoin: round; }
+</style>
+<path class="ln" d="M42,12 Q62,26 82,18"/>
+  <path class="ln" d="M118,18 Q138,26 158,12"/>
+  <ellipse class="eye" cx="62" cy="48" rx="23" ry="27"/>
+  <ellipse class="eye" cx="138" cy="48" rx="23" ry="27"/>
+  <circle class="pup" cx="62" cy="50" r="7"/>
+  <circle class="pup" cx="138" cy="50" r="7"/>
+  <path class="ln" d="M44,40 l-12.0,-8.0"/>
+  <path class="ln" d="M44,47 l-14.0,-4.0"/>
+  <path class="ln" d="M44,54 l-14.0,0.5"/>
+  <path class="ln" d="M156,40 l12.0,-8.0"/>
+  <path class="ln" d="M156,47 l14.0,-4.0"/>
+  <path class="ln" d="M156,54 l14.0,0.5"/>
+  <path class="ln" d="M80,96 q8,-8 12,0 q8,8 12,0 q8,-8 12,0"/>
+</svg>

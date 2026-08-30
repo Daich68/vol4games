@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="100 0 400 1200" width="400" height="1200">
+<!-- BABYLAND — причёска «hair_messy_bun».
+     Не генерируется: модель рисует отделимые предметы, но всё, что часть тела
+     (лицо, макияж, волосы), приезжает портретом с чужим лицом. Голова базы —
+     x 220..380, y 58..242; волосы кроятся под неё. -->
+<style>
+  .ol { fill: #2a1c26; stroke: #2a1c26; stroke-width: 14; stroke-linejoin: round; stroke-linecap: round; }
+  .hr { fill: #4a3340; stroke: #4a3340; stroke-width: 3; stroke-linejoin: round; }
+  .sh { fill: #33222c; opacity: 0.55; }
+  .ac { fill: #ff8ec6; stroke: #43303a; stroke-width: 7; stroke-linejoin: round; }
+</style>
+<g class="ol">
+    <circle cx="300" cy="30" r="46"/>
+    <path d="M300,52 C360,52 388,96 388,152 C388,172 376,180 368,172
+             C360,158 352,132 300,132 C248,132 240,158 232,172
+             C224,180 212,172 212,152 C212,96 240,52 300,52 Z"/>
+    <path d="M212,150 C196,176 190,214 196,240 M388,150 C404,176 410,214 404,240"
+          fill="none" stroke-width="12"/>
+  </g>
+  <g class="hr">
+    <circle cx="300" cy="30" r="46"/>
+    <path d="M300,52 C360,52 388,96 388,152 C388,172 376,180 368,172
+             C360,158 352,132 300,132 C248,132 240,158 232,172
+             C224,180 212,172 212,152 C212,96 240,52 300,52 Z"/>
+  </g>
+</svg>

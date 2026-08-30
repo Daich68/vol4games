@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 120" width="200" height="120">
+<!-- BABYLAND — макияж «mk_natural». Накладка на лицо в тех же координатах, что и
+     мимика (art/babyland/faces): едва заметный — «неправильный» вариант -->
+<ellipse cx="62" cy="34" rx="20" ry="8" fill="#f0cdbb" opacity="0.55"/>
+  <ellipse cx="138" cy="34" rx="20" ry="8" fill="#f0cdbb" opacity="0.55"/>
+  <ellipse cx="46" cy="72" rx="14" ry="8" fill="#f2a9a0" opacity="0.35"/>
+  <ellipse cx="154" cy="72" rx="14" ry="8" fill="#f2a9a0" opacity="0.35"/>
+  <path d="M84,92 Q100,104 116,92 Q100,98 84,92 Z" fill="#d98b86" opacity="0.75"/>
+</svg>

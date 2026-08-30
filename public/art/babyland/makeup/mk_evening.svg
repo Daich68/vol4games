@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 120" width="200" height="120">
+<!-- BABYLAND — макияж «mk_evening». Накладка на лицо в тех же координатах, что и
+     мимика (art/babyland/faces): дымчатый глаз и тёмная помада — «неправильный» -->
+<path d="M40,30 Q62,18 84,30 Q84,48 62,50 Q40,48 40,30 Z" fill="#5b4655" opacity="0.8"/>
+  <path d="M116,30 Q138,18 160,30 Q160,48 138,50 Q116,48 116,30 Z" fill="#5b4655" opacity="0.8"/>
+  <path d="M38,28 L30,20 M44,22 L38,12 M156,22 L162,12 M162,28 L170,20"
+        stroke="#3a2b36" stroke-width="4" stroke-linecap="round" fill="none"/>
+  <path d="M82,91 Q100,106 118,91 Q100,99 82,91 Z" fill="#8e2740"/>
+</svg>

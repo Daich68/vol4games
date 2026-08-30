@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="100 0 400 1200" width="400" height="1200">
+<!-- BABYLAND — причёска «hair_shaved_side».
+     Не генерируется: модель рисует отделимые предметы, но всё, что часть тела
+     (лицо, макияж, волосы), приезжает портретом с чужим лицом. Голова базы —
+     x 220..380, y 58..242; волосы кроятся под неё. -->
+<style>
+  .ol { fill: #2a1c26; stroke: #2a1c26; stroke-width: 14; stroke-linejoin: round; stroke-linecap: round; }
+  .hr { fill: #4a3340; stroke: #4a3340; stroke-width: 3; stroke-linejoin: round; }
+  .sh { fill: #33222c; opacity: 0.55; }
+  .ac { fill: #ff8ec6; stroke: #43303a; stroke-width: 7; stroke-linejoin: round; }
+</style>
+<g class="ol"><path d="M300,46 C368,46 394,100 394,164 C394,214 384,244 374,256
+    C364,266 352,250 356,228 C360,192 352,140 300,140
+    C276,140 262,148 254,158 L238,120 C252,74 268,46 300,46 Z"/></g>
+  <g class="hr"><path d="M300,46 C368,46 394,100 394,164 C394,214 384,244 374,256
+    C364,266 352,250 356,228 C360,192 352,140 300,140
+    C276,140 262,148 254,158 L238,120 C252,74 268,46 300,46 Z"/></g>
+</svg>

@@ -36,6 +36,8 @@ export default defineConfig({
         "nancy-drew": resolve(__dirname, "games/nancy-drew/index.html"),
         birds:      resolve(__dirname, "games/birds/index.html"),
         prizma:     resolve(__dirname, "games/prizma/index.html"),
+        // DLC — отдельная точка входа, в счёт 4/4 не идёт
+        babyland:   resolve(__dirname, "games/babyland/index.html"),
       },
     },
   },
