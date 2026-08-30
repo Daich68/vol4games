@@ -7,6 +7,7 @@ import { OutputPass }         from "three/examples/jsm/postprocessing/OutputPass
 import { isDone, clearAllProgress } from "../shared/nav.js";
 import { createHero, HERO_FIELD_RADIUS_PX } from "../shared/hero.js";
 import { createHalftonePass } from "../shared/halftone.js";
+import { createYggdrasil, TREE } from "./yggdrasil.js";
 import { osPowerOn, osBindLinks, osNavigate } from "../shared/os.js";
 
 // VOL4/OS: включение кинескопа при возврате из игры (boot-класс ставит
@@ -59,23 +60,30 @@ const NODES = [
   { id: "n2", x: -16.0, z: -6.5,  label: "НЭНСИ ДРЮ", sub: "милена степанян · hidden object", game: "nancy-drew" },
   { id: "n3", x:  15.0, z: -8.0,  label: "ПТИЦЫ",     sub: "лиза хереш · match-3",            game: "birds"      },
   { id: "n4", x:  12.5, z:  10.0, label: "ПРИЗМА",    sub: "данила кудимов · icy tower",      game: "prizma"     },
+  // DLC — не стих машины, а чужой диск, который в неё вставили. В счёт 4/4
+  // не идёт: ни в заголовке, ни в центоне, ни в условии появления арки.
+  { id: "n5", x:  -9.0, z:  -12.0, label: "BABYLAND",  sub: "лана ленкова · дополнение",       game: "babyland", dlc: true },
 ];
 // n1 — хаб; n2-n3 даёт внешнюю дугу, чтобы пути не пересекались крестом.
-const EDGES = [["n1","n2"],["n1","n3"],["n1","n4"],["n2","n3"]];
+const EDGES = [["n1","n2"],["n1","n3"],["n1","n4"],["n2","n3"],["n1","n5"]];
 const nodeById = id => NODES.find(n => n.id === id);
 
 // ── рандомизация позиций нод (каждую загрузку новая раскладка) ─────────────
 // n1 садится ближе к центру (стартовая), остальные разбрасываются с
 // гарантированным минимальным расстоянием друг от друга.
 (function randomizeNodes() {
-  const placed = [];
+  // арка-выход стоит в (0,-13), в центре растёт Иггдрасиль — держим ноды
+  // на расстоянии и от них
+  const placed = [{ x: 0, z: -13 }, { x: 0, z: 0 }];
   const BX = 18, BZ = 11, MIN_DIST = 11;
   NODES.forEach((n, i) => {
     let tries = 0, x, z;
     do {
-      if (i === 0) {                       // старт — центральная зона
-        x = (Math.random() * 2 - 1) * 6;
-        z = (Math.random() * 2 - 1) * 4;
+      if (i === 0) {                       // старт — рядом с деревом, но не в нём
+        const a = Math.random() * Math.PI * 2;
+        const r = 7.5 + Math.random() * 2.5;
+        x = Math.cos(a) * r;
+        z = Math.sin(a) * r * 0.62;
       } else {
         x = (Math.random() * 2 - 1) * BX;
         z = (Math.random() * 2 - 1) * BZ;
@@ -100,6 +108,15 @@ function terrainH(x, z) {
   h += Math.cos(x * 1.100 + z * 0.880 + 4.20) * 0.42;
   h += Math.sin(x * 0.095 + z * 0.073 + 3.80) * 3.4; // длинная фоновая волна
   h -= 2.8; // смещение: большинство рельефа ниже нулевого уровня
+
+  // ровная площадка под Иггдрасилем: корни не должны висеть над ямой
+  {
+    const d = Math.hypot(x, z);
+    if (d < 9.0) {
+      const s2 = 1 - d / 9.0;
+      h *= (1 - s2 * s2 * (3 - 2 * s2));
+    }
+  }
 
   // выравниваем рядом с нодами — диски и герой не должны «тонуть» в холмах
   const FLAT_R = 6.5;
@@ -282,6 +299,7 @@ const animatedOb = []; // парящие/вращающиеся элементы
 
     // не у нод (включая старт n1) и не вплотную к другим монументам
     let ok = true;
+    if (Math.hypot(x, z) < 10.0) continue;           // центр занят деревом
     for (const n of NODES) if (Math.hypot(x - n.x, z - n.z) < 5.0) { ok = false; break; }
     if (!ok) continue;
     for (const o of obstacles) if (Math.hypot(x - o.x, z - o.z) < 4.2) { ok = false; break; }
@@ -296,6 +314,10 @@ const animatedOb = []; // парящие/вращающиеся элементы
   }
 }
 
+// Иггдрасиль в центре карты. Ставится после монументов: ему нужен массив
+// препятствий, чтобы вписать в него ствол.
+const yggdrasil = createYggdrasil({ scene, obstacles, isDone });
+
 // анимация парящих элементов монументов
 function updateObstacles(t) {
   for (const a of animatedOb) {
@@ -303,6 +325,184 @@ function updateObstacles(t) {
     a.mesh.rotation.x = t * a.spin * 0.4;
     a.mesh.position.y = a.baseY + Math.sin(t * a.spd + a.ph) * a.amp;
   }
+}
+
+// ── DLC-нода: огромное розовое сердце с аурой ─────────────────────────────
+// Чужой диск обязан быть видно с другого конца карты и обязан читаться как
+// НЕ-vol4: холодная машина светит белым и дышит синусом, BABYLAND — розовым
+// и бьётся. Отсюда сердцебиение вместо пульса и вся аура на аддитивном
+// блендинге: халфтон цвет сохраняет, так что розовые точки доезжают до экрана.
+const DLC_PINK   = new THREE.Color(0xff6fb2);
+const DLC_PINK_L = new THREE.Color(0xffc4e2);
+
+// lub-dub: два удара и пауза. Синус тут читался бы как «дыхание» монумента,
+// а нужно именно сердце.
+function heartbeat(t, period = 1.15) {
+  const p = (t % period) / period;
+  const g = (c, w) => Math.exp(-Math.pow((p - c) / w, 2));
+  return g(0.06, 0.045) + 0.62 * g(0.27, 0.055);
+}
+
+function buildHeartGeo(height) {
+  const sh = new THREE.Shape();
+  sh.moveTo(25, 25);
+  sh.bezierCurveTo(25, 25, 20,  0,   0,  0);
+  sh.bezierCurveTo(-30, 0, -30, 35, -30, 35);
+  sh.bezierCurveTo(-30, 55, -10, 77, 25, 95);
+  sh.bezierCurveTo(60, 77, 80, 55, 80, 35);
+  sh.bezierCurveTo(80, 35, 80,  0,  50,  0);
+  sh.bezierCurveTo(35,  0, 25, 25,  25, 25);
+  const geo = new THREE.ExtrudeGeometry(sh, {
+    depth: 17, curveSegments: 26,
+    bevelEnabled: true, bevelSegments: 5, bevelSize: 7, bevelThickness: 6,
+  });
+  geo.center();
+  // в исходной раскладке остриё смотрит вверх — разворачиваем в плоскости,
+  // чтобы не портить winding зеркалом по Y
+  geo.rotateZ(Math.PI);
+  const k = height / 95;
+  geo.scale(k, k, k);
+  return geo;
+}
+
+// радиальное свечение: используется и как лужа на полу, и как ореол за сердцем
+// hole > 0 делает из заливки кольцо: сплошной градиент топит силуэт сердца,
+// а нужно, чтобы аура светила ВОКРУГ него, оставляя середину под сердце
+function auraMaterial(color, intensity, power, hole = 0.0) {
+  return new THREE.ShaderMaterial({
+    uniforms: {
+      col:       { value: color.clone() },
+      intensity: { value: intensity },
+      power:     { value: power },
+      hole:      { value: hole },
+    },
+    vertexShader: `varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+    fragmentShader: `
+      uniform vec3 col; uniform float intensity; uniform float power; uniform float hole;
+      varying vec2 vUv;
+      void main(){
+        float d = length(vUv - 0.5) * 2.0;
+        float a = pow(1.0 - smoothstep(0.0, 1.0, d), power);
+        a *= smoothstep(hole, hole + 0.30, d);
+        gl_FragColor = vec4(col, a * intensity);
+      }`,
+    transparent: true, depthWrite: false,
+    blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
+  });
+}
+
+const HEART_H = 2.7;   // высота сердца в единицах мира — оно должно быть огромным
+const HEART_Y = 1.75;  // на какой высоте парит
+
+function buildDlcAura(g) {
+  const d = {};
+
+  // 1. широкая розовая лужа света под нодой — её видно раньше самого сердца
+  d.poolMat = auraMaterial(DLC_PINK, 0.34, 2.3);
+  const pool = new THREE.Mesh(new THREE.CircleGeometry(3.4, 64), d.poolMat);
+  pool.rotation.x = -Math.PI / 2;
+  pool.position.y = 0.0015;
+  g.add(pool);
+
+  // 2. кольца-волны: расходятся от ноды на каждом ударе
+  d.ripples = [0, 0.34, 0.67].map((phase) => {
+    const mat = new THREE.MeshBasicMaterial({
+      color: DLC_PINK_L.clone(), side: THREE.DoubleSide,
+      transparent: true, opacity: 0, depthWrite: false,
+      blending: THREE.AdditiveBlending,
+    });
+    const m = new THREE.Mesh(new THREE.RingGeometry(0.94, 1.0, 96), mat);
+    m.rotation.x = -Math.PI / 2;
+    m.position.y = 0.004;
+    g.add(m);
+    return { m, mat, phase };
+  });
+
+  // 3. ореол за сердцем — билборд, всегда лицом к камере
+  d.haloMat = auraMaterial(DLC_PINK, 0.42, 1.5, 0.58);
+  d.halo = new THREE.Mesh(new THREE.PlaneGeometry(6.6, 6.6), d.haloMat);
+  d.halo.position.y = HEART_Y;
+  g.add(d.halo);
+
+  // 4. само сердце
+  d.heartMat = new THREE.MeshStandardMaterial({
+    color: 0xff5aa8, roughness: 0.34, metalness: 0.16,
+    emissive: new THREE.Color(0xd93b86), emissiveIntensity: 1.15,
+    flatShading: false,
+  });
+  d.heart = new THREE.Mesh(buildHeartGeo(HEART_H), d.heartMat);
+  d.heart.position.y = HEART_Y;
+  // камера смотрит сверху под ~52°: без наклона сердце читается как пятно
+  d.heart.rotation.x = -0.48;
+  g.add(d.heart);
+
+  // 5. искры, всплывающие вокруг сердца
+  const N = 70;
+  d.sparkData = [];
+  const pos = new Float32Array(N * 3);
+  for (let i = 0; i < N; i++) {
+    d.sparkData.push({
+      a: Math.random() * Math.PI * 2,
+      r: 1.7 + Math.random() * 1.7,
+      spd: 0.16 + Math.random() * 0.26,
+      ph: Math.random(),
+      sway: 0.25 + Math.random() * 0.5,
+    });
+  }
+  const sg = new THREE.BufferGeometry();
+  sg.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+  d.sparkMat = new THREE.PointsMaterial({
+    color: 0xffd4ea, size: 0.115, sizeAttenuation: true,
+    transparent: true, opacity: 0.9, depthWrite: false,
+    blending: THREE.AdditiveBlending,
+  });
+  d.sparks = new THREE.Points(sg, d.sparkMat);
+  g.add(d.sparks);
+
+  return d;
+}
+
+function updateDlcAura(d, t, isActive, done) {
+  const beat = heartbeat(t);
+  const near = isActive ? 1 : 0;
+
+  // сердце: удар в масштабе + лёгкое покачивание, чтобы читался объём
+  const s = 1 + beat * (0.13 + near * 0.06);
+  d.heart.scale.set(s, s * (1 - beat * 0.04), s);
+  d.heart.position.y = HEART_Y + Math.sin(t * 0.7) * 0.16;
+  d.heart.rotation.y = Math.sin(t * 0.45) * 0.42;
+  d.heart.rotation.z = Math.sin(t * 0.33) * 0.06;
+  d.heartMat.emissiveIntensity = (done ? 0.8 : 1.15) + beat * 1.05 + near * 0.35;
+
+  // ореол дышит вместе с ударом и всегда смотрит в камеру
+  d.halo.position.y = d.heart.position.y;
+  d.halo.lookAt(camera.position);
+  const hs = 1 + beat * 0.16 + near * 0.08;
+  d.halo.scale.set(hs, hs, 1);
+  d.haloMat.uniforms.intensity.value = (done ? 0.3 : 0.42) + beat * 0.30 + near * 0.16;
+
+  // лужа под нодой
+  d.poolMat.uniforms.intensity.value = (done ? 0.24 : 0.32) + beat * 0.22 + near * 0.14;
+
+  // волны: каждая живёт свой цикл, на пике удара рождается новая
+  for (const rp of d.ripples) {
+    const k = ((t / 2.3) + rp.phase) % 1;          // 0→1 за цикл
+    const sc = 0.55 + k * 3.6;
+    rp.m.scale.set(sc, sc, 1);
+    rp.mat.opacity = (1 - k) * (1 - k) * (0.55 + near * 0.3);
+  }
+
+  // искры: детерминированный подъём по t, без накопления состояния
+  const pa = d.sparks.geometry.attributes.position;
+  for (let i = 0; i < d.sparkData.length; i++) {
+    const p = d.sparkData[i];
+    const k = (t * p.spd + p.ph) % 1;
+    const ang = p.a + t * p.sway * 0.35;
+    const rr = p.r * (1 - k * 0.35);
+    pa.setXYZ(i, Math.cos(ang) * rr, 0.05 + k * 4.4, Math.sin(ang) * rr);
+  }
+  pa.needsUpdate = true;
+  d.sparkMat.opacity = (0.55 + beat * 0.4) * (done ? 0.6 : 1);
 }
 
 // светящийся диск на полу + кольцо. MeshBasic, без освещения.
@@ -354,6 +554,7 @@ NODES.forEach(n => {
 
   scene.add(g);
   nodeObjs[n.id] = { g, ring, ringMat, core, coreMat, glowMat, n };
+  if (n.dlc) nodeObjs[n.id].dlc = buildDlcAura(g);
 });
 
 // ── АРКА-ВЫХОД ────────────────────────────────────────────────────────────
@@ -445,6 +646,17 @@ function updateNodes(t, activeId) {
 
     const pulse = 0.85 + 0.15 * Math.sin(t * 1.9 + n.z * 0.5);
 
+    // ── DLC: своя палитра и свой ритм, машина этот узел не считает своим ──
+    if (o.dlc) {
+      updateDlcAura(o.dlc, t, isActive, done);
+      const b = 0.55 + heartbeat(t) * 0.45 + (isActive ? 0.25 : 0);
+      ringMat.color.copy(DLC_PINK_L).multiplyScalar(Math.min(1.25, b));
+      coreMat.color.copy(DLC_PINK).multiplyScalar(Math.min(1.35, b * 1.1));
+      glowMat.uniforms.col.value.copy(DLC_PINK);
+      glowMat.uniforms.intensity.value = (done ? 0.5 : 0.75) * b;
+      continue;
+    }
+
     if (done) {
       // пройдено — холодный белый, ровное свечение (без пульса)
       ringMat.color.setRGB(0.82, 0.88, 1.0);
@@ -496,13 +708,28 @@ EDGES.forEach(([a, b]) => {
   pGeo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
   pGeo.setAttribute("size",     new THREE.BufferAttribute(sizes,     1));
 
+  // Камера показывает лишь ~±5 единиц вокруг героя, так что «увидеть сердце
+  // издалека» невозможно by design. Зато тропа к диску может вести к нему
+  // цветом: ребро, упирающееся в DLC-ноду, разогревается из белого в розовый.
+  const toDlc = !!(A.dlc || B.dlc);
+  const dlcAtEnd = !!B.dlc;                     // куда именно ведёт градиент
+  const tint = new Float32Array(COUNT);
+  pGeo.setAttribute("tint", new THREE.BufferAttribute(tint, 1));
+
   const pMat = new THREE.ShaderMaterial({
-    uniforms: { col: { value: new THREE.Color(0xffffff) } },
+    uniforms: {
+      col:   { value: new THREE.Color(0xffffff) },
+      col2:  { value: DLC_PINK.clone() },
+      boost: { value: 1.0 },
+    },
     vertexShader: `
       attribute float size;
+      attribute float tint;
       varying float vAlpha;
+      varying float vTint;
       void main() {
         vAlpha = size;
+        vTint  = tint;
         vec4 mv = modelViewMatrix * vec4(position, 1.0);
         gl_PointSize = (3.0 + size * 6.0) * (60.0 / -mv.z);
         gl_Position = projectionMatrix * mv;
@@ -510,12 +737,16 @@ EDGES.forEach(([a, b]) => {
     `,
     fragmentShader: `
       uniform vec3 col;
+      uniform vec3 col2;
+      uniform float boost;
       varying float vAlpha;
+      varying float vTint;
       void main() {
         float d = length(gl_PointCoord - 0.5) * 2.0;
         float a = 1.0 - smoothstep(0.2, 1.0, d);
         if (a < 0.01) discard;
-        gl_FragColor = vec4(col, a * vAlpha);
+        vec3 c = mix(col, col2, vTint);
+        gl_FragColor = vec4(c, a * vAlpha * mix(1.0, boost, vTint));
       }
     `,
     transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
@@ -524,7 +755,17 @@ EDGES.forEach(([a, b]) => {
 
   // фиксированные t (равномерно вдоль кривой)
   const ts = Array.from({ length: COUNT }, (_, i) => i / (COUNT - 1));
-  edgeSystems.push({ curve, pGeo, positions, sizes, ts, flowOffset: 0 });
+
+  // градиент подмешивается только у той половины тропы, что упирается в диск
+  if (toDlc) {
+    for (let i = 0; i < COUNT; i++) {
+      const k = i / (COUNT - 1);
+      tint[i] = Math.pow(dlcAtEnd ? k : 1 - k, 0.8);   // розовеет рано — это указатель, а не финальный акцент
+    }
+    pGeo.attributes.tint.needsUpdate = true;
+  }
+
+  edgeSystems.push({ curve, pGeo, positions, sizes, ts, flowOffset: 0, mat: pMat, toDlc });
 });
 
 function updateEdges(t) {
@@ -543,6 +784,8 @@ function updateEdges(t) {
     }
     e.pGeo.attributes.position.needsUpdate = true;
     e.pGeo.attributes.size.needsUpdate     = true;
+    // розовый конец тропы разгорается в такт сердцу — дорожка «зовёт»
+    if (e.toDlc) e.mat.uniforms.boost.value = 1.15 + heartbeat(t) * 1.25;
   }
 }
 
@@ -557,16 +800,68 @@ const uiEl = document.getElementById("ui");
 const labelEls = {};
 NODES.forEach(n => {
   const el = document.createElement("div");
-  el.className = "nlabel" + (n.game ? " has-game" : "");
+  el.className = "nlabel" + (n.game ? " has-game" : "") + (n.dlc ? " dlc" : "");
   if (isDone(n.game)) el.classList.add("done");
   el.innerHTML = `<span class="title">${n.label}</span><span class="sub">${n.sub || ""}</span>`;
   uiEl.appendChild(el);
   labelEls[n.id] = el;
 });
 
+// метка дерева — тем же прибором, что и ноды: машина подписывает всё,
+// на что смотрит. Показывает, сколько стихов она уже прочла.
+const treeLabel = document.createElement("div");
+{
+  const n = ["birds", "stalagmit", "nancy-drew", "prizma"].filter(isDone).length;
+  treeLabel.className = "nlabel has-game tree";
+  treeLabel.innerHTML =
+    `<span class="title">ДРЕВО</span><span class="sub">память · ${n}/4</span>`;
+  uiEl.appendChild(treeLabel);
+}
+
+// подписи плодов — прошлые выпуски альманаха, висящие на дереве
+const fruitLabels = yggdrasil.fruits.map((f) => {
+  // Именно <a>, а не div: window.open режут блокировщики popup'ов, а клик по
+  // ссылке — нет. Подпись плода и ЕСТЬ кнопка «открыть выпуск».
+  const el = document.createElement("a");
+  el.className = "nlabel fruit";
+  el.href = f.url;
+  el.target = "_blank";
+  el.rel = "noopener noreferrer";
+  el.innerHTML = `<span class="title">${f.label}</span><span class="sub">выпуск ↗</span>`;
+  // osBindLinks пропускает внешние ссылки сам, но клик не должен долетать
+  // до карты и трогать ходьбу
+  el.addEventListener("pointerdown", (e) => e.stopPropagation());
+  uiEl.appendChild(el);
+  return el;
+});
+
 const promptEl = document.getElementById("prompt");
 
 function updateLabels(activeId) {
+  // подпись дерева висит у основания ствола и проявляется при подходе
+  {
+    const v = new THREE.Vector3(TREE.x, 1.3, TREE.z).project(camera);
+    treeLabel.style.left = `${(v.x + 1) / 2 * W()}px`;
+    treeLabel.style.top  = `${(-v.y + 1) / 2 * H()}px`;
+    treeLabel.style.transform = "translate(-50%, 0)";
+    treeLabel.style.opacity = (0.12 + yggdrasil.near * 0.88).toFixed(2);
+    treeLabel.classList.toggle("near", yggdrasil.near > 0.55);
+  }
+
+  yggdrasil.fruits.forEach((f, i) => {
+    const el = fruitLabels[i];
+    const v = f.world.clone().project(camera);
+    el.style.left = `${(v.x + 1) / 2 * W()}px`;
+    el.style.top  = `${(-v.y + 1) / 2 * H()}px`;
+    el.style.transform = "translate(-50%, -140%)";
+    // Видны, как только игрок подошёл к дереву: искать плоды глазами по кроне —
+    // работа, а не интерфейс. У самого плода подпись ярче и кликабельна.
+    const vis = Math.max(yggdrasil.near * 0.9, f.near);
+    el.style.opacity = vis.toFixed(2);
+    el.style.pointerEvents = vis > 0.25 ? "auto" : "none";
+    el.classList.toggle("near", f.near > 0.45);
+  });
+
   for (const n of NODES) {
     const el  = labelEls[n.id];
     const vec = new THREE.Vector3(n.x, 0.55, n.z).project(camera);
@@ -584,6 +879,9 @@ let activeNode = null;
 let isMoving   = false;
 let teleport   = null; // { t, dur, nodeId, game } во время анимации перехода
 
+let activeFruit = null;   // плод под игроком — прошлый выпуск альманаха
+let promptKey   = "";     // что показано в промпте: перерисовываем при смене
+
 const MOVE_CODES  = new Set(["KeyW","KeyA","KeyS","KeyD","ArrowUp","ArrowDown","ArrowLeft","ArrowRight"]);
 const ENTER_CODES = new Set(["Enter","KeyE","Space"]);
 
@@ -597,7 +895,16 @@ window.addEventListener("keydown", e => {
     return;
   }
   if (MOVE_CODES.has(e.code))  { keys.add(e.code); e.preventDefault(); }
-  if (ENTER_CODES.has(e.code) && activeNode) enterNode(activeNode);
+  if (ENTER_CODES.has(e.code)) {
+    if (activeFruit) {
+      // кликаем ту же ссылку, что видит игрок: один путь вместо двух, и
+      // блокировщик popup'ов его не режет
+      const i = yggdrasil.fruits.indexOf(activeFruit);
+      if (i >= 0) fruitLabels[i].click();
+      return;
+    }
+    if (activeNode) enterNode(activeNode);
+  }
 });
 window.addEventListener("keyup",  e => keys.delete(e.code));
 window.addEventListener("blur",   () => keys.clear());
@@ -748,10 +1055,20 @@ const camTarget = new THREE.Vector3(0, 0, 0);
 const camPos    = camera.position.clone();
 let   idleTime  = 0;
 
+// Насколько кадр «поднят» к дереву: 0 обычная карта, 1 подошли вплотную.
+// Считаем отдельно от yggdrasil.near, потому что кадр обязан реагировать
+// плавнее самого дерева — иначе камера дёргается на каждом шаге.
+let camTreeLift = 0;
+
 function updateCamera(dt) {
   // камера ведёт героя 1:1 — карта большая, парallax-плавание тут не работает.
   const lookAt = new THREE.Vector3(heroPos.x, 0, heroPos.z);
   camTarget.lerp(lookAt, isMoving ? 0.12 : 0.05);
+
+  // Подход к Иггдрасилю: камера отъезжает и задирается, чтобы в кадр вошла
+  // крона. Дерево высотой под 15 единиц иначе просто не помещается — игрок
+  // видел бы только корни.
+  camTreeLift += (yggdrasil.near - camTreeLift) * Math.min(1, dt * 1.6);
 
   let swX = 0, swY = 0, swZ = 0;
   if (idleTime > 1.5) {
@@ -761,14 +1078,27 @@ function updateCamera(dt) {
     swY = Math.sin(s * 0.06) * 0.35;
   }
 
+  const L = camTreeLift;
+  // Отъезжаем не по мировой оси, а ПО НАПРАВЛЕНИЮ ОТ ДЕРЕВА К ГЕРОЮ: игрок
+  // подходит с любой стороны, и только так дерево остаётся в кадре.
+  let ox = camTarget.x - TREE.x, oz = camTarget.z - TREE.z;
+  const ol = Math.hypot(ox, oz) || 1;
+  ox /= ol; oz /= ol;
+
   const target = new THREE.Vector3(
-    camTarget.x + CAM_BASE.x + swX,
-    CAM_BASE.y + swY,
-    camTarget.z + CAM_BASE.z + swZ,
+    camTarget.x + CAM_BASE.x + swX + ox * L * 7.5,
+    CAM_BASE.y + swY + L * 9.0,                  // и заметно выше
+    camTarget.z + CAM_BASE.z + swZ + oz * L * 7.5,
   );
   camPos.lerp(target, isMoving ? 0.06 : 0.025);
   camera.position.copy(camPos);
-  camera.lookAt(camTarget.x, 0, camTarget.z - 0.4);
+  // точка взгляда переезжает на ствол и ползёт вверх — кадр «смотрит на
+  // дерево», а не просто отодвигается от героя
+  camera.lookAt(
+    camTarget.x + (TREE.x - camTarget.x) * L * 0.8,
+    L * 6.4,
+    camTarget.z + (TREE.z - camTarget.z) * L * 0.8 - 0.4,
+  );
 }
 
 // ── hero update ──────────────────────────────────────────────────────────
@@ -807,6 +1137,18 @@ function updateHero(dt) {
   hero.setPosition(heroPos.x, heroPos.z);
   hero.update(dt, { moving, dx, dz });
 
+  // Плод перебивает ноду: если игрок стоит под выпуском, он хочет открыть
+  // выпуск, а не запустить игру.
+  const FRUIT_RAD = 2.0;
+  activeFruit = null;
+  {
+    let best = FRUIT_RAD;
+    for (const f of yggdrasil.fruits) {
+      const d = Math.hypot(f.world.x - heroPos.x, f.world.z - heroPos.z);
+      if (d < best) { best = d; activeFruit = f; }
+    }
+  }
+
   let nearId = null, nearDist = ACT_RAD;
   for (const n of NODES) {
     const d = Math.hypot(n.x - heroPos.x, n.z - heroPos.z);
@@ -816,7 +1158,19 @@ function updateHero(dt) {
   if (allGamesDone() && Math.hypot(EXIT.x - heroPos.x, EXIT.z - heroPos.z) < 1.7) {
     nearId = "exit";
   }
-  if (nearId !== activeNode) {
+  // плод перебивает ноду: стоя под выпуском игрок хочет открыть выпуск
+  const key = activeFruit ? "fruit:" + activeFruit.id : "node:" + nearId;
+  if (activeFruit) {
+    if (key !== promptKey) {
+      promptKey = key;
+      promptEl.textContent =
+        (IS_TOUCH ? "тап · открыть " : "enter · открыть ") + activeFruit.label;
+      promptEl.classList.remove("done");
+      promptEl.classList.add("show");
+    }
+    activeNode = null;
+  } else if (key !== promptKey) {
+    promptKey = key;
     activeNode = nearId;
     if (nearId === "exit") {
       promptEl.textContent = IS_TOUCH ? "тап · новый сеанс" : "enter · новый сеанс";
@@ -828,9 +1182,11 @@ function updateHero(dt) {
       promptEl.classList.toggle("show", hasGame);
       if (hasGame) {
         const done = isDone(near.game);
+        // DLC — не процесс машины, а носитель: и подписан он как носитель
         promptEl.textContent = done
-          ? "процесс завершён"
-          : `запустить ${near.label.toLowerCase()}`;
+          ? (near.dlc ? "диск прочитан" : "процесс завершён")
+          : (near.dlc ? `вставить диск ${near.label.toLowerCase()}`
+                      : `запустить ${near.label.toLowerCase()}`);
         promptEl.classList.toggle("done", done);
       }
     }
@@ -858,7 +1214,17 @@ function loop(now) {
   updateObstacles(t);
   updateNodes(t, activeNode);
   updateExit(t);
+  yggdrasil.update(t, dt, heroPos);
   updateCamera(dt);
+  if (import.meta.env.DEV) {
+    // дев-хук рядом с __vol4_resetProgress: позиция героя и близость дерева
+    window.__vol4 = { x: heroPos.x, z: heroPos.z, tree: TREE,
+                      near: +yggdrasil.near.toFixed(3),
+                      fruits: yggdrasil.fruits.map(f => ({ id: f.id,
+                        x: +f.world.x.toFixed(2), z: +f.world.z.toFixed(2),
+                        near: +f.near.toFixed(2) })),
+                      prompt: promptEl.textContent };
+  }
   updateLabels(activeNode);
 
   if (teleport) {
