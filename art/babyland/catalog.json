@@ -1,6 +1,6 @@
 {
   "doll": {
-    "w": 400,
+    "w": 596,
     "h": 1200,
     "slots": {
       "hair_back": {
@@ -15,8 +15,8 @@
       },
       "bottom": {
         "z": 30,
-        "w_ref": "hip",
-        "w_k": 1.02,
+        "w_ref": "waist",
+        "w_k": 1.55,
         "anchor": [
           "waist",
           "top"
@@ -24,8 +24,8 @@
       },
       "top": {
         "z": 40,
-        "w_ref": "shoulder",
-        "w_k": 1.02,
+        "w_ref": "waist",
+        "w_k": 1.8,
         "anchor": [
           "waist",
           "bottom"
@@ -34,7 +34,7 @@
       "shoes": {
         "z": 50,
         "w_ref": "foot",
-        "w_k": 1.55,
+        "w_k": 1.0,
         "anchor": [
           "sole",
           "bottom"
@@ -61,8 +61,8 @@
       },
       "acc": {
         "z": 80,
-        "w_ref": "shoulder",
-        "w_k": 0.72,
+        "w_ref": "waist",
+        "w_k": 0.6,
         "anchor": [
           "neck",
           "top"
@@ -127,12 +127,16 @@
         226,
         235
       ],
-      "doll": null
+      "doll": [
+        255,
+        214,
+        232
+      ]
     },
     "tint_amount": {
       "pretty": 0.04,
       "wrong": 0.1,
-      "doll": 0.0
+      "doll": 0.16
     }
   },
   "items": [
@@ -143,16 +147,11 @@
       "label": "блонд, локоны",
       "query": "long blonde wavy wig on mannequin head, product photo, white background",
       "source": null,
-      "fit": {
-        "scale": 1.0,
-        "dx": 0.0,
-        "dy": 0.0
-      },
       "slot": "hair",
       "prompt": "a long wavy blonde wig hairpiece, wig displayed on a plain white featureless mannequin head with no face, no eyes, no nose, no mouth, no makeup, front view, whole wig visible, product photography, plain white background, soft even light, no text",
       "matte": "flood",
       "w_ref": "head",
-      "w_k": 1.45,
+      "w_k": 1.3,
       "anchor": [
         "head_top",
         "top"
@@ -165,16 +164,11 @@
       "label": "блонд с бантами",
       "query": "blonde wig with pink ribbon bows, doll hair, product photo, white background",
       "source": null,
-      "fit": {
-        "scale": 1.0,
-        "dx": 0.0,
-        "dy": 0.0
-      },
       "slot": "hair",
       "prompt": "a long blonde wig hairpiece with pink ribbon bows tied in it, wig displayed on a plain white featureless mannequin head with no face, no eyes, no nose, no mouth, no makeup, front view, whole wig visible, product photography, plain white background, soft even light, no text",
       "matte": "flood",
       "w_ref": "head",
-      "w_k": 1.45,
+      "w_k": 1.3,
       "anchor": [
         "head_top",
         "top"
@@ -187,16 +181,11 @@
       "label": "два хвостика",
       "query": "blonde pigtails wig twin tails, product photo, white background",
       "source": null,
-      "fit": {
-        "scale": 1.0,
-        "dx": 0.0,
-        "dy": 0.0
-      },
       "slot": "hair",
       "prompt": "a blonde wig hairpiece styled in two pigtails with ribbons, wig displayed on a plain white featureless mannequin head with no face, no eyes, no nose, no mouth, no makeup, front view, whole wig visible, product photography, plain white background, soft even light, no text",
       "matte": "flood",
       "w_ref": "head",
-      "w_k": 1.45,
+      "w_k": 1.3,
       "anchor": [
         "head_top",
         "top"
@@ -209,16 +198,11 @@
       "label": "каре с диадемой",
       "query": "blonde bob wig with rhinestone tiara, product photo, white background",
       "source": null,
-      "fit": {
-        "scale": 1.0,
-        "dx": 0.0,
-        "dy": 0.0
-      },
       "slot": "hair",
       "prompt": "a blonde bob wig hairpiece, wig displayed on a plain white featureless mannequin head with no face, no eyes, no nose, no mouth, no makeup, front view, whole wig visible, product photography, plain white background, soft even light, no text",
       "matte": "flood",
       "w_ref": "head",
-      "w_k": 1.45,
+      "w_k": 1.3,
       "anchor": [
         "head_top",
         "top"
@@ -231,16 +215,11 @@
       "label": "короткая стрижка",
       "query": "short dark pixie cut wig on mannequin, product photo, white background",
       "source": null,
-      "fit": {
-        "scale": 1.0,
-        "dx": 0.0,
-        "dy": 0.0
-      },
       "slot": "hair",
       "prompt": "a short dark brown pixie cut wig hairpiece, wig displayed on a plain white featureless mannequin head with no face, no eyes, no nose, no mouth, no makeup, front view, whole wig visible, product photography, plain white background, soft even light, no text",
       "matte": "flood",
       "w_ref": "head",
-      "w_k": 1.45,
+      "w_k": 1.3,
       "anchor": [
         "head_top",
         "top"
@@ -253,16 +232,11 @@
       "label": "тёмное каре",
       "query": "dark brown straight bob wig, product photo, white background",
       "source": null,
-      "fit": {
-        "scale": 1.0,
-        "dx": 0.0,
-        "dy": 0.0
-      },
       "slot": "hair",
       "prompt": "a dark brown straight bob wig hairpiece, wig displayed on a plain white featureless mannequin head with no face, no eyes, no nose, no mouth, no makeup, front view, whole wig visible, product photography, plain white background, soft even light, no text",
       "matte": "flood",
       "w_ref": "head",
-      "w_k": 1.45,
+      "w_k": 1.3,
       "anchor": [
         "head_top",
         "top"
@@ -275,16 +249,11 @@
       "label": "растрёпанный пучок",
       "query": "messy dark bun wig with loose strands, product photo, white background",
       "source": null,
-      "fit": {
-        "scale": 1.0,
-        "dx": 0.0,
-        "dy": 0.0
-      },
       "slot": "hair",
       "prompt": "a dark brown wig hairpiece styled in a messy bun, wig displayed on a plain white featureless mannequin head with no face, no eyes, no nose, no mouth, no makeup, front view, whole wig visible, product photography, plain white background, soft even light, no text",
       "matte": "flood",
       "w_ref": "head",
-      "w_k": 1.45,
+      "w_k": 1.3,
       "anchor": [
         "head_top",
         "top"
@@ -295,18 +264,13 @@
       "cat": "hair",
       "kind": "wrong",
       "label": "выбритый висок",
-      "query": "undercut shaved side wig dark hair, product photo, white background",
+      "query": "short dark asymmetric haircut, long on one side, shaved undercut on the other side",
       "source": null,
-      "fit": {
-        "scale": 1.0,
-        "dx": 0.0,
-        "dy": 0.0
-      },
       "slot": "hair",
       "prompt": "a dark wig hairpiece with one side shaved undercut, wig displayed on a plain white featureless mannequin head with no face, no eyes, no nose, no mouth, no makeup, front view, whole wig visible, product photography, plain white background, soft even light, no text",
       "matte": "flood",
       "w_ref": "head",
-      "w_k": 1.45,
+      "w_k": 1.3,
       "anchor": [
         "head_top",
         "top"
@@ -349,14 +313,9 @@
       "label": "бандо со стразами",
       "query": "pink rhinestone bandeau top, flat lay, white background",
       "source": null,
-      "fit": {
-        "scale": 1.0,
-        "dx": 0.0,
-        "dy": 0.0
-      },
       "slot": "top",
       "prompt": "pink rhinestone bandeau top, product photography, real garment, photographed flat, soft even studio light, sharp detail, fabric texture, e-commerce catalogue photo, single item, centered, whole item visible, plain white background, no person, no model, no hands, no text",
-      "w_k": 1.05,
+      "w_k": 1.25,
       "anchor": [
         "chest",
         "bottom"
@@ -399,14 +358,9 @@
       "label": "розовое болеро",
       "query": "pink cropped bolero cardigan, flat lay, white background",
       "source": null,
-      "fit": {
-        "scale": 1.0,
-        "dx": 0.0,
-        "dy": 0.0
-      },
       "slot": "top",
       "prompt": "pink cropped bolero cardigan, product photography, real garment, photographed flat, soft even studio light, sharp detail, fabric texture, e-commerce catalogue photo, single item, centered, whole item visible, plain white background, no person, no model, no hands, no text",
-      "w_k": 0.94,
+      "w_k": 1.55,
       "anchor": [
         "chest",
         "bottom"
@@ -419,14 +373,9 @@
       "label": "мешковатое худи",
       "query": "oversized grey baggy hoodie, flat lay, white background",
       "source": null,
-      "fit": {
-        "scale": 1.0,
-        "dx": 0.0,
-        "dy": 0.0
-      },
       "slot": "top",
       "prompt": "a plain grey oversized hoodie laid flat, empty garment, product photography, real garment, photographed flat, soft even studio light, sharp detail, fabric texture, e-commerce catalogue photo, single item, centered, whole item visible, plain white background, no person, no model, no hands, no text",
-      "w_k": 1.21,
+      "w_k": 2.1,
       "anchor": [
         "hip",
         "bottom"
@@ -439,14 +388,9 @@
       "label": "футболка оверсайз",
       "query": "plain grey oversized t-shirt, flat lay, white background",
       "source": null,
-      "fit": {
-        "scale": 1.0,
-        "dx": 0.0,
-        "dy": 0.0
-      },
       "slot": "top",
       "prompt": "a plain grey oversized t-shirt laid flat, empty garment, product photography, real garment, photographed flat, soft even studio light, sharp detail, fabric texture, e-commerce catalogue photo, single item, centered, whole item visible, plain white background, no person, no model, no hands, no text",
-      "w_k": 1.13,
+      "w_k": 2.0,
       "anchor": [
         "hip",
         "bottom"
@@ -459,14 +403,9 @@
       "label": "спортивная кофта",
       "query": "black sports track jacket, flat lay, white background",
       "source": null,
-      "fit": {
-        "scale": 1.0,
-        "dx": 0.0,
-        "dy": 0.0
-      },
       "slot": "top",
       "prompt": "black sports track jacket, product photography, real garment, photographed flat, soft even studio light, sharp detail, fabric texture, e-commerce catalogue photo, single item, centered, whole item visible, plain white background, no person, no model, no hands, no text",
-      "w_k": 1.13,
+      "w_k": 2.05,
       "anchor": [
         "hip",
         "bottom"
@@ -479,14 +418,9 @@
       "label": "мужская рубашка",
       "query": "men's plaid flannel shirt, flat lay, white background",
       "source": null,
-      "fit": {
-        "scale": 1.0,
-        "dx": 0.0,
-        "dy": 0.0
-      },
       "slot": "top",
       "prompt": "a men's plaid flannel shirt laid flat and buttoned, empty garment, product photography, real garment, photographed flat, soft even studio light, sharp detail, fabric texture, e-commerce catalogue photo, single item, centered, whole item visible, plain white background, no person, no model, no hands, no text",
-      "w_k": 1.17,
+      "w_k": 2.1,
       "anchor": [
         "hip",
         "bottom"
@@ -514,14 +448,9 @@
       "label": "потёртая ветровка",
       "query": "worn faded windbreaker jacket, flat lay, white background",
       "source": null,
-      "fit": {
-        "scale": 1.0,
-        "dx": 0.0,
-        "dy": 0.0
-      },
       "slot": "top",
       "prompt": "worn faded windbreaker jacket, product photography, real garment, photographed flat, soft even studio light, sharp detail, fabric texture, e-commerce catalogue photo, single item, centered, whole item visible, plain white background, no person, no model, no hands, no text",
-      "w_k": 1.17,
+      "w_k": 2.1,
       "anchor": [
         "hip",
         "bottom"
@@ -639,14 +568,13 @@
       "label": "длинная тёмная юбка",
       "query": "long black maxi skirt, flat lay, white background",
       "source": null,
-      "fit": {
-        "scale": 1.0,
-        "dx": 0.0,
-        "dy": 0.0
-      },
       "slot": "bottom",
       "prompt": "a long black maxi skirt laid flat, empty garment, product photography, real garment, photographed flat, soft even studio light, sharp detail, fabric texture, e-commerce catalogue photo, single item, centered, whole item visible, plain white background, no person, no model, no hands, no text",
-      "w_k": 1.01
+      "w_k": 1.6,
+      "anchor": [
+        "waist",
+        "top"
+      ]
     },
     {
       "id": "sh_platform",
@@ -775,14 +703,9 @@
       "label": "жемчужное ожерелье",
       "query": "pearl necklace, product photo, white background",
       "source": null,
-      "fit": {
-        "scale": 1.0,
-        "dx": 0.0,
-        "dy": 0.0
-      },
       "slot": "acc",
       "prompt": "a white pearl necklace lying flat in a circle, jewellery only, product photography, real garment, photographed flat, soft even studio light, sharp detail, fabric texture, e-commerce catalogue photo, single item, centered, whole item visible, plain white background, no person, no model, no hands, no text",
-      "w_k": 0.62,
+      "w_k": 0.58,
       "anchor": [
         "neck",
         "top"
@@ -795,18 +718,16 @@
       "label": "сумочка с бантом",
       "query": "pink handbag with bow and gold clasp, product photo, white background",
       "source": null,
-      "fit": {
-        "scale": 1.0,
-        "dx": 0.255,
-        "dy": 0.0
-      },
       "slot": "acc",
       "prompt": "pink handbag with bow and gold clasp, product photography, real garment, photographed flat, soft even studio light, sharp detail, fabric texture, e-commerce catalogue photo, single item, centered, whole item visible, plain white background, no person, no model, no hands, no text",
-      "w_k": 0.55,
+      "w_k": 0.5,
       "anchor": [
         "hip",
         "top"
-      ]
+      ],
+      "fit": {
+        "dx": 0.3
+      }
     },
     {
       "id": "acc_tiara",
@@ -815,15 +736,10 @@
       "label": "диадема",
       "query": "rhinestone tiara crown, product photo, white background",
       "source": null,
-      "fit": {
-        "scale": 1.0,
-        "dx": 0.0,
-        "dy": 0.0
-      },
       "slot": "acc",
       "prompt": "rhinestone tiara crown, product photography, real garment, photographed flat, soft even studio light, sharp detail, fabric texture, e-commerce catalogue photo, single item, centered, whole item visible, plain white background, no person, no model, no hands, no text",
       "w_ref": "head",
-      "w_k": 0.8,
+      "w_k": 0.75,
       "anchor": [
         "head_top",
         "top"
@@ -836,15 +752,10 @@
       "label": "серьги-жемчужины",
       "query": "pearl drop earrings pair, product photo, white background",
       "source": null,
-      "fit": {
-        "scale": 1.0,
-        "dx": 0.0,
-        "dy": 0.0
-      },
       "slot": "acc",
       "prompt": "pearl drop earrings pair, product photography, real garment, photographed flat, soft even studio light, sharp detail, fabric texture, e-commerce catalogue photo, single item, centered, whole item visible, plain white background, no person, no model, no hands, no text",
       "w_ref": "head",
-      "w_k": 1.0,
+      "w_k": 0.95,
       "anchor": [
         "eye_line",
         "top"
@@ -857,18 +768,16 @@
       "label": "розовые перчатки",
       "query": "pink satin gloves, flat lay, white background",
       "source": null,
-      "fit": {
-        "scale": 1.0,
-        "dx": 0.0,
-        "dy": 0.0
-      },
       "slot": "acc",
       "prompt": "pink satin gloves, product photography, real garment, photographed flat, soft even studio light, sharp detail, fabric texture, e-commerce catalogue photo, single item, centered, whole item visible, plain white background, no person, no model, no hands, no text",
-      "w_k": 1.3,
+      "w_k": 0.75,
       "anchor": [
         "hip",
         "bottom"
-      ]
+      ],
+      "fit": {
+        "dx": 0.0
+      }
     },
     {
       "id": "acc_bracelet",
@@ -877,18 +786,16 @@
       "label": "браслет со стразами",
       "query": "rhinestone bracelet, product photo, white background",
       "source": null,
-      "fit": {
-        "scale": 1.0,
-        "dx": -0.3,
-        "dy": 0.0
-      },
       "slot": "acc",
       "prompt": "rhinestone bracelet, product photography, real garment, photographed flat, soft even studio light, sharp detail, fabric texture, e-commerce catalogue photo, single item, centered, whole item visible, plain white background, no person, no model, no hands, no text",
-      "w_k": 0.22,
+      "w_k": 0.16,
       "anchor": [
         "hip",
         "top"
-      ]
+      ],
+      "fit": {
+        "dx": -0.3
+      }
     },
     {
       "id": "acc_choker_bow",
@@ -897,14 +804,9 @@
       "label": "бант на шею",
       "query": "pink ribbon bow choker, product photo, white background",
       "source": null,
-      "fit": {
-        "scale": 1.0,
-        "dx": 0.0,
-        "dy": 0.0
-      },
       "slot": "acc",
       "prompt": "pink ribbon bow choker, product photography, real garment, photographed flat, soft even studio light, sharp detail, fabric texture, e-commerce catalogue photo, single item, centered, whole item visible, plain white background, no person, no model, no hands, no text",
-      "w_k": 0.45,
+      "w_k": 0.4,
       "anchor": [
         "neck",
         "top"
@@ -917,14 +819,9 @@
       "label": "крылышки феи",
       "query": "small glitter fairy wings costume, product photo, white background",
       "source": null,
-      "fit": {
-        "scale": 1.0,
-        "dx": 0.0,
-        "dy": 0.0
-      },
       "slot": "acc",
       "prompt": "small glitter fairy wings costume, product photography, real garment, photographed flat, soft even studio light, sharp detail, fabric texture, e-commerce catalogue photo, single item, centered, whole item visible, plain white background, no person, no model, no hands, no text",
-      "w_k": 2.1,
+      "w_k": 2.4,
       "anchor": [
         "shoulder",
         "top"
@@ -937,14 +834,9 @@
       "label": "рюкзак",
       "query": "black school backpack, product photo, white background",
       "source": null,
-      "fit": {
-        "scale": 1.0,
-        "dx": 0.0,
-        "dy": 0.0
-      },
       "slot": "acc",
       "prompt": "black school backpack, product photography, real garment, photographed flat, soft even studio light, sharp detail, fabric texture, e-commerce catalogue photo, single item, centered, whole item visible, plain white background, no person, no model, no hands, no text",
-      "w_k": 1.15,
+      "w_k": 0.95,
       "anchor": [
         "shoulder",
         "top"
@@ -957,15 +849,10 @@
       "label": "наушники",
       "query": "silver over-ear headphones, product photo, white background",
       "source": null,
-      "fit": {
-        "scale": 1.0,
-        "dx": 0.0,
-        "dy": 0.0
-      },
       "slot": "acc",
       "prompt": "silver over-ear headphones, product photography, real garment, photographed flat, soft even studio light, sharp detail, fabric texture, e-commerce catalogue photo, single item, centered, whole item visible, plain white background, no person, no model, no hands, no text",
       "w_ref": "head",
-      "w_k": 1.2,
+      "w_k": 1.1,
       "anchor": [
         "head_top",
         "top"
@@ -978,15 +865,10 @@
       "label": "очки",
       "query": "black rectangular eyeglasses, product photo, white background",
       "source": null,
-      "fit": {
-        "scale": 1.0,
-        "dx": 0.0,
-        "dy": 0.0
-      },
       "slot": "acc",
       "prompt": "black rectangular eyeglasses, product photography, real garment, photographed flat, soft even studio light, sharp detail, fabric texture, e-commerce catalogue photo, single item, centered, whole item visible, plain white background, no person, no model, no hands, no text",
       "w_ref": "head",
-      "w_k": 0.9,
+      "w_k": 0.85,
       "anchor": [
         "eye_line",
         "top"
@@ -999,15 +881,10 @@
       "label": "кепка",
       "query": "black baseball cap, product photo, white background",
       "source": null,
-      "fit": {
-        "scale": 1.0,
-        "dx": 0.0,
-        "dy": 0.0
-      },
       "slot": "acc",
       "prompt": "a black baseball cap, side view, headwear only, product photography, real garment, photographed flat, soft even studio light, sharp detail, fabric texture, e-commerce catalogue photo, single item, centered, whole item visible, plain white background, no person, no model, no hands, no text",
       "w_ref": "head",
-      "w_k": 1.05,
+      "w_k": 1.0,
       "anchor": [
         "head_top",
         "top"
@@ -1020,15 +897,10 @@
       "label": "пластырь на щеке",
       "query": "adhesive bandage plaster strip, product photo, white background",
       "source": null,
-      "fit": {
-        "scale": 1.0,
-        "dx": 0.0,
-        "dy": 0.0
-      },
       "slot": "acc",
       "prompt": "adhesive bandage plaster strip, product photography, real garment, photographed flat, soft even studio light, sharp detail, fabric texture, e-commerce catalogue photo, single item, centered, whole item visible, plain white background, no person, no model, no hands, no text",
       "w_ref": "head",
-      "w_k": 0.26,
+      "w_k": 0.22,
       "anchor": [
         "eye_line",
         "top"
@@ -1041,18 +913,16 @@
       "label": "разводной ключ",
       "query": "adjustable wrench tool, product photo, white background",
       "source": null,
-      "fit": {
-        "scale": 1.0,
-        "dx": 0.255,
-        "dy": 0.0
-      },
       "slot": "acc",
       "prompt": "adjustable wrench tool, product photography, real garment, photographed flat, soft even studio light, sharp detail, fabric texture, e-commerce catalogue photo, single item, centered, whole item visible, plain white background, no person, no model, no hands, no text",
-      "w_k": 0.45,
+      "w_k": 0.42,
       "anchor": [
         "hip",
         "top"
-      ]
+      ],
+      "fit": {
+        "dx": 0.3
+      }
     },
     {
       "id": "acc_eyepatch",
@@ -1061,15 +931,10 @@
       "label": "повязка на глаз",
       "query": "black fabric eye patch, product photo, white background",
       "source": null,
-      "fit": {
-        "scale": 1.0,
-        "dx": 0.0,
-        "dy": 0.0
-      },
       "slot": "acc",
       "prompt": "black fabric eye patch, product photography, real garment, photographed flat, soft even studio light, sharp detail, fabric texture, e-commerce catalogue photo, single item, centered, whole item visible, plain white background, no person, no model, no hands, no text",
       "w_ref": "head",
-      "w_k": 0.42,
+      "w_k": 0.38,
       "anchor": [
         "eye_line",
         "top"
@@ -1143,10 +1008,10 @@
     "doll_size": "704x1280",
     "doll_prompt": "product photo of a white matte fiberglass retail display mannequin, female shop window mannequin with arms, full body straight front view, entire mannequin from head to feet in frame, standing upright, perfectly symmetrical frontal pose, mannequin arms hanging straight down at the sides with molded hands, legs straight and parallel, feet together, blank oval mannequin head with absolutely no facial features, no face, no eyes, no nose, no mouth, smooth bald plastic head, slim feminine mannequin figure, matte white plastic surface, plain seamless dark charcoal grey studio background, even soft light on the mannequin, strong separation from background",
     "face_anchor": {
-      "x": 0.35,
-      "y": 0.093,
-      "w": 0.3,
-      "h": 0.075
+      "x": 0.3997,
+      "y": 0.0781,
+      "w": 0.1934,
+      "h": 0.0576
     },
     "expressions": [
       "happy",

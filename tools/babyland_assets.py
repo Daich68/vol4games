@@ -189,6 +189,23 @@ def coverage(rgba: Image.Image) -> float:
     return float((np.asarray(rgba.getchannel("A")) > 40).mean())
 
 
+def border_frac(rgba: Image.Image, band: int = 3) -> float:
+    """Доля непрозрачных пикселей по рамке кадра.
+
+    У честно вырезанного предмета край пустой. Если рамка залита — в маску
+    попал фон (подложка, карточка, стена), и такой результат брать нельзя,
+    каким бы «правдоподобным» ни было общее покрытие.
+    """
+    a = np.asarray(rgba.getchannel("A")) > 40
+    if a.shape[0] <= band * 2 or a.shape[1] <= band * 2:
+        return 1.0
+    edges = np.concatenate([
+        a[:band, :].ravel(), a[-band:, :].ravel(),
+        a[:, :band].ravel(), a[:, -band:].ravel(),
+    ])
+    return float(edges.mean())
+
+
 def cut_auto(img: Image.Image, prefer=None, verbose=""):
     """Матирует, сам выбирая метод по правдоподобию результата.
 
@@ -218,10 +235,15 @@ def cut_auto(img: Image.Image, prefer=None, verbose=""):
         except Exception:
             continue
         cov = coverage(r)
-        if 0.06 <= cov <= 0.88:
+        # Одного покрытия мало: фоновая подложка даёт вполне «правдоподобные»
+        # 40%, и в результат уезжает прямоугольник с жёстким краем — именно
+        # это дало белые коробки вокруг половины вещей. Настоящий признак —
+        # маска ЛЕЗЕТ НА РАМКУ кадра: у вырезанного предмета край пустой.
+        if 0.06 <= cov <= 0.88 and border_frac(r) < 0.12:
             return r, name
-        # запоминаем наименее безумный на случай, если ни один не подойдёт
-        score = -abs(cov - 0.35)
+        # запоминаем наименее безумный на случай, если ни один не подойдёт:
+        # штрафуем и за неправдоподобное покрытие, и за залитую рамку
+        score = -abs(cov - 0.35) - border_frac(r) * 2.0
         if score > best_cov:
             best, best_name, best_cov = r, name, score
     if verbose:
@@ -339,6 +361,45 @@ def cmd_queries(cat, args):
         print(f"{mark} {it['id']:22} [{it['kind']:6}] {it['query']}")
 
 
+# ── ГОТОВЫЕ СЛОИ: вещь нарисована прямо на манекене ───────────────────────
+# Слои из tools/dress_prototype.py уже стоят на своих местах в координатах
+# исходной базы, поэтому их нельзя «сажать» второй раз. Всё, что нужно —
+# применить к базе и КО ВСЕМ слоям ОДНО И ТО ЖЕ преобразование кадра.
+PLACED_DIR = ROOT / "art" / "babyland" / "work"
+
+
+def placed_layer(item_id):
+    p = PLACED_DIR / f"layer_{item_id}.png"
+    return p if p.exists() else None
+
+
+def frame_transform(base_png: Path, doll):
+    """Общий кадр: обрезка по силуэту базы с запасом → холст куклы.
+
+    Запас по бокам больше, чем сверху и снизу: широкие вещи (крылья, сумка)
+    выходят за силуэт тела, и без запаса их бы срезало.
+    """
+    img = Image.open(base_png).convert("RGB")
+    rgba, _ = cut_auto(trim_border(img), prefer=doll.get("matte"), verbose="база")
+    bb = rgba.getbbox()
+    if not bb:
+        sys.exit("силуэт базы не найден")
+    x0, y0, x1, y1 = bb
+    bw, bh = x1 - x0, y1 - y0
+    px, py = int(bw * 0.22), int(bh * 0.03)
+    box = (max(0, x0 - px), max(0, y0 - py),
+           min(img.width, x1 + px), min(img.height, y1 + py))
+    H = doll["h"]
+    W = max(8, int(round((box[2] - box[0]) / (box[3] - box[1]) * H)) // 2 * 2)
+    return box, (W, H)
+
+
+def apply_frame(png: Path, box, size, rgba=False):
+    im = Image.open(png)
+    im = im.convert("RGBA") if rgba else im.convert("RGB")
+    return im.crop(box).resize(size, Image.LANCZOS)
+
+
 def cmd_build(cat, args):
     ITEMS_DIR.mkdir(parents=True, exist_ok=True)
     WORK_DIR.mkdir(parents=True, exist_ok=True)
@@ -373,7 +434,45 @@ def cmd_build(cat, args):
     # целиком и гоняем через тот же грейд, что и вещи, — иначе кукла будет
     # выглядеть чище своей одежды и стык будет виден.
     doll_src = ROOT / "art" / "babyland" / "doll" / "base.png"
-    if doll_src.exists() and not args.only:
+
+    # Если есть готовые слои — весь набор переводится в ОДИН кадр: база и
+    # каждый слой обрезаются и масштабируются одинаково. Риг, ширины и якоря
+    # для таких слоёв не нужны: позиция уже в пикселях.
+    frame = None
+    if doll_src.exists() and any(PLACED_DIR.glob("layer_*.png")):
+        box, size = frame_transform(doll_src, doll)
+        doll["w"], doll["h"] = size
+        frame = (box, size)
+        (OUT_DIR / "doll").mkdir(parents=True, exist_ok=True)
+        # База обязана быть С ПРОЗРАЧНОСТЬЮ: иначе студийный фон уезжает в
+        # игру серым прямоугольником вокруг куклы.
+        b_rgba, _ = cut_auto(trim_border(Image.open(doll_src)),
+                             prefer=doll.get("matte"), verbose="база")
+        b = b_rgba.crop(box).resize(size, Image.LANCZOS)
+        b = grade(b, g, "doll")
+        b.save(OUT_DIR / "doll" / "base.png")
+        manifest["doll"].update({"w": size[0], "h": size[1], "src": "doll/base.png"})
+        print(f"общий кадр: {box} → {size[0]}x{size[1]}")
+
+        # Якорь лица пересчитывается под новый кадр: макияж рисованный, он
+        # садится по координатам, и старые остались от прежнего холста.
+        try:
+            al = np.asarray(cut_auto(trim_border(Image.open(OUT_DIR / "doll" / "base.png")),
+                                     prefer="flood")[0].getchannel("A"))
+            lines, widths, cx = measure_rig(al)
+            anchor = {"x": round(cx - widths["head"] * 0.36, 4),
+                      "y": round(lines["eye_line"] - 0.018, 4),
+                      "w": round(widths["head"] * 0.72, 4),
+                      "h": round(widths["head"] * 0.72 * size[0] / size[1] * 0.6, 4)}
+            manifest["face_anchor"] = anchor
+            cat["generation"]["face_anchor"] = anchor
+            CATALOG.write_text(json.dumps(cat, ensure_ascii=False, indent=2),
+                               encoding="utf-8")
+            print(f"якорь лица: {anchor}")
+        except Exception as e:
+            print("   ! якорь лица не пересчитан:", e)
+
+    if doll_src.exists() and not args.only and frame is None:
         d, _ = cut_auto(trim_border(Image.open(doll_src)),
                         prefer=doll.get("matte"), verbose="база куклы")
         bb = d.getbbox()
@@ -392,6 +491,19 @@ def cmd_build(cat, args):
     for it in cat["items"]:
         if args.only and it["id"] not in args.only:
             continue
+        # готовый слой: только перевести в общий кадр
+        lay = placed_layer(it["id"]) if frame else None
+        if lay is not None:
+            im = apply_frame(lay, frame[0], frame[1], rgba=True)
+            im = grade(im, g, it["kind"])
+            im.save(ITEMS_DIR / f"{it['id']}.png")
+            bb = im.getbbox()
+            th = im.crop(bb) if bb else im
+            th.thumbnail((256, 256), Image.LANCZOS)
+            th.save(ITEMS_DIR / f"{it['id']}.thumb.png")
+            built += 1
+            continue
+
         raw = find_raw(it["id"])
         if raw is None:
             skipped += 1
@@ -476,11 +588,14 @@ def cmd_build(cat, args):
         if it["cat"] in drawn_cats:
             continue                              # уже положены выше
         if (ITEMS_DIR / f"{it['id']}.png").exists():
-            manifest["items"][it["id"]] = {
+            rec = {
                 "slot": it["slot"], "z": doll["z"][it["slot"]],
                 "src": f"items/{it['id']}.png",
                 "thumb": f"items/{it['id']}.thumb.png",
             }
+            if frame and placed_layer(it["id"]):
+                rec["placed"] = True      # позиция в пикселях, подгонка не нужна
+            manifest["items"][it["id"]] = rec
     # база куклы: нарисованный SVG имеет приоритет над сгенерированным PNG —
     # только он гарантирует лысую голову, пустое лицо и точные якоря слотов
     svg_src = ROOT / "art" / "babyland" / "doll" / "base.svg"
@@ -832,9 +947,74 @@ def cmd_rig(cat, args):
         print(f"разметка: {out}")
 
 
+
+def cmd_fitsheet(cat, args):
+    """Лист СОБРАННЫХ кукол: база + по одной вещи в каждый слот, много раскладов.
+
+    Та проверка, которой не хватало. Контактный лист показывает вещи по
+    отдельности, и на нём не видно ни съехавшей посадки, ни остатков фона —
+    каждая вещь там на своей карточке. Дефект вылезает только на СОБРАННОЙ
+    кукле, поэтому смотреть надо её.
+    """
+    mf = OUT_DIR / "manifest.json"
+    if not mf.exists():
+        sys.exit("нет манифеста — сначала build")
+    man = json.loads(mf.read_text(encoding="utf-8"))
+    items = man.get("items", {})
+    doll = cat["doll"]
+
+    by_slot = {}
+    for iid, rec in items.items():
+        by_slot.setdefault(rec["slot"], []).append((iid, rec))
+    for v in by_slot.values():
+        v.sort()
+
+    base_p = OUT_DIR / man["doll"]["src"]
+    base = Image.open(base_p).convert("RGBA") if base_p.suffix == ".png" else None
+
+    import random
+    rnd = random.Random(args.seed if args.seed is not None else 7)
+    order = ["hair", "bottom", "top", "shoes", "acc"]
+
+    n = args.count or 8
+    cells = []
+    for i in range(n):
+        canvas = Image.new("RGBA", (doll["w"], doll["h"]), (250, 246, 250, 255))
+        if base:
+            canvas.alpha_composite(base)
+        used = []
+        for slot in order:
+            pool = by_slot.get(slot) or []
+            pool = [x for x in pool if x[1]["src"].endswith(".png")]
+            if not pool:
+                continue
+            iid, rec = pool[rnd.randrange(len(pool))]
+            layer = OUT_DIR / rec["src"]
+            if layer.exists():
+                canvas.alpha_composite(Image.open(layer).convert("RGBA"))
+                used.append(iid)
+        cells.append((canvas, used))
+
+    from PIL import ImageDraw
+    cols = min(4, n)
+    rows = (n + cols - 1) // cols
+    cw, ch = 300, 600
+    sheet = Image.new("RGB", (cols * cw, rows * (ch + 62)), (22, 20, 26))
+    d = ImageDraw.Draw(sheet)
+    for i, (im, used) in enumerate(cells):
+        x, y = (i % cols) * cw, (i // cols) * (ch + 62)
+        th = im.copy(); th.thumbnail((cw - 12, ch - 12), Image.LANCZOS)
+        sheet.paste(th.convert("RGB"), (x + (cw - th.width) // 2, y + 6))
+        for j, iid in enumerate(used):
+            d.text((x + 8, y + ch + 4 + j * 11), iid, fill=(180, 180, 195))
+    out = ROOT / "art" / "babyland" / "fit-sheet.png"
+    sheet.save(out)
+    print(f"лист собранных кукол: {out}  ({n} раскладов)")
+
+
 def main():
     ap = argparse.ArgumentParser(description="BABYLAND — конвейер графики")
-    ap.add_argument("cmd", choices=["status", "build", "sheet", "queries", "gen", "rig"])
+    ap.add_argument("cmd", choices=["status", "build", "sheet", "queries", "gen", "rig", "fitsheet"])
     ap.add_argument("--only", nargs="*", help="только эти id")
     ap.add_argument("--grabcut", action="store_true", help="матирование GrabCut (сложный фон)")
     ap.add_argument("--debug", action="store_true", help="сохранять промежуточные вырезы в work/")
@@ -844,10 +1024,12 @@ def main():
     ap.add_argument("--steps", type=int, help="gen: шагов сэмплера")
     ap.add_argument("--model", choices=["sdxl", "wan"], help="gen: чем генерить")
     ap.add_argument("--force", action="store_true", help="gen: перегенерить поверх существующего")
+    ap.add_argument("--count", type=int, help="fitsheet: сколько раскладов")
     args = ap.parse_args()
     cat = load_catalog()
     {"status": cmd_status, "build": cmd_build, "sheet": cmd_sheet,
-     "queries": cmd_queries, "gen": cmd_gen, "rig": cmd_rig}[args.cmd](cat, args)
+     "queries": cmd_queries, "gen": cmd_gen, "rig": cmd_rig,
+     "fitsheet": cmd_fitsheet}[args.cmd](cat, args)
 
 
 if __name__ == "__main__":

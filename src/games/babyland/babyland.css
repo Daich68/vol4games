@@ -129,7 +129,7 @@ body.rot-4 #blRoot { filter: saturate(1.5) contrast(1.2) hue-rotate(-12deg); }
 #blLayers {
   position: absolute; left: 50%; top: 50%;
   transform: translate(-50%, -50%);
-  height: 96%; aspect-ratio: 400 / 1200;
+  height: 96%; aspect-ratio: 596 / 1200;
   display: none;
   pointer-events: none;
 }
@@ -150,10 +150,14 @@ body.rot-4 #blRoot { filter: saturate(1.5) contrast(1.2) hue-rotate(-12deg); }
    1. Белая вырубка по контуру вещи — вещь становится наклейкой. Наклейка
       имеет право не совпадать с телом: её на тело НАКЛЕИЛИ. */
 #blLayers img.doll-item {
-  filter:
-    drop-shadow( 1.5px 0 0 #fff) drop-shadow(-1.5px 0 0 #fff)
-    drop-shadow(0  1.5px 0 #fff) drop-shadow(0 -1.5px 0 #fff)
-    drop-shadow(2px 3px 2px rgba(120,20,80,0.28));
+  /* Обводка ТЁМНАЯ, а не белая. Белая вырубка задумывалась под розовый фон,
+     но кукла — белый манекен, и белые вещи на нём просто исчезали: белый
+     контур поверх белого не отделяет ничего. Тёмная линия плюс смещённая
+     тень читаются и на теле, и на фоне. */
+  /* Обводка сильно тише: вещь теперь нарисована прямо на манекене и сама
+     отделяется светом и складками. Жирный контур превращал куклу в раскраску,
+     а нужна лишь лёгкая посадочная тень. */
+  filter: drop-shadow(2px 3px 4px rgba(90,15,60,0.30));
   /* 2. Микро-перекос: наклеено вручную и чуть криво */
   transform: rotate(var(--jr, 0deg)) translate(var(--jx, 0px), var(--jy, 0px));
   transform-origin: 50% 45%;
@@ -520,14 +524,12 @@ body.rot-4 #blRoot { filter: saturate(1.5) contrast(1.2) hue-rotate(-12deg); }
 /* на финале кукла показывается целиком — тем же стеком слоёв, что в игре */
 #blEnding .fin-doll {
   position: relative;
-  height: min(52vh, 380px); aspect-ratio: 400 / 1200;
+  height: min(52vh, 380px); aspect-ratio: 596 / 1200;
 }
 #blEnding .fin-layers { position: absolute; inset: 0; }
 #blEnding .fin-layers img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
 #blEnding .fin-layers img.doll-item {
-  filter: drop-shadow( 1.5px 0 0 #fff) drop-shadow(-1.5px 0 0 #fff)
-          drop-shadow(0  1.5px 0 #fff) drop-shadow(0 -1.5px 0 #fff)
-          drop-shadow(2px 3px 2px rgba(120,20,80,0.28));
+  filter: drop-shadow(2px 3px 4px rgba(90,15,60,0.30));
 }
 #blEnding .fin-layers img.doll-face { inset: auto; height: auto; object-fit: fill; }
 
