@@ -4,8 +4,12 @@ import { buildHead, faceTexture, MAKEUP } from './face.js';
 // One coordinate system for the body and every garment, in scene units.
 export const RIG = { sole:.12, ankle:.29, knee:1.05, hip:1.69, waist:2.02, chest:2.28, shoulder:2.52, neck:2.69, head:2.90 };
 const profile = [[1.53,.22,.14],[1.69,.29,.18],[1.84,.25,.16],[2.02,.20,.14],[2.18,.25,.17],[2.34,.29,.18],[2.49,.30,.14],[2.57,.15,.10]];
-const pinks = ['#ef8bb4','#edb6d0','#d9609a','#f5cddc','#cc68a0','#e99db7'];
-const darks = ['#565467','#444652','#738083','#777183','#373440','#65717b'];
+// Дуотон оставляет от цвета только светлоту, поэтому «красивое» и
+// «неправильное» разведены по яркости с запасом: это геймплейный сигнал,
+// а не оформление. Замер: самое тёмное розовое 0.34, самое светлое
+// тёмное 0.13 — зазор втрое шире прежнего.
+const pinks = ['#ef8bb4', '#edb6d0', '#e87cb0', '#f5cddc', '#ef8ec0', '#e99db7'];
+const darks = ['#4a4857', '#3a3c46', '#575f63', '#565162', '#2e2c35', '#4c555d'];
 const mat = (color, glossy=false) => new T.MeshStandardMaterial({color,roughness:glossy?.29:.65,metalness:glossy?.13:0,side:T.DoubleSide});
 const skin = '#f4d3b8';
 function mesh(g,geo,m,pos=[0,0,0]) { const o=new T.Mesh(geo,m);o.position.set(...pos);o.castShadow=true;o.receiveShadow=true;g.add(o);return o; }
