@@ -338,10 +338,21 @@ dialog p{margin:0;padding:10px 20px 0;font:var(--t-small)/1.65 var(--mono);color
 #ending a{display:block;margin-top:18px;font:var(--t-micro)/1 var(--mono);
   letter-spacing:.14em;color:var(--ink-3);text-decoration:none}
 #ending a:hover{color:var(--rose)}
-#ending[data-kind=perfect]{background:#000000d0;justify-content:flex-end;
-  align-items:flex-end;padding-bottom:250px;pointer-events:none}
-#ending[data-kind=perfect] > div{pointer-events:auto;max-width:310px;
-  padding:22px;background:var(--void);border:1px solid var(--rose-deep)}
+/* Победа НЕ затемняется. По брифу (стр. 7) здесь играет весёлая музыка и
+   девочка застывает с чрезмерной улыбкой «до самого закрытия вкладки».
+   Тёмная пелена читала бы это как грустный финал и убивала смысл: страшно
+   ровно то, что всё осталось идеальным и не кончается. Поэтому стол виден
+   целиком, на шестой ступени блаженства, а окно поздравления — розовое. */
+#ending[data-kind=perfect]{background:#00000038;justify-content:flex-end;
+  align-items:flex-end;padding-bottom:238px;pointer-events:none}
+#ending[data-kind=perfect] > div{pointer-events:auto;max-width:318px;
+  padding:20px;background:var(--rose);border:1px solid #fff;
+  box-shadow:0 0 26px #f0a8c066,6px 6px 0 var(--rose-deep)}
+#ending[data-kind=perfect] .edition{color:#7d2b48}
+#ending[data-kind=perfect] h2{color:var(--void);text-shadow:none}
+#ending[data-kind=perfect] p{color:#5c1c33}
+#ending[data-kind=perfect] a{color:#7d2b48}
+#ending[data-kind=perfect] a:hover{color:var(--void)}
 
 #scream{position:fixed;inset:0;z-index:200;display:grid;place-content:center;
   background:var(--void);color:var(--rose);text-align:center;
@@ -549,3 +560,15 @@ body:has(#ending:not([hidden])) .diary-tab{display:none}
   letter-spacing:var(--ls-ui);color:var(--rose)}
 .intro-greet span{color:var(--rose-deep)}
 .bl-intro .intro-invite,#intro .intro-invite{margin:0 0 26px}
+
+/* скример: её лицо крупно + фраза поверх, как и просит бриф («окно можно
+   прямо поверх скримера»). Цвет выкручен в предел — дешевизна пугает
+   сильнее качества. */
+#scream{display:grid;place-content:center;gap:18px;justify-items:center}
+#screamShot{width:min(46vw,380px);height:auto;
+  image-rendering:pixelated;
+  filter:grayscale(1) contrast(2.6) brightness(1.25) invert(1);
+  mix-blend-mode:screen}
+#scream p{margin:0;text-align:center;
+  font:var(--t-display)/1.45 var(--mono);letter-spacing:var(--ls-display);
+  color:var(--rose)}

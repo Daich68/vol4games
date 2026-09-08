@@ -38,11 +38,16 @@ export function createScene(host) {
  });
  // окна-спутники показывают тот же кадр кусками. Копировать надо СРАЗУ
  // после render в том же кадре: буфер WebGL живёт только до конца задачи.
- let fragments=[];
+ let fragments=[],shots=[];
+ // Одноразовый снимок: скримеру нужна её гримаса, а не текстовая плашка.
+ // Кадр берём тем же способом, что и окна-спутники — прямо из буфера.
+ function grab(canvas,x,y,w,h){shots.push({canvas,x,y,w,h});}
  function copyFragments(){
-  if(!fragments.length)return;
+  if(!fragments.length&&!shots.length)return;
   const w=renderer.domElement.width,h=renderer.domElement.height;
-  for(const f of fragments){
+  const jobs=shots.length?fragments.concat(shots):fragments;
+  shots=[];
+  for(const f of jobs){
    const ctx=f.canvas.getContext('2d');if(!ctx)continue;
    ctx.clearRect(0,0,f.canvas.width,f.canvas.height);
    try{ctx.drawImage(renderer.domElement,f.x*w,f.y*h,f.w*w,f.h*h,0,0,f.canvas.width,f.canvas.height);}catch{}
@@ -64,6 +69,7 @@ export function createScene(host) {
  return {
   thumbnail,
   fragments(list){fragments=list||[];},
+  capture(canvas,x=.34,y=.04,w=.32,h=.26){grab(canvas,x,y,w,h);},
   wear(cat,id){if(layers.has(cat)){model.remove(layers.get(cat));disposeGroup(layers.get(cat));layers.delete(cat);}if(id&&cat!=='makeup'){const item=itemById(id),g=createItem(cat,item,ITEMS[cat].findIndex(i=>i.id===id));model.add(g);layers.set(cat,g);}},
   face(kind,makeup){body.expression(kind,makeup);},
   view(face){zoom=face;targetAngle=0;host.dataset.view=face?'face':'full';},

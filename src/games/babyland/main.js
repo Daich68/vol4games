@@ -48,7 +48,7 @@ function escalate(force=false){
  dread?.set(state.cycles+(level>=3?1:0));
  if(state.cycles>=3){finish('gone');return true;}
  if(level===4){sound('glitch');scene.face('grimace',state.worn.makeup);
-  if(!matchMedia('(prefers-reduced-motion: reduce)').matches){$('scream').hidden=false;clearTimeout(flashTimer);flashTimer=setTimeout(()=>$('scream').hidden=true,550);}}
+  if(!matchMedia('(prefers-reduced-motion: reduce)').matches){scene.capture($('screamShot'));$('scream').hidden=false;clearTimeout(flashTimer);flashTimer=setTimeout(()=>$('scream').hidden=true,620);}}
  if(force||level===4)dialog('Эта девочка хочет быть красивой!');
  else if(level===3)dialog('Ей это не нравится!!!');
  else if(level===2)dialog('Это не очень красиво.');
