@@ -77,7 +77,13 @@ export function createScene(host) {
  return {
   thumbnail,
   fragments(list){fragments=list||[];},
-  capture(canvas,x=.34,y=.04,w=.32,h=.26){grab(canvas,x,y,w,h);},
+  // Скример берёт её лицо крупно. Рамку выбирает сама сцена: она знает свой
+  // план, а снаружи это забывали учесть — в режиме «лицо» фиксированная рамка
+  // ловила пустой лоб вместо гримасы.
+  capture(canvas){
+   const r = zoom ? [.28,.22,.44,.42] : [.36,.04,.28,.20];
+   grab(canvas, r[0], r[1], r[2], r[3]);
+  },
   wear(cat,id){if(layers.has(cat)){model.remove(layers.get(cat));disposeGroup(layers.get(cat));layers.delete(cat);}if(id&&cat!=='makeup'){const item=itemById(id),g=createItem(cat,item,ITEMS[cat].findIndex(i=>i.id===id));model.add(g);layers.set(cat,g);}},
   face(kind,makeup){body.expression(kind,makeup);},
   view(face){zoom=face;targetAngle=0;host.dataset.view=face?'face':'full';},

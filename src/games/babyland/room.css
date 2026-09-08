@@ -570,9 +570,12 @@ body:has(#ending:not([hidden])) .diary-tab{display:none}
    прямо поверх скримера»). Цвет выкручен в предел — дешевизна пугает
    сильнее качества. */
 #scream{display:grid;place-content:center;gap:18px;justify-items:center}
-#screamShot{width:min(46vw,380px);height:auto;
+/* Лицо в скримере светлое, а не негативом: на обоих референсах Ланы (стр. 5)
+   лицо ярко освещено, черты тёмные. Инверсия давала фотонегатив — эффектно,
+   но это уже не её лицо. Контраст выкручен вместо неё. */
+#screamShot{width:min(52vw,440px);height:auto;
   image-rendering:pixelated;
-  filter:grayscale(1) contrast(2.6) brightness(1.25) invert(1);
+  filter:grayscale(1) contrast(2.1) brightness(1.18);
   mix-blend-mode:screen}
 #scream p{margin:0;text-align:center;
   font:var(--t-display)/1.45 var(--mono);letter-spacing:var(--ls-display);

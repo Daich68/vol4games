@@ -118,31 +118,30 @@ export function faceTexture({ expression = "happy", makeup = null,
 
   // ── глаза ──
   const lash = (makeup && makeup.lash) || 1;
-  const shape = { happy: 1.0, sad: 0.72, worried: 1.12, grimace: 0.25, frozen: 1.05 }[expression] ?? 1;
+  // Раскрытие века. У гримасы оно САМОЕ большое: на обоих референсах Ланы
+  // (бриф, стр. 5, «гримаса типа того») глаза широко раскрыты и пялятся,
+  // белок виден вокруг радужки. Зажмуренный крест читался бы мультяшной
+  // болью, а нужен неподвижный взгляд куклы.
+  const shape = { happy: 1.0, sad: 0.72, worried: 1.12, grimace: 1.5, frozen: 1.05 }[expression] ?? 1;
   for (const s of [-1, 1]) {
     const ex = cx + s * eyeDX;
-    if (expression === "grimace") {
-      // зажмурено крестом — единственный кадр, где кукла перестаёт быть милой
-      x.strokeStyle = "#3a2b33"; x.lineWidth = S * 0.014; x.lineCap = "round";
-      x.beginPath();
-      x.moveTo(ex - S * 0.045, eyeY - S * 0.035); x.lineTo(ex + S * 0.045, eyeY + S * 0.035);
-      x.moveTo(ex + S * 0.045, eyeY - S * 0.035); x.lineTo(ex - S * 0.045, eyeY + S * 0.035);
-      x.stroke();
-      continue;
-    }
     // белок
     x.save(); x.translate(ex, eyeY); x.scale(1, shape * 0.72);
     x.fillStyle = "#fdfcfa";
     x.beginPath(); x.arc(0, 0, S * 0.083, 0, 7); x.fill();
     x.restore();
     // радужка и зрачок
-    const irisR = S * 0.044 * (expression === "worried" ? 0.72 : 1);
+    // Радужка у гримасы мельче и выше: белок, видимый вокруг и снизу, —
+    // то самое, от чего лицо перестаёт быть живым.
+    const grim = expression === "grimace";
+    const irisR = S * 0.044 * (expression === "worried" ? 0.72 : grim ? 0.62 : 1);
+    const irisY = eyeY + S * (grim ? -0.020 : 0.004);
     x.fillStyle = (makeup && makeup.iris) || "#6b4a3a";
-    x.beginPath(); x.arc(ex, eyeY + S * 0.004, irisR, 0, 7); x.fill();
+    x.beginPath(); x.arc(ex, irisY, irisR, 0, 7); x.fill();
     x.fillStyle = "#241b20";
-    x.beginPath(); x.arc(ex, eyeY + S * 0.004, irisR * 0.48, 0, 7); x.fill();
+    x.beginPath(); x.arc(ex, irisY, irisR * 0.48, 0, 7); x.fill();
     x.fillStyle = "rgba(255,255,255,0.92)";
-    x.beginPath(); x.arc(ex - irisR * 0.34, eyeY - irisR * 0.36, irisR * 0.26, 0, 7); x.fill();
+    x.beginPath(); x.arc(ex - irisR * 0.34, irisY - irisR * 0.36, irisR * 0.26, 0, 7); x.fill();
     // верхняя линия ресниц — по ней читается «кукольность»
     x.strokeStyle = "#2c2027"; x.lineWidth = S * 0.011 * lash; x.lineCap = "round";
     x.beginPath();
@@ -158,10 +157,11 @@ export function faceTexture({ expression = "happy", makeup = null,
     }
     // бровь
     x.strokeStyle = "#59413a"; x.lineWidth = S * 0.012; x.beginPath();
-    const browY = eyeY - S * 0.13 + (expression === "sad" ? S * 0.012 : 0);
+    const browY = eyeY - S * (grim ? 0.175 : 0.13) + (expression === "sad" ? S * 0.012 : 0);
+    if (grim) { x.strokeStyle = "#2a1c22"; x.lineWidth = S * 0.015; }
     const tilt = expression === "sad" ? -S * 0.018 : expression === "worried" ? -S * 0.026 : 0;
     x.moveTo(ex - s * S * 0.078, browY - tilt * s * 0);
-    x.quadraticCurveTo(ex, browY - S * 0.016 + (tilt * -1), ex + s * S * 0.076, browY + (s === 1 ? 0 : 0) + (tilt ? -tilt : 0));
+    x.quadraticCurveTo(ex, browY - S * (grim ? 0.040 : 0.016) + (tilt * -1), ex + s * S * 0.076, browY + (s === 1 ? 0 : 0) + (tilt ? -tilt : 0));
     x.stroke();
   }
 
@@ -174,8 +174,8 @@ export function faceTexture({ expression = "happy", makeup = null,
 
   // ── губы ──
   const lipFill = (makeup && makeup.lip) || "#c9707a";
-  const w = S * (expression === "frozen" ? 0.15 : 0.11) * ((makeup && makeup.lipWide) || 1);
-  const h = S * (expression === "grimace" ? 0.055 : 0.026);
+  const w = S * (expression === "frozen" ? 0.15 : expression === "grimace" ? 0.165 : 0.11) * ((makeup && makeup.lipWide) || 1);
+  const h = S * (expression === "grimace" ? 0.075 : 0.026);
   const up = expression === "sad" ? -1 : 1;
   x.fillStyle = lipFill;
   x.beginPath();
