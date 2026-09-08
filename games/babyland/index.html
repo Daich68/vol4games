@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<link rel="icon" type="image/svg+xml" href="/babyland-icon.svg">
+<title>BABYLAND — Идеальная девочка</title>
+</head>
+<!-- BABYLAND — DLC.
+     Подача: не страница, а чужой рабочий стол. Всё содержимое живёт в окнах
+     с тайтлбаром и адресом localhost. Девочку не показывают целиком: на неё
+     смотрят из нескольких окон, каждое видит свой фрагмент.
+     Заголовки окон-спутников — строки Ланы из makeup.txt: список требований
+     к девочке. Требование смотрит на ту часть тела, которой оно касается. -->
+<body>
+<div class="os-bezel"><i>┌</i><i>┐</i><i>└</i><i>┘</i></div>
+<header class="os-rail top"><a href="/" id="back">← карта</a><span>vol4://babyland ◈</span><span id="machine">диск вставлен</span></header>
+
+<main id="game">
+ <header class="room-brand"><h1>BABYLAND<span>идеальная девочка</span></h1><p>Лана Ленкова</p></header>
+ <div class="room-meta"><span id="slots">0 / 6</span><button id="sound" aria-pressed="false">звук вкл</button></div>
+
+ <div class="workspace">
+
+  <!-- окна-спутники: живые фрагменты той же сцены, копируются изканваса
+       после каждого кадра. Не декорация — это взгляды на неё. -->
+  <div class="win fragment" id="frag-1" style="left:4%;top:12%" aria-hidden="true">
+   <div class="bar"><b>укладывать брови</b></div>
+   <div class="body"><canvas width="104" height="126"></canvas></div>
+  </div>
+  <div class="win fragment" id="frag-2" style="left:11%;top:44%" aria-hidden="true">
+   <div class="bar"><b>казаться меньше</b></div>
+   <div class="body"><canvas width="104" height="126"></canvas></div>
+  </div>
+  <div class="win fragment" id="frag-3" style="right:5%;top:9%" aria-hidden="true">
+   <div class="bar"><b>подводить линию роста</b></div>
+   <div class="body"><canvas width="104" height="126"></canvas></div>
+  </div>
+  <div class="win fragment" id="frag-4" style="right:12%;top:47%" aria-hidden="true">
+   <div class="bar"><b>рисовать солнечный свет</b></div>
+   <div class="body"><canvas width="104" height="126"></canvas></div>
+  </div>
+
+  <!-- главное окно: она целиком -->
+  <section class="win room" id="win-gaze" aria-label="Трёхмерная примерочная">
+   <div class="bar"><b>она</b></div>
+   <div class="url">http://127.0.0.1:5173/babyland/girl.html</div>
+   <div class="body">
+    <div id="scene"></div>
+    <div id="sceneError" hidden><p>Не удалось открыть 3D-примерочную. Для неё нужен WebGL 2.</p><button onclick="location.reload()">Попробовать ещё раз</button></div>
+   </div>
+  </section>
+
+  <div class="view-tools">
+   <button id="rotateLeft" aria-label="Повернуть влево">↶</button>
+   <button id="full" aria-pressed="true">образ</button>
+   <button id="face" aria-pressed="false">лицо</button>
+   <button id="rotateRight" aria-label="Повернуть вправо">↷</button>
+  </div>
+  <p class="drag-hint">потяни, чтобы повернуть</p>
+
+  <!-- гардероб как файловый листинг: вещи это файлы на чужом диске -->
+  <aside class="win wardrobe" id="win-files">
+   <div class="bar"><b>гардероб</b></div>
+   <div class="url">http://127.0.0.1:5173/babyland/wardrobe/ — 55 файлов</div>
+   <div class="body">
+    <div class="wardrobe-bar">
+     <nav id="categories" aria-label="Категории гардероба"></nav>
+     <button id="drawerToggle" aria-expanded="true" aria-controls="items">свернуть ↓</button>
+    </div>
+    <div class="drawer">
+     <header><span id="categoryNumber">01 / 06</span><h2 id="categoryTitle">причёска</h2><p id="categoryHint">Выбери то, что ей подойдёт.</p></header>
+     <div id="items"></div>
+    </div>
+   </div>
+   <p id="look" class="sr-only" aria-live="polite">Твой первый выбор — впереди.</p>
+  </aside>
+
+ </div>
+ <footer class="status"><p id="status" aria-live="polite">Сделай эту девочку красивой.</p><span id="cycles">♡</span></footer>
+</main>
+
+<section id="intro" aria-labelledby="introTitle">
+ <div class="intro-copy">
+  <p class="intro-credit">Игра-стих Ланы Ленковой</p>
+  <h2 id="introTitle">BABYLAND<span>идеальная девочка</span></h2>
+  <p class="intro-greet">Добро пожаловать в BABYLAND <span aria-hidden="true">♡</span></p>
+  <p class="intro-invite">Сделай эту девочку красивой!</p>
+  <button id="start">войти в примерочную <span>↗</span></button>
+  <p class="intro-note">Выбирай вещи. Меняй образ.<br>Она будет рада. Правда?</p>
+ </div>
+ <span class="intro-seal" aria-hidden="true">100%<br>pretty</span>
+</section>
+
+<div id="subtitles" hidden><span>Лана Ленкова</span><p></p><button id="hidePoem" aria-label="Скрыть субтитры">×</button></div>
+
+<dialog id="reactionDialog"><form method="dialog"><header><span>BABYLAND</span><button aria-label="Закрыть">×</button></header><h2 id="reactionTitle"></h2><p id="reactionText"></p><button class="primary">Хорошо</button></form></dialog>
+
+<dialog id="exitDialog" aria-labelledby="exitTitle"><form method="dialog"><header><span>BABYLAND</span><button value="stay" aria-label="Закрыть">×</button></header><h2 id="exitTitle">Вы уверены?</h2><p>Эта девочка всё ещё хочет быть красивой.</p><div class="exit-actions"><button value="stay" autofocus>Остаться</button><button value="leave">Всё равно выйти</button></div></form></dialog>
+
+<section id="ending" hidden aria-labelledby="endingTitle"><div><p class="edition">BABYLAND</p><h2 id="endingTitle"></h2><p id="endingText"></p><button id="restart">Попробовать всё исправить</button><a href="/">← карта</a></div></section>
+
+<!-- Анкета из брифа (стр. 12): доступна в углу всю игру. Единственный
+     тёплый объект на чёрном столе — и та же механика, развёрнутая на
+     игрока: теперь ты сам украшаешь себя, чтобы понравиться. -->
+<button id="diaryOpen" class="diary-tab" aria-haspopup="dialog">дневничок ♡</button>
+<dialog id="diaryWin" aria-labelledby="diaryTitle">
+ <div class="bar"><b id="diaryTitle">анкета</b><button id="diaryClose" aria-label="Закрыть">×</button></div>
+ <div class="url">file:///BABYLAND/анкета.html — не отправлено</div>
+ <div class="diary-body">
+  <div class="diary-sheet"><canvas id="diaryCanvas" width="420" height="560"
+       aria-label="Твоя анкета. Клик по листу ставит выбранную наклейку."></canvas></div>
+  <div class="diary-tools">
+   <div class="diary-fields" id="diaryFields"></div>
+   <fieldset><legend>цвет листа</legend><div id="diaryPapers" class="swatches"></div></fieldset>
+   <fieldset><legend>рамка</legend><div id="diaryFrames" class="chips"></div></fieldset>
+   <fieldset><legend>наклейки</legend><div id="diaryStickers" class="chips"></div>
+    <p class="diary-hint">выбери наклейку и ткни в лист</p></fieldset>
+   <div class="diary-actions">
+    <button id="diaryUndo">убрать наклейку</button>
+    <button id="diarySave" class="primary">сохранить</button>
+    <button id="diaryShare">скачать картинку</button>
+   </div>
+   <p class="diary-note" id="diaryNote">Анкета хранится только у тебя в браузере.</p>
+  </div>
+ </div>
+</dialog>
+
+<div id="scream" hidden aria-hidden="true">ЭТА ДЕВОЧКА ХОЧЕТ БЫТЬ КРАСИВОЙ</div>
+
+<script type="module" src="/src/games/babyland/main.js"></script>
+</body>
+</html>

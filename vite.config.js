@@ -36,8 +36,8 @@ export default defineConfig({
         "nancy-drew": resolve(__dirname, "games/nancy-drew/index.html"),
         birds:      resolve(__dirname, "games/birds/index.html"),
         prizma:     resolve(__dirname, "games/prizma/index.html"),
-        // DLC babyland: страница снесена под полную переделку. Нода и пункт
-        // меню на карте остались и ведут в 404, пока страницу не соберут заново.
+        babyland:   resolve(__dirname, "games/babyland/index.html"),
+        // BABYLAND is a separate DLC entry; the four-poem map arithmetic is unchanged.
       },
     },
   },

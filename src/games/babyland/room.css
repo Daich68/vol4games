@@ -1,0 +1,551 @@
+@import '../../shared/os.css';
+
+/* ═══════════════════════════════════════════════════════════════════════
+   BABYLAND — дизайн-система «рабочий стол»
+
+   Не страница, а чужой десктоп. Чёрная пустота, в ней окна; у каждого
+   тайтлбар и адрес localhost. Девочку не показывают целиком — на неё
+   смотрят из нескольких окон сразу, и каждое видит свой фрагмент.
+   Это и есть игра: её разглядывают.
+
+   Стих Ланы живёт в ЗАГОЛОВКАХ окон, а не в подписи под картинкой.
+   Заголовки читаются подряд и складываются во фразу.
+
+   Что здесь сознательно НЕ делается:
+   - никаких сдвинутых копий текста и поворотов заголовка: «объём» из
+     смещённых теней — первое, что выдаёт сгенерированный макет;
+   - никакого выделения текста мышью: это интерфейс, а не документ;
+   - ни одной скруглённой «карточки»: окно имеет прямой угол и рамку,
+     как окно, а не как плитка в приложении.
+
+   Палитра взята с референса: пыльная роза и чёрный, второй тон —
+   пепельно-оливковый. Не конфетно-розовый: он был бы мил, а нужно жутко.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+:root{
+  --void:#000;
+  --rose:#f0a8c0;          /* основной: розовое на чёрном */
+  --rose-dim:#b9788e;
+  --rose-deep:#7d4257;
+  --ash:#9a8f7a;           /* второй тон растра, из референса */
+  --chrome:#e8e8e6;        /* корпус окна */
+  --chrome-bar:#dcdcda;
+  --chrome-line:#a8a8a4;
+  --chrome-ink:#1c1c1c;
+  --url:#f6f6f4;
+
+
+/* ─── ТИПОГРАФИЧЕСКАЯ СИСТЕМА ──────────────────────────────────────────
+   Шесть ступеней, у каждой ровно одна роль. До этого в файле было 13
+   произвольных кеглей на 51 объявление — отсюда и ощущение случайности.
+
+   Правило системы: иерархию держат ЦВЕТ и РАЗРЯДКА, а не насыщенность.
+   Жирный моноширинный всегда выглядит грязно, поэтому вес везде 400;
+   единственное исключение — хром окна, он рисуется системным шрифтом,
+   потому что это чужой интерфейс, а не наш текст.                       */
+  --t-micro:9px;    /* служебное: адреса, индексы, имена файлов, статус */
+  --t-small:10px;   /* управление: кнопки, категории, заголовки окон    */
+  --t-body:11px;    /* чтение: стих, текст системных окон               */
+  --t-lead:14px;    /* приглашение, название открытой категории         */
+  --t-title:20px;   /* заголовок системного окна и концовки             */
+  --t-display:clamp(26px,3.6vw,40px);  /* BABYLAND, скример             */
+
+  /* разрядка привязана к роли, а не к вкусу */
+  --ls-display:.34em;   /* витринное: имя игры, скример   */
+  --ls-caps:.16em;      /* прописные подписи и заголовки  */
+  --ls-ui:.08em;        /* управление                     */
+  --ls-text:.02em;      /* сплошной текст                 */
+
+  /* три ступени тона — четвёртой нет, иначе иерархия расплывается */
+  --ink-1:var(--rose);
+  --ink-2:#8a8a8a;
+  --ink-3:#4a4a4a;
+  --ink-chrome:#57575a;
+
+  --mono:'JetBrains Mono',ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+  --sys:-apple-system,'Segoe UI',Tahoma,sans-serif;
+
+  font-family:var(--mono);
+  color:var(--rose);
+  background:var(--void);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--void)}
+
+/* Интерфейс не выделяется мышью. Исключение — стих: его можно скопировать. */
+body{-webkit-user-select:none;user-select:none}
+#subtitles p,#subtitles{-webkit-user-select:text;user-select:text}
+
+button,a{-webkit-tap-highlight-color:transparent}
+button{font:inherit;cursor:pointer;color:inherit;border:0;background:transparent;min-height:34px}
+button:disabled{cursor:default}
+button:focus-visible,a:focus-visible{outline:2px solid var(--rose);outline-offset:2px}
+[hidden]{display:none!important}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+
+/* ── растр поверх всего: дизер, а не размытие ─────────────────────────── */
+body::after{
+  content:'';position:fixed;inset:0;z-index:100;pointer-events:none;
+  background-image:radial-gradient(circle at 0 0,#ffffff14 .5px,#0000 .6px);
+  background-size:3px 3px;
+  mix-blend-mode:overlay;
+}
+
+/* ── рейка и безель машины: остаются от vol4/OS ───────────────────────── */
+.os-rail{position:fixed;inset:0 0 auto;height:30px;z-index:41;display:flex;
+  justify-content:space-between;align-items:center;padding:0 22px;
+  font:var(--t-small)/1 var(--mono);letter-spacing:.06em;
+  background:var(--void);color:#8e8e92;border-bottom:1px solid #1e1e1e}
+.os-rail a{color:inherit;text-decoration:none}
+.os-rail a:hover{color:var(--rose)}
+.os-bezel{position:fixed;inset:30px 12px 12px;border:1px solid #262626;pointer-events:none;z-index:40}
+.os-bezel i{position:absolute;font:var(--t-title)/1 var(--mono);color:#3a3a3a}
+.os-bezel i:nth-child(1){left:-5px;top:-8px}
+.os-bezel i:nth-child(2){right:-5px;top:-8px}
+.os-bezel i:nth-child(3){left:-5px;bottom:-8px}
+.os-bezel i:nth-child(4){right:-5px;bottom:-8px}
+
+#game{position:relative;height:calc(100dvh - 44px);margin:31px 13px 13px;
+  overflow:hidden;background:var(--void)}
+.workspace{position:absolute;inset:0}
+
+/* ═══ ОКНО — единственный контейнер во всей системе ════════════════════ */
+.win{
+  position:absolute;display:flex;flex-direction:column;
+  background:var(--chrome);border:1px solid var(--chrome-line);
+  box-shadow:0 10px 30px #000000b0;
+}
+.win > .bar{
+  flex:0 0 auto;display:flex;align-items:center;gap:8px;
+  height:22px;padding:0 8px;
+  background:var(--chrome-bar);border-bottom:1px solid var(--chrome-line);
+}
+/* три точки — не украшение: они говорят «это чужое окно, не наша страница» */
+.win > .bar::before{
+  content:'';flex:0 0 auto;width:32px;height:8px;
+  background:
+    radial-gradient(circle 4px at 4px 4px,#c9c9c5 98%,#0000),
+    radial-gradient(circle 4px at 16px 4px,#c9c9c5 98%,#0000),
+    radial-gradient(circle 4px at 28px 4px,#c9c9c5 98%,#0000);
+}
+.win > .bar b{
+  flex:1;text-align:center;
+  font:500 var(--t-small)/1 var(--sys);letter-spacing:.16em;text-transform:uppercase;
+  color:var(--ink-chrome);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+/* адресная строка: работа идёт на localhost, и это видно */
+.win > .url{
+  flex:0 0 auto;display:flex;align-items:center;gap:6px;
+  height:20px;padding:0 8px;
+  background:var(--url);border-bottom:1px solid var(--chrome-line);
+  font:var(--t-micro)/1 var(--mono);color:#6d6d70;
+  white-space:nowrap;overflow:hidden;
+}
+.win > .url::before{content:'ⓘ';font-size:var(--t-micro);color:#a0a0a3}
+.win > .body{flex:1;min-height:0;position:relative;background:var(--void);overflow:hidden}
+
+/* ═══ ГЛАВНОЕ ОКНО — девочка ══════════════════════════════════════════ */
+#win-gaze{left:50%;transform:translateX(-50%);top:34px;bottom:210px;width:min(360px,46%)}
+#scene{position:absolute;inset:0;cursor:grab}
+#scene:active{cursor:grabbing}
+#scene canvas{display:block;width:100%;height:100%;
+  /* дуотон: сцена обесцвечивается и красится розовым сквозь смешивание */
+  filter:grayscale(1) contrast(1.15)}
+.room > .body::after{
+  content:'';position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:var(--rose);mix-blend-mode:multiply}
+
+/* спутники: те же кадры, только фрагментами — её разглядывают по частям */
+.fragment{width:146px;height:132px}
+.fragment > .bar{height:20px;padding:0 5px}
+.fragment > .bar::before{width:20px;background-size:20px 8px;
+  background:radial-gradient(circle 3px at 3px 4px,#c9c9c5 98%,#0000),
+            radial-gradient(circle 3px at 11px 4px,#c9c9c5 98%,#0000),
+            radial-gradient(circle 3px at 19px 4px,#c9c9c5 98%,#0000)}
+.fragment > .bar b{font-size:var(--t-micro);letter-spacing:.04em;text-transform:none}
+.fragment .body{background:var(--void)}
+.fragment canvas{position:absolute;inset:0;width:100%;height:100%;
+  filter:grayscale(1) contrast(1.2)}
+.fragment .body::after{
+  content:'';position:absolute;inset:0;background:var(--rose);
+  mix-blend-mode:multiply;pointer-events:none}
+
+/* ═══ ФАЙЛОВЫЙ ЛИСТИНГ — гардероб ═════════════════════════════════════ */
+.wardrobe{left:0;right:0;bottom:29px;height:178px}
+.wardrobe-bar{display:flex;align-items:center;justify-content:space-between;
+  gap:12px;padding:0 10px;background:#141414;border-bottom:1px solid #242424}
+#categories{display:flex;gap:0}
+#categories button{position:relative;display:flex;align-items:center;gap:7px;
+  min-height:30px;padding:0 12px;
+  font:var(--t-small)/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;
+  color:var(--rose-dim);border-right:1px solid #242424;white-space:nowrap}
+#categories .cat-index{font-size:var(--t-micro);color:var(--ink-3)}
+#categories small{font-size:var(--t-micro);color:var(--ink-3);letter-spacing:.04em}
+#categories button[aria-pressed=true]{background:var(--rose);color:var(--void)}
+#categories button[aria-pressed=true] .cat-index,
+#categories button[aria-pressed=true] small{color:#00000099}
+#categories button:disabled{color:var(--ink-3)}
+#drawerToggle{font:var(--t-micro)/1 var(--mono);letter-spacing:.08em;color:var(--ink-3);
+  text-transform:uppercase;min-height:30px;padding:0 10px}
+#drawerToggle:hover{color:var(--rose)}
+
+.drawer{display:flex;height:calc(100% - 31px);min-height:0}
+.drawer > header{flex:0 0 132px;padding:9px 12px;border-right:1px solid #242424;
+  background:#0c0c0c}
+.drawer header > span{font:var(--t-micro)/1 var(--mono);color:var(--ink-3);letter-spacing:.1em}
+.drawer h2{margin:7px 0 5px;font:var(--t-lead)/1.1 var(--mono);letter-spacing:.02em;
+  color:var(--rose);text-transform:lowercase}
+.drawer header p{margin:0;font:var(--t-micro)/1.5 var(--mono);color:var(--ink-3)}
+
+/* сетка файлов: плотная, как в проводнике — из референса */
+#items{flex:1;min-width:0;display:grid;grid-auto-flow:column;
+  grid-template-rows:repeat(2,1fr);grid-auto-columns:max-content;
+  justify-content:start;align-content:start;gap:2px;
+  padding:8px;overflow-x:auto;overflow-y:hidden;
+  scrollbar-width:thin;scrollbar-color:var(--rose-deep) #0c0c0c}
+#items button{position:relative;flex:0 0 auto;width:76px;
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+  padding:4px 2px;min-height:0;border:1px solid transparent;
+  background:#150d11}
+#items button:hover{background:#1e1218;border-color:#33202a}
+/* Иконка файла лежит в ячейке, а не смешивается с пустотой: при screen по
+   чёрному тёмные вещи («неправильные») пропадали совсем, а именно они и
+   должны быть видны — это половина выбора. */
+#items img{width:38px;height:38px;object-fit:contain;
+  filter:grayscale(1) brightness(1.45) contrast(.92)}
+#items button > span{font:var(--t-micro)/1.15 var(--mono);color:var(--ink-2);text-align:center;
+  letter-spacing:.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  max-width:100%}
+/* имя файла вместо человеческой подписи: это листинг, а не витрина */
+#items button::after{content:attr(data-file);font:var(--t-micro)/1 var(--mono);color:var(--ink-3)}
+#items button[aria-pressed=true]{border-color:var(--rose);background:#1a0e14}
+#items button[aria-pressed=true] > span{color:var(--rose)}
+#items button[aria-pressed=true]::after{color:var(--rose-dim)}
+#items button:disabled{opacity:.32}
+
+/* ═══ ПРИБОРЫ ═════════════════════════════════════════════════════════ */
+.room-brand{position:absolute;left:0;top:9px;z-index:3;pointer-events:none}
+/* Заголовок без поворота и без смещённых копий: моноширинный, разряженный.
+   Он метка носителя, а не логотип бренда. Одной строкой — иначе три строки
+   подписи наезжают на угол окна со сценой. */
+.room-brand{display:flex;align-items:baseline;gap:13px;white-space:nowrap}
+.room-brand h1{margin:0;display:flex;align-items:baseline;gap:13px;
+  font:var(--t-small)/1 var(--mono);letter-spacing:.34em;color:var(--rose)}
+.room-brand h1 br{display:none}
+.room-brand h1 span{font-size:var(--t-micro);letter-spacing:.14em;color:var(--rose-deep)}
+.room-brand p{margin:0;font:var(--t-micro)/1 var(--mono);letter-spacing:.1em;color:var(--ink-3)}
+
+.room-meta{position:absolute;right:0;top:9px;z-index:3;display:flex;gap:14px;
+  align-items:center;font:var(--t-micro)/1 var(--mono);letter-spacing:.1em;color:var(--ink-3)}
+.room-meta #slots{color:var(--rose)}
+#sound{font:var(--t-micro)/1 var(--mono);letter-spacing:.1em;color:var(--ink-3);min-height:22px}
+#sound:hover{color:var(--rose)}
+
+.view-tools{position:absolute;left:50%;transform:translateX(-50%);bottom:212px;
+  z-index:5;display:flex;gap:1px;background:#141414;border:1px solid #242424}
+.view-tools button{min-width:34px;min-height:24px;padding:0 10px;
+  font:var(--t-micro)/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)}
+.view-tools button[aria-pressed=true]{background:var(--rose);color:var(--void)}
+.view-tools button:hover{color:var(--rose)}
+.view-tools button[aria-pressed=true]:hover{color:var(--void)}
+.drag-hint{position:absolute;left:0;bottom:212px;margin:0;
+  font:var(--t-micro)/1 var(--mono);letter-spacing:.06em;color:var(--ink-3)}
+
+.status{position:absolute;left:0;right:0;bottom:0;height:29px;z-index:4;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:0 2px;font:var(--t-micro)/1 var(--mono);letter-spacing:.08em;color:var(--ink-3);
+  border-top:1px solid #1e1e1e}
+.status p{margin:0}
+#cycles{color:var(--rose)}
+
+.drawer-closed .drawer{display:none}
+.drawer-closed .wardrobe{height:31px}
+.drawer-closed #win-gaze{bottom:60px}
+.drawer-closed .view-tools,.drawer-closed .drag-hint{bottom:66px}
+
+/* ═══ СТИХ ════════════════════════════════════════════════════════════ */
+#subtitles{position:fixed;left:26px;bottom:230px;width:min(400px,36vw);z-index:20;
+  background:var(--chrome);border:1px solid var(--chrome-line);
+  box-shadow:0 10px 30px #000000b0}
+#subtitles > span{display:block;height:22px;padding:0 8px;
+  background:var(--chrome-bar);border-bottom:1px solid var(--chrome-line);
+  font:500 var(--t-small)/var(--t-title) var(--sys);letter-spacing:.16em;text-transform:uppercase;
+  color:var(--ink-chrome);text-align:center}
+#subtitles p{margin:0;padding:14px 16px;white-space:pre-line;
+  font:var(--t-body)/1.7 var(--mono);color:var(--rose);background:var(--void)}
+#hidePoem{position:absolute;right:0;top:0;width:28px;min-height:22px;
+  color:var(--ink-chrome);font:var(--t-small)/1 var(--sys)}
+
+/* ═══ СИСТЕМНЫЕ ОКНА ══════════════════════════════════════════════════ */
+dialog{z-index:35;padding:0;width:min(370px,88vw);color:var(--rose);
+  background:var(--chrome);border:1px solid var(--chrome-line);
+  box-shadow:0 16px 44px #000000cc}
+dialog::backdrop{background:#000000c4;clip-path:inset(31px 13px 13px)}
+dialog header{display:flex;align-items:center;justify-content:space-between;
+  height:22px;padding-left:10px;background:var(--chrome-bar);
+  border-bottom:1px solid var(--chrome-line);
+  font:500 var(--t-small)/1 var(--sys);letter-spacing:.16em;color:var(--ink-chrome)}
+dialog header button{width:28px;min-height:22px;color:var(--ink-chrome)}
+dialog form{background:var(--void)}
+dialog h2{margin:0;padding:18px 20px 0;font:var(--t-title)/1.3 var(--mono);color:var(--rose)}
+dialog p{margin:0;padding:10px 20px 0;font:var(--t-small)/1.65 var(--mono);color:var(--ink-2)}
+.primary,.exit-actions button{margin:16px 20px 20px;padding:8px 16px;
+  font:var(--t-micro)/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;
+  color:var(--void);background:var(--rose)}
+.exit-actions{display:flex;gap:8px;padding:0 20px 20px}
+.exit-actions button{margin:16px 0 0}
+.exit-actions button[value=leave]{background:transparent;color:var(--ink-3);
+  border:1px solid #2e2e2e}
+
+/* ═══ ПРОЛОГ ══════════════════════════════════════════════════════════ */
+#intro{position:fixed;inset:31px 13px 13px;z-index:30;background:var(--void);
+  overflow:hidden;display:grid;place-items:center}
+.intro-copy{position:relative;z-index:2;text-align:center;padding:20px}
+.intro-credit{margin:0 0 26px;font:var(--t-micro)/1 var(--mono);letter-spacing:.22em;
+  text-transform:uppercase;color:var(--ink-3)}
+/* то же правило, что и у метки носителя: без поворота, без сдвинутых копий */
+#introTitle{margin:0;font:var(--t-display)/1.2 var(--mono);
+  letter-spacing:.44em;color:var(--rose);text-indent:.44em}
+#introTitle br{display:none}
+#introTitle span{display:block;margin-top:14px;
+  font-size:var(--t-small);letter-spacing:.3em;color:var(--rose-deep);text-indent:.3em}
+.intro-invite{margin:36px 0 26px;font:var(--t-lead)/1.9 var(--mono);
+  letter-spacing:.06em;color:var(--ink-2)}
+.intro-invite br{display:none}
+#start{padding:11px 26px;font:var(--t-small)/1 var(--mono);letter-spacing:.16em;
+  text-transform:uppercase;color:var(--void);background:var(--rose)}
+#start:hover{background:#fff}
+#start span{margin-left:14px}
+.intro-note{margin:26px 0 0;font:var(--t-micro)/1.8 var(--mono);letter-spacing:.06em;color:var(--ink-3)}
+/* печать «100% pretty» — единственная круглая форма в системе, поэтому и
+   читается как штамп, а не как элемент интерфейса */
+.intro-seal{position:absolute;right:9%;top:11%;z-index:2;
+  width:86px;height:86px;display:grid;place-content:center;text-align:center;
+  border:1px solid var(--rose-deep);border-radius:50%;
+  font:var(--t-small)/1.5 var(--mono);letter-spacing:.08em;color:var(--rose-deep);
+  transform:rotate(-11deg)}
+
+/* ═══ КОНЦОВКИ И СКРИМЕР ══════════════════════════════════════════════ */
+#ending{position:fixed;inset:31px 13px 13px;z-index:30;background:#000000f2;
+  display:flex;align-items:center;justify-content:center;padding:26px;color:var(--rose)}
+#ending > div{max-width:460px}
+.edition{margin:0;font:var(--t-micro)/1 var(--mono);letter-spacing:.24em;color:var(--ink-3)}
+#ending h2{margin:20px 0;font:var(--t-display)/1.25 var(--mono);
+  letter-spacing:.04em;color:var(--rose)}
+#ending p{margin:0;font:var(--t-body)/1.8 var(--mono);color:var(--ink-2)}
+#restart{margin-top:22px;padding:10px 20px;font:var(--t-micro)/1 var(--mono);
+  letter-spacing:.14em;text-transform:uppercase;color:var(--void);background:var(--rose)}
+#ending a{display:block;margin-top:18px;font:var(--t-micro)/1 var(--mono);
+  letter-spacing:.14em;color:var(--ink-3);text-decoration:none}
+#ending a:hover{color:var(--rose)}
+#ending[data-kind=perfect]{background:#000000d0;justify-content:flex-end;
+  align-items:flex-end;padding-bottom:250px;pointer-events:none}
+#ending[data-kind=perfect] > div{pointer-events:auto;max-width:310px;
+  padding:22px;background:var(--void);border:1px solid var(--rose-deep)}
+
+#scream{position:fixed;inset:0;z-index:200;display:grid;place-content:center;
+  background:var(--void);color:var(--rose);text-align:center;
+  font:var(--t-display)/1.45 var(--mono);letter-spacing:.3em}
+
+#sceneError{position:absolute;inset:14%;z-index:5;padding:18px;
+  background:var(--chrome);color:var(--chrome-ink);
+  font:var(--t-small)/1.6 var(--mono)}
+#sceneError button{margin-top:12px;padding:8px 14px;
+  background:var(--chrome-ink);color:var(--chrome);font:var(--t-micro)/1 var(--mono);
+  letter-spacing:.12em;text-transform:uppercase}
+
+body:has(#intro:not([hidden])) .room-brand,
+body:has(#intro:not([hidden])) .room-meta,
+body:has(#intro:not([hidden])) .wardrobe,
+body:has(#intro:not([hidden])) .status,
+body:has(#intro:not([hidden])) .view-tools,
+body:has(#intro:not([hidden])) .drag-hint,
+body:has(#intro:not([hidden])) .fragment{visibility:hidden}
+
+@media(max-width:900px){
+  #win-gaze{width:52%}
+  .drawer > header{flex-basis:104px}
+  .fragment{display:none}
+}
+@media(max-width:600px){
+  #game{margin:31px 5px 5px;height:calc(100dvh - 36px)}
+  .os-bezel{inset:30px 4px 4px}
+  .os-rail{padding:0 12px;font-size:var(--t-micro)}
+  #machine{display:none}
+  .room-brand h1{font-size:var(--t-body);letter-spacing:.3em}
+  .room-meta{gap:8px}
+  #win-gaze{width:76%;bottom:214px}
+  .wardrobe{left:0;right:0;height:185px}
+  .drawer > header{flex-basis:88px;padding:7px 8px}
+  .drawer h2{font-size:var(--t-small)}
+  .drawer header p{display:none}
+  #items{padding:6px;grid-template-rows:repeat(2,1fr)}
+  #items button{width:66px}
+  #items img{width:32px;height:32px}
+  .view-tools,.drag-hint{bottom:220px}
+  .fragment{display:none}
+  #subtitles{left:12px;right:12px;width:auto;bottom:238px}
+  #intro,#ending{inset:31px 5px 5px}
+  .intro-seal{width:64px;height:64px;font-size:var(--t-small);right:6%;top:7%}
+  #introTitle{font-size:var(--t-title);letter-spacing:.34em;text-indent:.34em}
+  .intro-invite{font-size:var(--t-small);margin:26px 0 20px}
+}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+}
+
+/* ═══ НАРАСТАНИЕ УЖАСА ════════════════════════════════════════════════
+   Бриф, стр. 12: «хоррор возникает постепенно и не разрушает ощущение
+   милой игры с первых секунд». Поэтому ступень 0 не делает ничего, а
+   дальше портится не девочка, а РАБОЧИЙ СТОЛ — на периферии зрения.
+   Из брифа взяты ровно два средства: мерцание и лёгкие глитчи.       */
+
+/* 1 — мерцание. Едва заметное, и только на спутниках. */
+#game[data-dread="1"] .fragment{animation:bl-flicker 5.5s steps(1,end) infinite}
+#game[data-dread="2"] .fragment{animation:bl-flicker 3.1s steps(1,end) infinite}
+#game[data-dread="3"] .fragment{animation:bl-flicker 1.7s steps(1,end) infinite}
+#game[data-dread="4"] .fragment{animation:bl-flicker .9s steps(1,end) infinite}
+.fragment:nth-of-type(2){animation-delay:-1.3s}
+.fragment:nth-of-type(3){animation-delay:-2.6s}
+.fragment:nth-of-type(4){animation-delay:-.7s}
+@keyframes bl-flicker{0%,92%{opacity:1}93%,96%{opacity:.22}97%{opacity:.9}}
+
+/* 2 — хром начинает терять цвет: окна выцветают в мертвенное */
+#game[data-dread="2"] .win{filter:saturate(.7)}
+#game[data-dread="3"] .win{filter:saturate(.35) brightness(.94)}
+#game[data-dread="4"] .win{filter:saturate(0) brightness(.86)}
+
+/* 3 — лёгкие глитчи: полосы сдвига поперёк главного окна */
+#game[data-dread="3"] .room > .body::before,
+#game[data-dread="4"] .room > .body::before{
+  content:'';position:absolute;inset:0;z-index:2;pointer-events:none;
+  background:repeating-linear-gradient(0deg,#0000 0 7px,var(--rose) 7px 8px);
+  opacity:.10;animation:bl-glitch 2.6s steps(3,end) infinite}
+#game[data-dread="4"] .room > .body::before{opacity:.2;animation-duration:1.1s}
+@keyframes bl-glitch{0%,88%{transform:translateY(0)}90%{transform:translateY(-4px)}
+  94%{transform:translateY(3px)}98%{transform:translateY(-2px)}}
+
+/* 4 — она уже не одна: адрес ветвится, и это видно по строке */
+#game[data-dread="4"] .win > .url{color:var(--rose-deep)}
+
+/* Спутники проявляются по одному (hidden ставит dread.js), но появление
+   не должно быть щелчком: окно всплывает так же, как всплывало бы чужое. */
+.fragment{animation-fill-mode:both}
+
+/* ═══ НАГРАДА ═════════════════════════════════════════════════════════
+   Бриф, стр. 3 и 11: свечение, блёстки, пиксельные вспышки,
+   курсор-звёздочка, «интерфейс становится слишком идеальным».
+   Обратная сторона той же шкалы, что и ужас.                          */
+
+/* курсор-звёздочка: игра для девочек не имеет права на системную стрелку */
+#game,#intro{cursor:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22'%3E%3Cpath d='M11 1 L13 8 L20 11 L13 14 L11 21 L9 14 L2 11 L9 8 Z' fill='%23f0a8c0' stroke='%23fff' stroke-width='.8'/%3E%3C/svg%3E") 11 11,auto}
+#game button,#game a,#intro button{cursor:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22'%3E%3Cpath d='M11 1 L13 8 L20 11 L13 14 L11 21 L9 14 L2 11 L9 8 Z' fill='%23fff' stroke='%23f0a8c0' stroke-width='1'/%3E%3C/svg%3E") 11 11,pointer}
+
+.shine-layer{position:absolute;inset:0;z-index:9;pointer-events:none;overflow:hidden}
+.spark{position:absolute;width:5px;height:5px;margin:-2px 0 0 -2px;
+  background:#fff;box-shadow:0 0 0 1px var(--rose);
+  animation:bl-spark var(--d,600ms) steps(4,end) forwards}
+@keyframes bl-spark{
+  0%{transform:translate(0,0) scale(1);opacity:1}
+  100%{transform:translate(var(--dx),var(--dy)) scale(.2);opacity:0}}
+
+/* вспышка сеткой квадратов, а не мягким градиентом: мягкое размытие
+   выдало бы современный движок */
+.pixel-flash{position:absolute;inset:0;
+  background:repeating-conic-gradient(var(--rose) 0 25%,#0000 0 50%) 0 0/9px 9px;
+  animation:bl-flash 340ms steps(4,end) forwards}
+@keyframes bl-flash{0%{opacity:.55}100%{opacity:0}}
+
+/* «красивое свечение» на окне со сценой */
+.win.glow{animation:bl-glow 1100ms ease-out}
+@keyframes bl-glow{
+  0%{box-shadow:0 0 0 0 #fff,0 0 34px 10px var(--rose),0 10px 30px #000000b0}
+  100%{box-shadow:0 0 0 0 #fff0,0 0 0 0 #fff0,0 10px 30px #000000b0}}
+
+/* ── ступени блаженства: интерфейс доводится до слишком идеального ──
+   Розовеет хром, теплеет пустота, у заголовков появляются сердечки.
+   На шестой ступени всё сияет — и это так же неживо, как порча.      */
+#game[data-bliss="1"],#game[data-bliss="2"]{--void:#050203}
+#game[data-bliss="3"],#game[data-bliss="4"]{--void:#0b0407}
+#game[data-bliss="5"]{--void:#12060b}
+#game[data-bliss="6"]{--void:#1a080f}
+#game[data-bliss]{background:var(--void)}
+#game[data-bliss="2"] .win>.bar,#game[data-bliss="3"] .win>.bar{background:#e6dade}
+#game[data-bliss="4"] .win>.bar{background:#efd8e4}
+#game[data-bliss="5"] .win>.bar{background:#f6d3e4}
+#game[data-bliss="6"] .win>.bar{background:#ffcfe6}
+#game[data-bliss="4"] .win,#game[data-bliss="5"] .win{border-color:#c79bb0}
+#game[data-bliss="6"] .win{border-color:var(--rose);
+  box-shadow:0 0 18px #f0a8c055,0 10px 30px #000000b0}
+#game[data-bliss="5"] .win>.bar b::after,
+#game[data-bliss="6"] .win>.bar b::after{content:' ♡';color:var(--rose)}
+/* шестая ступень — «слишком идеальный»: всё блестит и ничто не живое */
+#game[data-bliss="6"] #blStage,#game[data-bliss="6"] .workspace{filter:saturate(1.25)}
+#game[data-bliss="6"] .drawer h2,#game[data-bliss="6"] .room-brand h1{
+  text-shadow:0 0 10px var(--rose)}
+
+/* ═══ АНКЕТА ══════════════════════════════════════════════════════════
+   Единственный тёплый объект на чёрном столе. Здесь намеренно нарушена
+   монохромная дисциплина остального интерфейса: анкета принадлежит не
+   машине, а игроку, и должна выглядеть как страничка из тетради.      */
+.diary-tab{position:fixed;right:18px;bottom:44px;z-index:36;
+  padding:7px 13px;min-height:0;
+  background:var(--rose);color:var(--void);
+  font:var(--t-small)/1 var(--mono);letter-spacing:var(--ls-ui);
+  box-shadow:2px 2px 0 var(--rose-deep)}
+.diary-tab:hover{background:#fff}
+body:has(#intro:not([hidden])) .diary-tab,
+body:has(#ending:not([hidden])) .diary-tab{display:none}
+
+#diaryWin{width:min(760px,94vw);max-height:92vh;padding:0;overflow:hidden;
+  background:var(--chrome);border:1px solid var(--chrome-line)}
+#diaryWin .bar{display:flex;align-items:center;height:22px;padding:0 8px;
+  background:var(--chrome-bar);border-bottom:1px solid var(--chrome-line)}
+#diaryWin .bar b{flex:1;text-align:center;
+  font:500 var(--t-small)/1 var(--sys);letter-spacing:var(--ls-caps);
+  text-transform:uppercase;color:var(--ink-chrome)}
+#diaryWin .bar button{width:26px;min-height:22px;color:var(--ink-chrome)}
+#diaryWin .url{height:20px;padding:0 8px;display:flex;align-items:center;
+  background:var(--url);border-bottom:1px solid var(--chrome-line);
+  font:var(--t-micro)/1 var(--mono);color:#6d6d70}
+.diary-body{display:flex;gap:16px;padding:16px;background:#efe9ec;
+  max-height:calc(92vh - 42px);overflow:auto}
+.diary-sheet{flex:0 0 auto}
+#diaryCanvas{width:280px;height:373px;display:block;cursor:crosshair;
+  box-shadow:3px 3px 0 #00000022}
+.diary-tools{flex:1;min-width:0;display:flex;flex-direction:column;gap:11px;
+  color:#3a2a33;font:var(--t-small)/1.5 var(--mono)}
+.diary-fields{display:flex;flex-direction:column;gap:6px}
+.diary-fields label{display:flex;flex-direction:column;gap:2px}
+.diary-fields span{font-size:var(--t-micro);color:#7a5f6e}
+.diary-fields input{padding:5px 7px;border:1px solid #c9b3bf;background:#fff;
+  font:var(--t-small)/1.4 var(--mono);color:#3a2a33;border-radius:0}
+.diary-fields input:focus-visible{outline:2px solid var(--rose-deep);outline-offset:0}
+#diaryWin fieldset{border:1px solid #d6c4ce;padding:8px 10px 10px;margin:0}
+#diaryWin legend{font-size:var(--t-micro);color:#7a5f6e;padding:0 4px}
+.swatches,.chips{display:flex;flex-wrap:wrap;gap:5px}
+.swatch{width:26px;height:26px;min-height:0;border:1px solid #b9a3af;padding:0}
+.swatch[aria-pressed=true]{outline:2px solid var(--rose-deep);outline-offset:1px}
+.chip{min-height:0;padding:4px 9px;border:1px solid #c9b3bf;background:#fff;
+  font:var(--t-micro)/1.3 var(--mono);color:#3a2a33}
+.chip[aria-pressed=true]{background:var(--rose);border-color:var(--rose-deep)}
+.chip.sticker{font-size:15px;padding:2px 7px;line-height:1.2}
+.diary-hint{margin:6px 0 0;font-size:var(--t-micro);color:#8a6f7c}
+.diary-actions{display:flex;flex-wrap:wrap;gap:7px}
+.diary-actions button{padding:7px 11px;min-height:0;border:1px solid #b9849c;
+  background:#fff;font:var(--t-micro)/1 var(--mono);color:#7a2d4d}
+.diary-actions .primary{background:var(--rose);border-color:var(--rose-deep);color:#3a1020}
+.diary-note{margin:0;font-size:var(--t-micro);color:#8a6f7c}
+@media(max-width:700px){
+  .diary-body{flex-direction:column}
+  #diaryCanvas{width:100%;height:auto}
+  .diary-tab{right:10px;bottom:38px}
+}
+
+/* приветствие из брифа, стр. 1: «Добро пожаловать в BABYLAND ♡ /
+   Сделай эту девочку красивой!». Повтор названия под самим названием —
+   не ошибка: дешёвые игры той эпохи всегда представлялись дважды. */
+.intro-greet{margin:34px 0 6px;font:var(--t-lead)/1.6 var(--mono);
+  letter-spacing:var(--ls-ui);color:var(--rose)}
+.intro-greet span{color:var(--rose-deep)}
+.bl-intro .intro-invite,#intro .intro-invite{margin:0 0 26px}
