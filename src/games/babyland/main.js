@@ -20,6 +20,14 @@ $('scene').addEventListener('scene-error',()=>{$('sceneError').hidden=false;docu
 const sound=(name,...args)=>{if(!muted)sfx[name]?.(...args);};
 const complete=()=>BASE_CATS.every(cat=>state.worn[cat]);
 const allPretty=()=>BASE_CATS.every(cat=>itemById(state.worn[cat])?.kind==='pretty');
+// Выражение лица по состоянию. Бриф, стр. 5: со второй неправильной вещи и до
+// правильного лука лицо «грустное/встревоженное» — названы ОБА, поэтому первый
+// цикл она встревожена, а со второго уже просто грустная. Одно место на всю
+// игру: раньше эта логика была списана в двух местах и успела разъехаться.
+const mood = () => state.ended ? 'frozen'
+              : state.sad ? (state.cycles ? 'sad' : 'worried')
+              : 'happy';
+
 function setView(face){currentView=face?'face':'full';scene?.view(face);bindFragments(currentView);$('full').setAttribute('aria-pressed',String(!face));$('face').setAttribute('aria-pressed',String(face));}
 function render(){
  if($('game').classList.contains('drawer-closed')) $('drawerToggle').click();
@@ -32,7 +40,7 @@ function render(){
  $('slots').textContent=`${Object.keys(state.worn).length} / 6`;$('look').textContent=Object.values(state.worn).map(id=>itemById(id).label).join(' · ')||'Твой первый выбор — впереди.';
  shine?.set(Object.values(state.worn).filter(id=>itemById(id)?.kind==='pretty').length);
  $('cycles').textContent=state.wrong?`${state.cycles} / 3 · ${(state.wrong-1)%4+1} / 4`:'♡';
- scene?.face(state.ended?'frozen':state.sad?'sad':'happy',state.worn.makeup);
+ scene?.face(mood(),state.worn.makeup);
 }
 
 // Подъём уровня реакции. Вызывается и кликом по неправильной вещи, и таймером
@@ -98,7 +106,7 @@ function pick(cat,item){
  if(item.kind==='pretty'){sound('sparkle');$('status').textContent='Вот так гораздо красивее.';shine.glow($('win-gaze'));shine.flash();{const r=$('win-gaze').getBoundingClientRect();shine.sparkle(r.left+r.width/2,r.top+r.height/2,14);}if(!played.has(cat)){played.add(cat);poem(CATEGORIES.find(c=>c.id===cat).poem);}}
  else{if(escalate(cat==='makeup'))return;}
  render();
- if(item.kind==='wrong'&&(state.wrong%4===0||cat==='makeup')){scene.face('grimace',state.worn.makeup);clearTimeout(faceTimer);faceTimer=setTimeout(()=>scene.face(state.sad?'sad':'happy',state.worn.makeup),1100);}
+ if(item.kind==='wrong'&&(state.wrong%4===0||cat==='makeup')){scene.face('grimace',state.worn.makeup);clearTimeout(faceTimer);faceTimer=setTimeout(()=>scene.face(mood(),state.worn.makeup),1100);}
 }
 // Кадрирование окон-спутников. Каждое требование Ланы должно смотреть ровно
 // на ту часть, которой касается, — иначе окно с надписью «укладывать брови»

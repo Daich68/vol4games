@@ -17,6 +17,7 @@ export function createScene(host) {
  // фон не заливаем: рендер прозрачный, под ним чёрная пустота рабочего стола,
  // а розовый тон накладывается смешиванием в CSS
  scene.fog=new T.Fog('#170e13',10,22);
+ let lastFace='happy';
  let targetAngle=0,zoom=false,reaction=0,frozen=false,shakeUntil=0,disposed=false;
  // «Девочка испаряется» (бриф, стр. 7) — это растворение, а не пропажа:
  // мгновенное visible=false читается как баг, а не как событие.
@@ -85,13 +86,13 @@ export function createScene(host) {
    grab(canvas, r[0], r[1], r[2], r[3]);
   },
   wear(cat,id){if(layers.has(cat)){model.remove(layers.get(cat));disposeGroup(layers.get(cat));layers.delete(cat);}if(id&&cat!=='makeup'){const item=itemById(id),g=createItem(cat,item,ITEMS[cat].findIndex(i=>i.id===id));model.add(g);layers.set(cat,g);}},
-  face(kind,makeup){body.expression(kind,makeup);},
+  face(kind,makeup){lastFace=kind;body.expression(kind,makeup);},
   view(face){zoom=face;targetAngle=0;host.dataset.view=face?'face':'full';},
   rotate(delta){if(!frozen)targetAngle+=delta;},
   react(level){reaction=level;shakeUntil=performance.now()+700;host.dataset.reaction=String(level);},
   end(kind){frozen=true;fadeTo=kind==='gone'?0:1;if(kind!=='gone')model.visible=true;if(kind==='perfect')targetAngle=0;},
   reset(){frozen=false;fade=1;fadeTo=1;model.visible=true;model.traverse(o=>{if(o.isMesh){const ms=Array.isArray(o.material)?o.material:[o.material];for(const m of ms){m.opacity=1;m.transparent=false;m.depthWrite=true;}}});targetAngle=0;zoom=false;reaction=0;host.dataset.reaction='0';for(const cat of layers.keys()){model.remove(layers.get(cat));disposeGroup(layers.get(cat));}layers.clear();body.expression();},
-  stats(){return {renderer:'Three.js',meshes:renderer.info.render.calls,triangles:renderer.info.render.triangles,geometries:renderer.info.memory.geometries,layers:[...layers.keys()],angle:model.rotation.y,view:zoom?'face':'full',reaction};},
+  stats(){return {renderer:'Three.js',meshes:renderer.info.render.calls,triangles:renderer.info.render.triangles,geometries:renderer.info.memory.geometries,layers:[...layers.keys()],angle:model.rotation.y,view:zoom?'face':'full',reaction,expression:lastFace};},
   dispose(){disposed=true;ro.disconnect();renderer.setAnimationLoop(null);disposeGroup(scene);renderer.dispose();renderer.domElement.remove();}
  };
 }
