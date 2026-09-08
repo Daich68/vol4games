@@ -66,6 +66,12 @@ function escalate(force=false){
 // Что на ней надето неправильного прямо сейчас — состояние, а не история.
 const wornWrong=()=>Object.values(state.worn).some(id=>itemById(id)?.kind==='wrong');
 function pressureTick(){
+ // Пока вкладку не смотрят, машина ждёт. Наказание по брифу полагается за
+ // то, что игрок ДЕРЖИТ её некрасивой, а не за то, что отошёл: setInterval
+ // в фоне продолжает тикать, и без этой проверки человек возвращался бы к
+ // проигрышу, которого не совершал. Замерено — давление копилось при
+ // document.hidden.
+ if(document.hidden)return;
  if(!state.started||state.ended||!wornWrong())return;
  if($('reactionDialog').open||$('exitDialog').open)return;   // не бить в открытое окно
  escalate();render();
@@ -86,7 +92,14 @@ async function poem(key,secret=false){
   if(version!==poemVersion)return;
   if(buf&&chunks.length){voice=sfx.playVoice(buf);perChunk=(buf.duration*1000)/chunks.length;}
  }
- let i=0;function next(){if(version!==poemVersion)return;if(i>=chunks.length){$('subtitles').hidden=true;if(secret)location.assign(MAP_URL);return;}$('subtitles').querySelector('p').textContent=chunks[i++];$('subtitles').hidden=false;poemTimer=setTimeout(next,perChunk||Math.max(4500,chunks[i-1].length*60));}next();
+ let i=0;function next(){if(version!==poemVersion)return;if(i>=chunks.length){$('subtitles').hidden=true;if(secret)location.assign(MAP_URL);return;}$('subtitles').querySelector('p').textContent=chunks[i++];$('subtitles').hidden=false;const wait=perChunk||Math.max(4500,chunks[i-1].length*60);
+  // Стих — награда, и промотать его мимо ушедшего игрока значит отнять её.
+  // Если вкладку не смотрят, ждём возвращения и только потом отсчитываем.
+  poemTimer=setTimeout(function tick(){
+   if(version!==poemVersion)return;
+   if(document.hidden){poemTimer=setTimeout(tick,600);return;}
+   next();
+  },wait);}next();
  }catch{if(version===poemVersion)$('status').textContent='Стих не загрузился. Можно продолжать примерку.';}
 }
 function dialog(title,text=''){hidePoem();$('reactionTitle').textContent=title;$('reactionText').textContent=text;sound('uiOpen');$('reactionDialog').showModal();}
