@@ -14,6 +14,7 @@
 //     как только он появится в public/audio/babyland/<key>.mp3.
 import "../../shared/type.css";   // общий худ машины: безель, рейки, приборы
 import "./babyland.css";
+import "./flash.css";   // шкура флеш-одевалки поверх базовых токенов
 import { CATEGORIES, ITEMS, BASE_CATS, SECRET_LOOK, PERFECT_MAKEUP, itemById } from "./items.js";
 import { markDone, MAP_URL, bindBackLink } from "../../shared/nav.js";
 import { osNavigate, osPowerOn, osTitleCard } from "../../shared/os.js";
@@ -30,7 +31,7 @@ const UGLY_CYCLES = 3;
 // ── состояние ─────────────────────────────────────────────────────────────
 const state = {
   worn: { hair: null, top: null, bottom: null, shoes: null, acc: null, makeup: null },
-  activeCat: "hair",
+  activeCat: "hair",   // порядок брифа: причёска первая
   wrongStreak: 0,      // неправильных вещей в текущем цикле реакций (0–4)
   cycles: 0,           // сколько циклов реакций пройдено целиком
   sadLocked: false,    // грустное лицо до тех пор, пока лук не станет «правильным»
@@ -61,12 +62,24 @@ const endingEl  = $("blEnding");
 // Манифест необязателен: пока вещь не собрана, на её месте остаётся
 // плейсхолдер — игра остаётся играбельной на любом проценте готовности арта.
 let ART = null;
+let artStatus = "loading";
+let currentView = "full";
+
+function setView(view) {
+  currentView = view;
+  girlEl.dataset.view = view;
+  document.querySelectorAll('[data-view]').forEach((button) => {
+    if (button.tagName === 'BUTTON') button.setAttribute('aria-pressed', String(button.dataset.view === view));
+  });
+}
 
 async function loadArt() {
   try {
     const r = await fetch(`${ART_BASE}manifest.json`);
-    if (r.ok) ART = await r.json();
-  } catch (e) { /* арта ещё нет — работаем на плейсхолдерах */ }
+    if (!r.ok) throw new Error('Art manifest unavailable');
+    ART = await r.json();
+    artStatus = "ready";
+  } catch (e) { artStatus = "error"; }
 }
 
 const artOf = (id) => (ART && ART.items && ART.items[id]) || null;
@@ -101,6 +114,7 @@ function lookIsPretty() {
 }
 
 let prevUnlocked = false;
+const expandedCategories = new Set();
 
 function renderCats() {
   catsEl.innerHTML = "";
@@ -108,7 +122,22 @@ function renderCats() {
   for (const cat of CATEGORIES) {
     const locked = cat.locked && !unlocked;
     const b = document.createElement("button");
-    b.textContent = cat.label;
+    const icon = document.createElement("img");
+    icon.src = `${ART_BASE}ui/${cat.id}.png`;
+    icon.alt = "";
+    icon.draggable = false;
+    icon.width = 192;
+    icon.height = 192;
+    const label = document.createElement("span");
+    label.textContent = cat.label;
+    b.append(icon, label);
+    b.setAttribute("aria-label", cat.label);
+    b.setAttribute("aria-pressed", String(cat.id === state.activeCat));
+    b.setAttribute("aria-disabled", String(!!locked));
+    b.disabled = !!locked;
+    b.dataset.cat = cat.id;
+    b.dataset.progress = `${BASE_CATS.filter(id => state.worn[id]).length}/5`;
+    b.title = locked ? "Макияж откроется после выбора пяти категорий" : cat.label;
     b.className = [
       cat.id === state.activeCat ? "on" : "",
       state.worn[cat.id] ? "filled" : "",
@@ -119,7 +148,12 @@ function renderCats() {
       if (locked) { sfx.uiClose(); return; }
       sfx.clickPlastic();
       state.activeCat = cat.id;
+      const url = new URL(location.href);
+      url.searchParams.set('category', cat.id);
+      history.replaceState(null, '', url);
+      if (cat.id === 'makeup') setView('face');
       render();
+      catsEl.querySelector(`[data-cat="${cat.id}"]`)?.focus({preventScroll:true});
     });
     catsEl.appendChild(b);
   }
@@ -129,17 +163,63 @@ function renderCats() {
 
 function renderItems() {
   itemsEl.innerHTML = "";
+  const meta = CATEGORIES.find(c => c.id === state.activeCat);
+  $("blCategoryTitle").textContent = meta.label;
+  $("blCategoryIndex").textContent = `${String(CATEGORIES.indexOf(meta) + 1).padStart(2,'0')} / 06`;
+  $("blCategoryHint").textContent = state.activeCat === 'makeup' ? 'последний штрих! посмотри поближе ♡' : 'жми на вещь — она сразу примерит!';
+  if (artStatus === 'loading') {
+    itemsEl.innerHTML = '<p class="bl-asset-state" role="status">Открываем гардероб…</p><div class="bl-loading" aria-hidden="true"></div>';
+    return;
+  }
+  if (artStatus === 'error') {
+    const message = document.createElement('p');
+    message.className = 'bl-asset-state';
+    message.textContent = 'гардероб не открылся :(';
+    const retry = document.createElement('button');
+    retry.className = 'bl-retry';
+    retry.textContent = 'Попробовать снова';
+    retry.addEventListener('click', async () => { artStatus='loading'; renderItems(); await loadArt(); render(); });
+    itemsEl.append(message,retry);
+    return;
+  }
+  const available = document.createElement('div');
+  available.className = 'bl-ready-items';
+  const missing = document.createElement('details');
+  missing.className = 'bl-missing-items';
+  missing.open = expandedCategories.has(state.activeCat);
+  const category = state.activeCat;
+  missing.addEventListener('toggle', () => {
+    if (!missing.isConnected) return;
+    if (missing.open) expandedCategories.add(category);
+    else expandedCategories.delete(category);
+  });
+  const summary = document.createElement('summary');
+  const absent = ITEMS[state.activeCat].filter(it => !artOf(it.id));
+  summary.textContent = `Без изображения · ${absent.length}`;
+  missing.append(summary);
+  if (absent.length === ITEMS[state.activeCat].length) {
+    missing.open = true;
+    const message = document.createElement('p');
+    message.className = 'bl-asset-state';
+    message.textContent = 'Для этой категории изображения ещё готовятся. Выбор по названию уже работает.';
+    itemsEl.append(message);
+  }
   for (const it of ITEMS[state.activeCat]) {
     const t = document.createElement("button");
     t.className = "tile" + (state.worn[state.activeCat] === it.id ? " on" : "");
     const art = artOf(it.id);
     const pic = art
-      ? `<img class="tile-img" src="${ART_BASE}${art.thumb}" alt="" draggable="false">`
-      : `<div class="tile-ph">нет арта</div>`;
+      ? `<img class="tile-img" src="${ART_BASE}${art.thumb}" alt="" width="192" height="192" draggable="false">`
+      : '';
+    if (!art) t.classList.add('tile-text');
+    t.dataset.item = it.id;
+    t.setAttribute('aria-pressed', String(state.worn[state.activeCat] === it.id));
     t.innerHTML = `${pic}<div class="name">${it.label}</div>`;
     t.addEventListener("click", () => pick(it));
-    itemsEl.appendChild(t);
+    (art ? available : missing).appendChild(t);
   }
+  if (available.children.length) itemsEl.append(available);
+  if (absent.length) itemsEl.append(missing);
 }
 
 // Слои куклы: то же, что панель Layers на референсе — стопка спрайтов,
@@ -203,6 +283,7 @@ function renderGirl() {
   const worn = CATEGORIES
     .map((c) => ({ c, it: itemById(state.worn[c.id]) }))
     .filter((x) => x.it);
+  $("blLookSummary").textContent = worn.length ? worn.map(({it}) => it.label).join(' · ') : 'пока ничего ♡';
   wornEl.innerHTML = worn.length
     ? worn.map(({ c, it }) =>
         `<span class="w${it.kind === "wrong" ? " wrong" : ""}">${c.label}: ${it.label}</span>`).join("")
@@ -226,17 +307,20 @@ function renderStats() {
 }
 
 function render() {
+  const focusedItem = document.activeElement?.dataset?.item;
   renderCats();
   renderItems();
   renderGirl();
   renderRot();
   renderStats();
+  if (focusedItem) itemsEl.querySelector(`[data-item="${focusedItem}"]`)?.focus({preventScroll:true});
 }
 
 // ── системные окна ────────────────────────────────────────────────────────
 // Одно шасси на все окна брифа: заголовок в стиле WinXP, иконка, кнопки.
 function showWindow({ title = "BABYLAND", icon = "⚠", text, buttons = [], pink = false, alarm = false }) {
   return new Promise((resolve) => {
+    const previousFocus = document.activeElement;
     modalsEl.innerHTML = "";
     modalsEl.classList.add("show");
 
@@ -246,25 +330,43 @@ function showWindow({ title = "BABYLAND", icon = "⚠", text, buttons = [], pink
 
     const win = document.createElement("div");
     win.className = "win" + (pink ? " pink" : "") + (alarm ? " alarm" : "");
+    win.setAttribute('role','dialog');
+    win.setAttribute('aria-modal','true');
+    win.setAttribute('aria-labelledby','blDialogTitle');
+    win.setAttribute('aria-describedby','blDialogMessage');
     const btns = buttons.length ? buttons : [{ label: "ОК", value: "ok", primary: true }];
     win.innerHTML = `
-      <div class="tb"><span>${title}</span><span class="x" data-v="__x">✕</span></div>
-      <div class="body"><div class="ico">${icon}</div><div>${text}</div></div>
+      <div class="tb"><span id="blDialogTitle">${title}</span><button type="button" aria-label="Закрыть окно" class="x" data-v="__x">×</button></div>
+      <div class="body"><div class="ico" aria-hidden="true">${icon}</div><div id="blDialogMessage">${text}</div></div>
       <div class="foot">${btns.map((b, i) =>
         `<button data-v="${b.value}" class="${b.primary ? "primary" : ""}">${b.label}</button>`).join("")}</div>`;
     modalsEl.appendChild(win);
+    const cancelValue = btns.find(b => b.value === 'stay')?.value ?? btns[btns.length - 1]?.value ?? 'ok';
+    const controls = [...win.querySelectorAll('button')];
+    win.querySelector('.foot button')?.focus();
+    function dialogKey(e) {
+      if (e.code === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); close(cancelValue); }
+      if (e.key === 'Tab') {
+        const first = controls[0], last = controls[controls.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
+    }
+    document.addEventListener('keydown',dialogKey,true);
     sfx.uiOpen();
 
     function close(v) {
+      document.removeEventListener('keydown',dialogKey,true);
       modalsEl.classList.remove("show");
       modalsEl.innerHTML = "";
       sfx.uiClose();
+      previousFocus?.focus?.({preventScroll:true});
       resolve(v);
     }
     win.addEventListener("click", (e) => {
       const v = e.target.closest("[data-v]")?.dataset.v;
       if (v == null) return;
-      close(v === "__x" ? (btns[btns.length - 1]?.value ?? "ok") : v);
+      close(v === "__x" ? cancelValue : v);
     });
   });
 }
@@ -570,7 +672,7 @@ function bootPrologue() {
 bindBackLink();
 $("back").addEventListener("click", (e) => { e.preventDefault(); tryExit(); });
 document.addEventListener("keydown", (e) => {
-  if (e.code === "Escape" && !state.ended) { e.preventDefault(); tryExit(); }
+  if (e.code === "Escape" && !state.ended && !modalsEl.classList.contains('show')) { e.preventDefault(); tryExit(); }
 });
 
 osPowerOn();
@@ -580,6 +682,12 @@ osTitleCard({
 });
 
 bootPrologue();
+document.querySelectorAll('.bl-view button').forEach(button => {
+  button.addEventListener('click', () => setView(button.dataset.view));
+});
+const initialCategory = new URLSearchParams(location.search).get('category');
+if (BASE_CATS.includes(initialCategory)) state.activeCat = initialCategory;
+setView(currentView);
 render();
 // манифест догружается асинхронно: как только пришёл — перерисовываем
-loadArt().then(() => { if (ART) render(); });
+loadArt().then(render);

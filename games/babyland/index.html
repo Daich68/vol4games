@@ -2,7 +2,8 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#843d60">
 <title>BABYLAND — vol4games</title>
 </head>
 <!-- BABYLAND — DLC.
@@ -48,10 +49,20 @@
 
 <!-- ── чужой диск внутри безеля ─────────────────────────────────────────── -->
 <div id="blRoot">
+  <header class="bl-masthead">
+    <div class="bl-brand" translate="no">BABYLAND<span>идеальная девочка</span></div>
+    <p>Сделай эту девочку красивой!</p>
+    <span class="bl-disc">Лана Ленкова · vol4</span>
+  </header>
   <div id="blStage">
+    <nav class="bl-tools" aria-label="Категории гардероба">
+      <div class="bl-tools-title">выбирай ♡</div>
+      <div id="blCats"></div>
+    </nav>
     <!-- девочка. ГРАФИКИ ПОКА НЕТ: .bl-doll-ph — служебный плейсхолдер,
          слои куклы встают сюда же, механика не трогается. -->
     <div id="blGirl">
+      <div class="bl-mirror" aria-hidden="true"></div>
       <!-- сюда конвейер кладёт слои куклы; пока их нет — виден плейсхолдер -->
       <div id="blLayers"></div>
       <div class="bl-doll-ph">
@@ -59,13 +70,22 @@
         <div class="ph-tag">место для графики · девочка</div>
         <div class="ph-worn" id="blWorn"></div>
       </div>
+      <div class="bl-view" aria-label="Масштаб примерки">
+        <button type="button" data-view="full" aria-pressed="true">Образ</button>
+        <button type="button" data-view="face" aria-pressed="false">Лицо</button>
+      </div>
     </div>
 
     <!-- гардероб -->
-    <div id="blCloset">
-      <div id="blCats"></div>
-      <div id="blItems"></div>
-    </div>
+    <section id="blCloset" aria-labelledby="blCategoryTitle">
+      <header class="bl-closet-head">
+        <span class="bl-category-index" id="blCategoryIndex">02 / 06</span>
+        <h1 id="blCategoryTitle">Верх</h1>
+        <p id="blCategoryHint">жми на вещь — она сразу примерит!</p>
+      </header>
+      <div id="blItems" aria-label="Вещи выбранной категории"></div>
+      <footer class="bl-look"><span>на ней сейчас ♡</span><p id="blLookSummary" aria-live="polite">пока ничего ♡</p></footer>
+    </section>
   </div>
 </div>
 
@@ -80,10 +100,23 @@
 
 <!-- ── пролог: «совершенно обычная флеш-одевалка» ────────────────────────── -->
 <div id="blPrologue" class="blScreen">
-  <div class="hello">Добро пожаловать в BABYLAND ♡</div>
-  <div class="sub">Сделай эту девочку красивой!</div>
-  <button class="bl-start" id="blStart">Играть</button>
-  <div class="credit">vol4 · дополнение · стихи — лана ленкова</div>
+  <div class="bl-intro-copy">
+    <div class="credit">стихи — лана ленкова</div>
+    <h1 class="hello" translate="no">BABYLAND</h1>
+    <div class="bl-intro-title">идеальная<br>девочка</div>
+    <p class="sub">Сделай эту девочку красивой!</p>
+    <button class="bl-start" id="blStart">Играть! <span aria-hidden="true">♡</span></button>
+    <div class="bl-intro-foot">vol4 · дополнение</div>
+  </div>
+  <div class="bl-intro-art" aria-hidden="true">
+    <div class="bl-intro-doll">
+      <img src="/art/babyland/doll/base-gpt.png" alt="" width="596" height="1200">
+      <img src="/art/babyland/items/bot_tutu.png" alt="" width="596" height="1200">
+      <img src="/art/babyland/items/top_ruffles.png" alt="" width="596" height="1200">
+      <img class="bl-intro-face" src="/art/babyland/faces/happy.svg" alt="" width="200" height="120">
+    </div>
+    <img class="bl-intro-lipstick" src="/art/babyland/ui/makeup.png" alt="" width="192" height="192">
+  </div>
 </div>
 
 <!-- ── концовки ──────────────────────────────────────────────────────────── -->
