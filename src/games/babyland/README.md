@@ -1,16 +1,83 @@
-# BABYLAND / Three.js
+# BABYLAND. Идеальная девочка
 
-Run from the repository root with `npm.cmd run dev -- --open false`, then open `/games/babyland/`. Production entry restored in vite.config.js. No map counters changed.
+DLC внутри vol4games по брифу Ланы Ленковой (PDF, 12 страниц). Бьюти-хоррор
+одевалка: снаружи «игра для девочек» нулевых, внутри машина, которая наказывает
+за неконвенциональный выбор, а за «правильный» читает стихи.
 
-The source brief is Lana Lenkova's 12-page PDF. This build implements the six wardrobe categories and 55 gameplay entries, cyclic wrong-choice reactions, makeup unlock after five categories, repeated-item guard, perfect / disappearance / secret endings, subtitle poems, synthesized music, mute, exit confirmation, rotation and close-up camera.
+Запуск: `npm run dev`, страница `/games/babyland/`.
+Сверка с брифом: `PYTHONUTF8=1 python tools/check_brief.py`.
 
-- `items.js`: original item ids and gameplay classification, recovered from commit 50417d6.
-- `doll.js`: new procedural body and garment geometry; shared rig coordinates, not image layers. Garment forms are stylized, with simplified details.
-- `face.js`: head and canvas face helpers adapted from the archived procedural experiment; enlarged features. No third-party GLB or donor model used.
-- `scene.js`: lighting, shadows, camera, pointer rotation, thumbnails from actual meshes, geometry disposal, WebGL error handling.
-- `main.js`: game state, poems and UI; native dialogs provide keyboard focus handling.
-- `sfx.js`: recovered browser synthesis, with mute and music-stop lifecycle fixes.
+## Два решения, которые нельзя ломать
 
-Audio readings are not recorded: poems currently appear as subtitles. No shared diary/backend. Closing a browser tab cannot display an arbitrary custom in-game dialog; the in-game map/escape action shows the brief's exit confirmation.
+**DLC — не пятый стих, а чужой диск.** Структура vol4 закрыта на четырёх:
+счётчик `N/4`, центон из четырёх цитат, арка-выход по `4/4`. Поэтому babyland
+помечен `dlc: true` в `NODES` карты, но **не** входит в `GAMES_ALL` и
+`COMPLETABLE`. Проверено: при прочитанном диске счётчик держит `0/4`, арка не
+появляется, строка меню отмечается отдельно.
 
-Local QA scripts and screenshots: `C:/Users/daich/Documents/vol4games-backups/check-three-babyland.mjs` and `check-three-visual.mjs`. The first exercises three endings, makeup lock, repeated click, restart, and 1440/390/320/844px layouts. The second renders ten deterministic mixed outfits. Tests use real Chromium WebGL with SwiftShader; this is not a physical mobile GPU performance benchmark.
+**Подача — не страница, а чужой рабочий стол.** Единственный контейнер во всей
+игре это окно: тайтлбар, адрес localhost, тело. Девочку не показывают целиком —
+на неё смотрят из нескольких окон, и каждое видит свой фрагмент. Заголовки
+окон-спутников это строки Ланы: требования к девочке, которые по мере нарастания
+ужаса мутируют в одно слово «она».
+
+## Файлы
+
+| файл | что делает |
+|---|---|
+| `main.js` | состояние игры, реакции, концовки, стихи, связь всего остального |
+| `items.js` | 55 предметов, деление `pretty` / `wrong`, `SECRET_LOOK` |
+| `scene.js` | камера, свет, рендер-цикл, миниатюры из настоящих мешей, копирование кадра в окна-спутники и в скример |
+| `doll.js` | процедурное тело и одежда |
+| `room.js` | примерочная: трюмо, шторы, стойка, подиум |
+| `face.js` | голова и лицо на canvas, выражения и макияж |
+| `dread.js` | нарастание ужаса и давление временем |
+| `shine.js` | награда: блёстки, вспышка, свечение, шкала «слишком идеального» |
+| `diary.js` | анкета-дневничок и её отрисовка в картинку |
+| `sfx.js` | музыка, звуки интерфейса, тракт обработки чтения стихов |
+| `room.css` | дизайн-система: окна, дуотон, типографика, обе шкалы |
+| `AUDIO.md` | куда класть записи чтения, когда они появятся |
+
+## Как устроена обратная связь
+
+Две шкалы, обе — хоррор:
+
+- `data-dread` 0–4 — порча рабочего стола. Мерцание, потеря цвета хромом,
+  полосы сдвига, ветвление адреса (`girl_3.html` — её копируют), мутация
+  заголовков спутников.
+- `data-bliss` 0–6 — доведение до «слишком идеального». Розовеет хром, теплеет
+  пустота, у заголовков появляются сердечки.
+
+Награда идёт первой: машина, которая умеет только бить, читается как враг, и
+играть в неё незачем.
+
+## Грабли, за которые заплачено
+
+**Проиграть было нельзя.** Цикл реакций двигался только на новом клике по
+неправильной вещи, а слотов шесть: одеть её неправильно и остановиться означало,
+что игра ждёт вечно. По брифу «Уродка» наступает за то, что игрок **держит** её
+некрасивой, — значит считать надо состояние, а не клики. Теперь пока на ней есть
+неправильное, уровень растёт сам раз в 9 секунд.
+
+**Дуотон оставляет от цвета только светлоту.** Различие `pretty` / `wrong` —
+геймплейный сигнал, и он едва не потерялся: зазор по яркости был 0.046. Разведён
+до 0.236, проверяется скриптом сверки.
+
+**Уборка DOM-эффектов не должна висеть на `animationend`.** В фоновой вкладке
+CSS-анимации замирают, событие не наступает, элементы копятся без предела
+(замер: 70 искр с пяти кликов). Нужен запасной таймер и потолок.
+
+**`NaN` в долях координат `JSON` пишет как `null`.** Замер канваса до раскладки
+диалога даёт нулевую ширину — отсюда деление на ноль и молча потерянные наклейки.
+
+**Копирование кадра — чтение с GPU.** Окна-спутники обновляются раз в три кадра,
+скрытые не копируются; одноразовые снимки для скримера идут вне очереди.
+
+## Что не сделано
+
+- **Записи чтения стихов.** Тракт обработки готов (`voiceChain` в `sfx.js`),
+  подробности в `AUDIO.md`. Пока стихи идут субтитрами по таймеру; как только
+  появится файл, субтитры пойдут по его реальному времени.
+- **Общая лента анкет** («все анкетки игроков» из брифа). Требует бэкенда,
+  выпиленного в `94ff102`. Локальная половина работает: своя анкета живёт в
+  `localStorage` и выгружается картинкой.

@@ -118,11 +118,67 @@ def check_contrast():
     say(gap >= MIN_GAP, f"зазор {gap:.3f} (минимум {MIN_GAP})")
 
 
+
+# Слои диска обязаны уходить под безель (z40) и рейки (z41) машины: розовое
+# живёт строго ВНУТРИ безеля, иначе диск перестаёт быть вставленным в машину
+# и становится просто страницей. Единственное исключение — скример: бриф
+# разрешает ему накрыть приборы.
+# Кому позволено быть выше безеля и почему:
+#   .os-bezel / .os-rail — сама машина;
+#   #scream              — бриф разрешает скримеру накрыть приборы;
+#   body::after          — растр уровня экрана, не содержимое диска.
+Z_ALLOWED_ABOVE = {".os-bezel", ".os-rail", "#scream", "body::after"}
+Z_CEILING = 40
+
+
+def check_z_order():
+    print("\nZ-порядок: слои диска под безелем машины")
+    css = (ROOT / "src/games/babyland/room.css").read_text(encoding="utf-8")
+    # правило вида «селектор { … z-index:N … }»
+    bad = []
+    for m in re.finditer(r"([^{}]+)\{([^{}]*)\}", css):
+        sel, body = m.group(1).strip(), m.group(2)
+        z = re.search(r"z-index:\s*(\d+)", body)
+        if not z:
+            continue
+        value = int(z.group(1))
+        if value < Z_CEILING:
+            continue
+        if any(a in sel for a in Z_ALLOWED_ABOVE):
+            continue
+        bad.append(f"{sel.splitlines()[-1].strip()[:40]} z-index:{value}")
+    say(not bad, f"нарушений потолка z={Z_CEILING}: {len(bad)}")
+    for b in bad:
+        print(f"      ✗ {b}")
+
+
+# Три концовки заданы брифом на стр. 7. Проверяем, что каждая вызывается и что
+# у каждой есть своё условие: «идеальная» — все красивые плюс гипермакияж,
+# «уродка» — три цикла реакций, секретная — точная комбинация.
+ENDINGS = [
+    ("идеальная", "finish('perfect')", "PERFECT_MAKEUP|mk_hyper"),
+    ("уродка", "finish('gone')", r"cycles\s*>=\s*3"),
+    ("секретная", "finish('secret')", "SECRET_LOOK"),
+]
+
+
+def check_endings():
+    print("\nТри концовки достижимы (бриф, стр. 7)")
+    src = (ROOT / "src/games/babyland/main.js").read_text(encoding="utf-8")
+    for name, call, cond in ENDINGS:
+        has_call = call in src
+        has_cond = bool(re.search(cond, src))
+        say(has_call and has_cond,
+            f"{name:11} вызов {'есть' if has_call else 'НЕТ'}, условие {'есть' if has_cond else 'НЕТ'}")
+
+
 def main():
     print("BABYLAND — сверка с брифом")
     check_counts()
     check_phrases()
     check_contrast()
+    check_z_order()
+    check_endings()
 
     if PDF.exists():
         try:

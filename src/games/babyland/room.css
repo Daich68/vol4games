@@ -83,7 +83,12 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--rose);outline-offse
 [hidden]{display:none!important}
 .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
 
-/* ── растр поверх всего: дизер, а не размытие ─────────────────────────── */
+/* ── растр поверх всего: дизер, а не размытие ───────────────────────────
+   Единственный слой диска выше безеля (z100), и это намеренно: растр —
+   эффект уровня ЭКРАНА, как живой кинескоп vol4/OS, а не содержимое диска.
+   Он обязан ложиться и на приборы машины, иначе безель выглядит вырезанным
+   из другой картинки. Правило «розовое живёт внутри безеля» на него не
+   распространяется: он не розовый и ничего не показывает. */
 body::after{
   content:'';position:fixed;inset:0;z-index:100;pointer-events:none;
   background-image:radial-gradient(circle at 0 0,#ffffff14 .5px,#0000 .6px);
