@@ -9,6 +9,14 @@
 let ctx = null;
 let master = null;   // общая шина → crusher → выход
 let musicGain = null;
+
+const MUSIC_FULL = 0.28;
+const DUCK = 0.09;
+let duckDepth = 0;
+// Базовый уровень музыки: пока идёт стих — приглушённый. И слом музыки, и
+// приглушение обязаны возвращаться сюда, иначе один затирает другой.
+const musicBase = () => (duckDepth ? DUCK : MUSIC_FULL);
+
 let stopMusic = null;
 let broken = false;
 let muted = false;
@@ -95,7 +103,7 @@ export function startMusic() {
   ensure();
   if (stopMusic) return;
   musicGain = ctx.createGain();
-  musicGain.gain.value = 0.28;
+  musicGain.gain.value = MUSIC_FULL;
   musicGain.connect(master);
 
   const STEP = 0.155;                     // шаг восьмушки
@@ -157,6 +165,10 @@ export function killMusic(fade = 0.6) {
 
 // «музыка на долю секунды ломается» — питч и громкость проваливаются и
 // возвращаются. Уровень 1 — едва заметно, дальше всё грубее.
+// Текущий уровень музыки — чтобы приглушение под стих можно было проверить
+// замером, а не на слух. Ничего не меняет, только читает.
+export const musicLevel = () => (musicGain ? musicGain.gain.value : null);
+
 export function breakMusic(level = 1) {
   if (!ctx || !musicGain) return;
   const t = ctx.currentTime;
@@ -164,9 +176,10 @@ export function breakMusic(level = 1) {
   const len   = 0.09 + level * 0.05;
   musicGain.gain.cancelScheduledValues(t);
   musicGain.gain.setValueAtTime(musicGain.gain.value, t);
-  musicGain.gain.linearRampToValueAtTime(0.28 * (1 - depth), t + 0.015);
-  musicGain.gain.setValueAtTime(0.28 * (1 - depth), t + len);
-  musicGain.gain.linearRampToValueAtTime(0.28, t + len + 0.05);
+  const base = musicBase();
+  musicGain.gain.linearRampToValueAtTime(base * (1 - depth), t + 0.015);
+  musicGain.gain.setValueAtTime(base * (1 - depth), t + len);
+  musicGain.gain.linearRampToValueAtTime(base, t + len + 0.05);
   broken = true;
 }
 
@@ -290,6 +303,19 @@ export function voiceChain() {
 
 // Проигрывает готовую запись через тракт. Возвращает управление, чтобы
 // субтитры могли идти по реальному времени записи, а не по таймеру.
+// Пока звучит стих, музыка приглушается, но не выключается: по брифу
+// (стр. 11) фон играет постоянно, а слышен должен быть текст. Полная тишина
+// под чтением сломала бы «милую игру», против которой этот текст и работает.
+function duck(on) {
+  if (!ctx || !musicGain) return;
+  duckDepth = Math.max(0, duckDepth + (on ? 1 : -1));
+  const target = musicBase();
+  const t = ctx.currentTime;
+  musicGain.gain.cancelScheduledValues(t);
+  musicGain.gain.setValueAtTime(musicGain.gain.value, t);
+  musicGain.gain.linearRampToValueAtTime(target, t + (on ? 0.35 : 0.9));
+}
+
 export function playVoice(buffer, { onEnd } = {}) {
   ensure();
   if (ctx.state === 'suspended') ctx.resume();
@@ -300,10 +326,13 @@ export function playVoice(buffer, { onEnd } = {}) {
   src.detune.value = -18;
   src.connect(chain.input);
   src.start();
-  if (onEnd) src.onended = onEnd;
+  duck(true);
+  let released = false;
+  const release = () => { if (released) return; released = true; duck(false); };
+  src.onended = () => { release(); if (onEnd) onEnd(); };
   const started = ctx.currentTime;
   return {
-    stop() { try { src.stop(); } catch { /* уже остановлен */ } },
+    stop() { try { src.stop(); } catch { /* уже остановлен */ } release(); },
     get time() { return ctx.currentTime - started; },
     duration: buffer.duration,
   };
