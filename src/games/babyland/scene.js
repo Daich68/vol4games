@@ -42,12 +42,20 @@ export function createScene(host) {
  // Одноразовый снимок: скримеру нужна её гримаса, а не текстовая плашка.
  // Кадр берём тем же способом, что и окна-спутники — прямо из буфера.
  function grab(canvas,x,y,w,h){shots.push({canvas,x,y,w,h});}
+ // Копирование стоит чтения с GPU, поэтому спутники обновляются не каждый
+ // кадр: они на периферии, и 20 кадров в секунду там неотличимы от 60.
+ // Одноразовые снимки (скример) идут вне очереди — им нужен именно этот кадр.
+ let frameNo=0;
+ const FRAG_EVERY=3;
  function copyFragments(){
-  if(!fragments.length&&!shots.length)return;
+  frameNo++;
+  const doFrags=fragments.length&&frameNo%FRAG_EVERY===0;
+  if(!doFrags&&!shots.length)return;
   const w=renderer.domElement.width,h=renderer.domElement.height;
-  const jobs=shots.length?fragments.concat(shots):fragments;
+  const jobs=(doFrags?fragments:[]).concat(shots);
   shots=[];
   for(const f of jobs){
+   if(f.canvas.closest('[hidden]'))continue;   // закрытое окно не рисуем
    const ctx=f.canvas.getContext('2d');if(!ctx)continue;
    ctx.clearRect(0,0,f.canvas.width,f.canvas.height);
    try{ctx.drawImage(renderer.domElement,f.x*w,f.y*h,f.w*w,f.h*h,0,0,f.canvas.width,f.canvas.height);}catch{}

@@ -572,3 +572,17 @@ body:has(#ending:not([hidden])) .diary-tab{display:none}
 #scream p{margin:0;text-align:center;
   font:var(--t-display)/1.45 var(--mono);letter-spacing:var(--ls-display);
   color:var(--rose)}
+
+/* ── узкий экран: развязка приборов ────────────────────────────────────
+   На 375 px в верхней строке не помещаются имя, подзаголовок, автор,
+   счётчик и звук разом, а вкладка дневничка накрывала вещи в гардеробе.
+   Проверено замером: .room-brand ✕ .room-meta и .wardrobe ✕ .diary-tab. */
+@media(max-width:600px){
+  .room-brand h1 span,.room-brand p{display:none}   /* остаётся одно имя */
+  .drag-hint{display:none}                          /* на тач-экране лишняя */
+  /* дневничок уезжает в нижнюю строку состояния — там есть место */
+  .diary-tab{right:6px;bottom:3px;padding:3px 8px;min-height:0;
+    font-size:var(--t-micro);box-shadow:1px 1px 0 var(--rose-deep)}
+  .status{padding-right:112px}
+  .status p{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+}
