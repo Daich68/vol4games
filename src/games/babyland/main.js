@@ -11,6 +11,7 @@ const $=id=>document.getElementById(id);
 const state={worn:{},active:'hair',wrong:0,cycles:0,sad:false,ended:false,started:false};
 let scene,muted=false,poemVersion=0,poemTimer,flashTimer,faceTimer,pressureTimer,voice;
 let dread,shine;
+let currentView='full';   // какой план камеры сейчас — от него зависят рамки спутников
 const poems=new Map(),played=new Set();
 $('game').inert=true;
 window.addEventListener('pageshow',event=>{if(event.persisted)location.reload();});
@@ -19,7 +20,7 @@ $('scene').addEventListener('scene-error',()=>{$('sceneError').hidden=false;docu
 const sound=(name,...args)=>{if(!muted)sfx[name]?.(...args);};
 const complete=()=>BASE_CATS.every(cat=>state.worn[cat]);
 const allPretty=()=>BASE_CATS.every(cat=>itemById(state.worn[cat])?.kind==='pretty');
-function setView(face){scene?.view(face);$('full').setAttribute('aria-pressed',String(!face));$('face').setAttribute('aria-pressed',String(face));}
+function setView(face){currentView=face?'face':'full';scene?.view(face);bindFragments(currentView);$('full').setAttribute('aria-pressed',String(!face));$('face').setAttribute('aria-pressed',String(face));}
 function render(){
  if($('game').classList.contains('drawer-closed')) $('drawerToggle').click();
  $('categories').replaceChildren();
@@ -99,13 +100,25 @@ function pick(cat,item){
  render();
  if(item.kind==='wrong'&&(state.wrong%4===0||cat==='makeup')){scene.face('grimace',state.worn.makeup);clearTimeout(faceTimer);faceTimer=setTimeout(()=>scene.face(state.sad?'sad':'happy',state.worn.makeup),1100);}
 }
-// Кадрирование спутников: голова, талия, ноги, плечо. Каждое требование
-// Ланы смотрит на ту часть, которой касается.
-const FRAGMENTS=[['frag-1',.36,.06,.28,.20],['frag-2',.30,.44,.40,.30],
-                 ['frag-3',.38,.20,.24,.18],['frag-4',.28,.66,.44,.30]];
-function bindFragments(){
+// Кадрирование окон-спутников. Каждое требование Ланы должно смотреть ровно
+// на ту часть, которой касается, — иначе окно с надписью «укладывать брови»
+// показывает колено, и вся конструкция рассыпается.
+// Наборов два: камера в общем плане и в лице кадрирует по-разному, поэтому
+// при смене плана рамки пересчитываются.
+const FRAGMENTS={
+ full:[['frag-1',.38,.05,.24,.16],   // брови — верх головы
+       ['frag-2',.30,.42,.40,.32],   // «казаться меньше» — фигура целиком
+       ['frag-3',.36,.10,.28,.14],   // линия роста волос
+       ['frag-4',.30,.60,.40,.28]],  // свет на ногах
+ face:[['frag-1',.34,.26,.32,.12],
+       ['frag-2',.28,.18,.44,.46],
+       ['frag-3',.32,.14,.36,.12],
+       ['frag-4',.30,.44,.26,.18]],
+};
+function bindFragments(view=currentView){
+ const set=FRAGMENTS[view]||FRAGMENTS.full;
  const list=[];
- for(const [id,x,y,w,h] of FRAGMENTS){const canvas=$(id)?.querySelector('canvas');if(canvas)list.push({canvas,x,y,w,h});}
+ for(const [id,x,y,w,h] of set){const canvas=$(id)?.querySelector('canvas');if(canvas)list.push({canvas,x,y,w,h});}
  scene?.fragments(list);
 }
 bindFragments();
