@@ -172,6 +172,18 @@ def check_endings():
             f"{name:11} вызов {'есть' if has_call else 'НЕТ'}, условие {'есть' if has_cond else 'НЕТ'}")
 
 
+def check_machine_font():
+    """Безель и рейки принадлежат машине, а не диску, и обязаны выглядеть
+    одинаково на карте и на странице игры. Диск намеренно не подключает
+    type.css (холодный монохром ему противопоказан), поэтому шрифт легко
+    теряется незаметно: страница молча откатывается на системный
+    моноширинный, и общий худ перестаёт быть общим. Проверено измерением —
+    расхождение было."""
+    print("\nШрифт машины на странице диска")
+    css = (ROOT / "src/games/babyland/room.css").read_text(encoding="utf-8")
+    say("JetBrains+Mono" in css, "room.css подключает JetBrains Mono")
+
+
 def main():
     print("BABYLAND — сверка с брифом")
     check_counts()
@@ -179,6 +191,7 @@ def main():
     check_contrast()
     check_z_order()
     check_endings()
+    check_machine_font()
 
     if PDF.exists():
         try:
