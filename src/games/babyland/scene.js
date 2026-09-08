@@ -16,7 +16,7 @@ export function createScene(host) {
  buildRoom(scene);
  // фон не заливаем: рендер прозрачный, под ним чёрная пустота рабочего стола,
  // а розовый тон накладывается смешиванием в CSS
- scene.fog=new T.Fog('#241820',11,24);
+ scene.fog=new T.Fog('#170e13',10,22);
  let targetAngle=0,zoom=false,reaction=0,frozen=false,shakeUntil=0,disposed=false;
  // «Девочка испаряется» (бриф, стр. 7) — это растворение, а не пропажа:
  // мгновенное visible=false читается как баг, а не как событие.
