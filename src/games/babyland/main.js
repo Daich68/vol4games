@@ -1,6 +1,7 @@
 import './room.css';
 import './reader.css';
 import './scream.css';
+import './mobile.css';
 import { createScene } from './scene.js';
 import { CATEGORIES, ITEMS, BASE_CATS, SECRET_LOOK, itemById } from './items.js';
 import { markDone, MAP_URL } from '../../shared/nav.js';
