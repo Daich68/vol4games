@@ -217,6 +217,42 @@ export function glitch(level = 4) {
   src.start(t0);
 }
 
+// The picture lands at 0.336 s. A short silence makes the impact distinct
+// without increasing the master volume. All nodes release after the tail.
+export function scream() {
+  ensure();
+  const t=ctx.currentTime,hit=t+.336;
+  if(musicGain){
+    musicGain.gain.cancelScheduledValues(t);
+    musicGain.gain.setValueAtTime(musicGain.gain.value,t);
+    musicGain.gain.linearRampToValueAtTime(.0001,t+.04);
+    musicGain.gain.setValueAtTime(.0001,t+2.05);
+    musicGain.gain.linearRampToValueAtTime(musicBase(),t+2.65);
+  }
+  const bus=ctx.createGain();bus.connect(master);
+  bus.gain.setValueAtTime(.0001,t);
+  bus.gain.setValueAtTime(.0001,hit);
+  bus.gain.exponentialRampToValueAtTime(.24,hit+.009);
+  bus.gain.exponentialRampToValueAtTime(.075,hit+.48);
+  bus.gain.exponentialRampToValueAtTime(.0001,t+2.1);
+  let remaining=4;
+  const release=nodes=>()=>{nodes.forEach(n=>n.disconnect());if(!--remaining)bus.disconnect();};
+  [147,311,947].forEach((frequency,i)=>{
+    const o=ctx.createOscillator(),g=ctx.createGain();
+    o.type=i===0?'triangle':'sawtooth';g.gain.value=i===0?.7:.16;
+    o.frequency.setValueAtTime(frequency,hit);
+    o.frequency.exponentialRampToValueAtTime(frequency*(i===2?.28:.61),t+1.95);
+    o.connect(g);g.connect(bus);o.onended=release([o,g]);o.start(hit);o.stop(t+2.15);
+  });
+  const buffer=ctx.createBuffer(1,Math.ceil(ctx.sampleRate*1.8),ctx.sampleRate);
+  const data=buffer.getChannelData(0);
+  for(let i=0;i<data.length;i++)data[i]=(Math.random()*2-1)*.38;
+  const noise=ctx.createBufferSource(),filter=ctx.createBiquadFilter();
+  noise.buffer=buffer;filter.type='bandpass';filter.Q.value=1.4;
+  filter.frequency.setValueAtTime(2400,hit);filter.frequency.exponentialRampToValueAtTime(430,t+2);
+  noise.connect(filter);filter.connect(bus);noise.onended=release([noise,filter]);noise.start(hit);
+}
+
 // торжественный джингл финала «Идеальная девочка»
 export function fanfare() {
   ensure();

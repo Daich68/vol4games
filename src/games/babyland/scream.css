@@ -1,0 +1,24 @@
+/* One impact, then a held frame. No looping full-screen flashes. */
+#scream{overflow:hidden;isolation:isolate;gap:0;animation:bl-scream-out 2.4s both;cursor:wait}
+#screamShot{width:min(115vw,1050px);height:min(105vh,1000px);object-fit:contain;
+ image-rendering:pixelated;mix-blend-mode:normal;
+ filter:grayscale(1) contrast(2.5) brightness(1.15);
+ animation:bl-scream-face 2.4s both;transform-origin:50% 43%}
+#scream::after{content:'';position:absolute;inset:0;pointer-events:none;
+ background:repeating-linear-gradient(0deg,#0005 0 1px,transparent 1px 4px),
+ radial-gradient(ellipse at center,transparent 25%,#000 83%);z-index:1}
+#scream p{position:absolute;z-index:2;bottom:max(9vh,30px);left:5%;right:5%;
+ font:400 clamp(17px,3.8vw,46px)/1.25 var(--mono);letter-spacing:.09em;
+ color:#f0a8c0;text-shadow:0 2px 10px #000,0 -2px 10px #000;
+ animation:bl-scream-words 2.4s both}
+@keyframes bl-scream-face{
+ 0%,12%{opacity:0;transform:scale(.72)}
+ 14%{opacity:1;transform:scale(1.17) translateX(-2%)}
+ 18%{transform:scale(1.03) translateX(1%)}
+ 24%{transform:scale(1.09) translateX(0)}
+ 68%{opacity:1;transform:scale(1.15)}
+ 88%,100%{opacity:0;transform:scale(1.19)}
+}
+@keyframes bl-scream-words{0%,25%{opacity:0}28%,72%{opacity:1}95%,100%{opacity:0}}
+@keyframes bl-scream-out{0%,91%{opacity:1}100%{opacity:0}}
+@media(prefers-reduced-motion:reduce){#scream,#screamShot,#scream p{animation:none}}

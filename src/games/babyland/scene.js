@@ -82,8 +82,22 @@ export function createScene(host) {
   // план, а снаружи это забывали учесть — в режиме «лицо» фиксированная рамка
   // ловила пустой лоб вместо гримасы.
   capture(canvas){
-   const r = zoom ? [.28,.22,.44,.42] : [.36,.04,.28,.20];
-   grab(canvas, r[0], r[1], r[2], r[3]);
+   // Independent portrait camera: the player may have turned her away or
+   // changed zoom just before the reaction. Never crop the current viewport.
+   const portrait=new T.PerspectiveCamera(32,canvas.width/canvas.height,.1,20);
+   portrait.position.set(0,2.91,1.38);portrait.lookAt(0,2.91,0);
+   const size=renderer.getSize(new T.Vector2()),ratio=renderer.getPixelRatio();
+   const rotation=model.rotation.y,x=model.position.x,tilt=body.head.rotation.z;
+   try{
+    model.rotation.y=0;model.position.x=0;body.head.rotation.z=-.045;
+    renderer.setPixelRatio(1);renderer.setSize(canvas.width,canvas.height,false);
+    renderer.render(scene,portrait);
+    const ctx=canvas.getContext('2d');ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.drawImage(renderer.domElement,0,0);
+   }finally{
+    model.rotation.y=rotation;model.position.x=x;body.head.rotation.z=tilt;
+    renderer.setPixelRatio(ratio);renderer.setSize(size.x,size.y,false);
+   }
   },
   wear(cat,id){if(layers.has(cat)){model.remove(layers.get(cat));disposeGroup(layers.get(cat));layers.delete(cat);}if(id&&cat!=='makeup'){const item=itemById(id),g=createItem(cat,item,ITEMS[cat].findIndex(i=>i.id===id));model.add(g);layers.set(cat,g);}},
   face(kind,makeup){lastFace=kind;body.expression(kind,makeup);},

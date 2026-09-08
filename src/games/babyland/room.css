@@ -156,7 +156,7 @@ body::after{
 .win > .body{flex:1;min-height:0;position:relative;background:var(--void);overflow:hidden}
 
 /* ═══ ГЛАВНОЕ ОКНО — девочка ══════════════════════════════════════════ */
-#win-gaze{left:50%;transform:translateX(-50%);top:34px;bottom:210px;width:min(360px,46%)}
+#win-gaze{left:50%;transform:translateX(-50%);top:34px;bottom:198px;width:min(360px,46%)}
 #scene{position:absolute;inset:0;cursor:grab}
 #scene:active{cursor:grabbing}
 #scene canvas{display:block;width:100%;height:100%;
@@ -182,7 +182,7 @@ body::after{
   mix-blend-mode:multiply;pointer-events:none}
 
 /* ═══ ФАЙЛОВЫЙ ЛИСТИНГ — гардероб ═════════════════════════════════════ */
-.wardrobe{left:0;right:0;bottom:29px;height:178px}
+.wardrobe{left:0;right:0;bottom:29px;height:166px}
 .wardrobe-bar{display:flex;align-items:center;justify-content:space-between;
   gap:12px;padding:0 10px;background:#141414;border-bottom:1px solid #242424}
 #categories{display:flex;gap:0}
@@ -210,7 +210,13 @@ body::after{
 
 /* сетка файлов: плотная, как в проводнике — из референса */
 #items{flex:1;min-width:0;display:grid;grid-auto-flow:column;
-  grid-template-rows:repeat(2,1fr);grid-auto-columns:max-content;
+  /* Один ряд с горизонтальной прокруткой, а не два.
+   Арифметика: плитка с названием в две строки и именем файла занимает 74px;
+   два ряда требуют 166 в сетке, плюс хром окна (тайтлбар 22 + адрес 20 +
+   полоса категорий 31) — итого окну нужно 239px, больше половины экрана.
+   Кукла важнее плотности: в категории максимум 15 вещей, прокрутка вбок
+   дешевле, чем отнятая у сцены высота. */
+  grid-template-rows:min-content;grid-auto-columns:max-content;
   justify-content:start;align-content:start;gap:2px;
   padding:8px;overflow-x:auto;overflow-y:hidden;
   scrollbar-width:thin;scrollbar-color:var(--rose-deep) #0c0c0c}
@@ -222,11 +228,17 @@ body::after{
 /* Иконка файла лежит в ячейке, а не смешивается с пустотой: при screen по
    чёрному тёмные вещи («неправильные») пропадали совсем, а именно они и
    должны быть видны — это половина выбора. */
-#items img{width:38px;height:38px;object-fit:contain;
+#items img{width:30px;height:30px;object-fit:contain;
   filter:grayscale(1) brightness(1.45) contrast(.92)}
+/* Название в две строки, а не в одну с обрезкой. Замер: «топ на бретельках с
+   бантами» требует 151px при 70 доступных — обрезалось КАЖДОЕ название, и
+   игрок выбирал вслепую. А смысл здесь не декоративный: половина различия
+   красивого и неправильного словесная («мешковатая одежда», «мужские
+   элементы»), иконка её не показывает. */
 #items button > span{font:var(--t-micro)/1.15 var(--mono);color:var(--ink-2);text-align:center;
-  letter-spacing:.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-  max-width:100%}
+  letter-spacing:.02em;max-width:100%;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+  overflow:hidden;min-height:2.3em}
 /* имя файла вместо человеческой подписи: это листинг, а не витрина */
 #items button::after{content:attr(data-file);font:var(--t-micro)/1 var(--mono);color:var(--ink-3)}
 #items button[aria-pressed=true]{border-color:var(--rose);background:#1a0e14}
@@ -252,14 +264,14 @@ body::after{
 #sound{font:var(--t-micro)/1 var(--mono);letter-spacing:.1em;color:var(--ink-3);min-height:22px}
 #sound:hover{color:var(--rose)}
 
-.view-tools{position:absolute;left:50%;transform:translateX(-50%);bottom:212px;
+.view-tools{position:absolute;left:50%;transform:translateX(-50%);bottom:200px;
   z-index:5;display:flex;gap:1px;background:#141414;border:1px solid #242424}
 .view-tools button{min-width:34px;min-height:24px;padding:0 10px;
   font:var(--t-micro)/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)}
 .view-tools button[aria-pressed=true]{background:var(--rose);color:var(--void)}
 .view-tools button:hover{color:var(--rose)}
 .view-tools button[aria-pressed=true]:hover{color:var(--void)}
-.drag-hint{position:absolute;left:0;bottom:212px;margin:0;
+.drag-hint{position:absolute;left:0;bottom:200px;margin:0;
   font:var(--t-micro)/1 var(--mono);letter-spacing:.06em;color:var(--ink-3)}
 
 .status{position:absolute;left:0;right:0;bottom:0;height:29px;z-index:4;
@@ -275,7 +287,7 @@ body::after{
 .drawer-closed .view-tools,.drawer-closed .drag-hint{bottom:66px}
 
 /* ═══ СТИХ ════════════════════════════════════════════════════════════ */
-#subtitles{position:fixed;left:26px;bottom:230px;width:min(400px,36vw);z-index:20;
+#subtitles{position:fixed;left:26px;bottom:218px;width:min(400px,36vw);z-index:20;
   background:var(--chrome);border:1px solid var(--chrome-line);
   box-shadow:0 10px 30px #000000b0}
 #subtitles > span{display:block;height:22px;padding:0 8px;

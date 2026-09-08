@@ -78,22 +78,16 @@
   </aside>
 
  </div>
- <footer class="status"><p id="status" aria-live="polite">Сделай эту девочку красивой.</p><span id="cycles">♡</span></footer>
+ <footer class="status"><p id="status" aria-live="polite">Добро пожаловать в BABYLAND. Сделай эту девочку красивой!</p><span id="cycles">♡</span></footer>
 </main>
 
-<section id="intro" aria-labelledby="introTitle">
- <div class="intro-copy">
-  <p class="intro-credit">Игра-стих Ланы Ленковой</p>
-  <h2 id="introTitle">BABYLAND<span>идеальная девочка</span></h2>
-  <p class="intro-greet">Добро пожаловать в BABYLAND <span aria-hidden="true">♡</span></p>
-  <p class="intro-invite">Сделай эту девочку красивой!</p>
-  <button id="start">войти в примерочную <span>↗</span></button>
-  <p class="intro-note">Выбирай вещи. Меняй образ.<br>Она будет рада. Правда?</p>
- </div>
- <span class="intro-seal" aria-hidden="true">100%<br>pretty</span>
+<button id="poemOpen" disabled>Стихи · 0</button>
+<section id="subtitles" hidden aria-label="Стихи Ланы Ленковой">
+ <header><label for="poemSelect">Лана Ленкова</label><button id="hidePoem" aria-label="Закрыть чтение">×</button></header>
+ <select id="poemSelect" aria-label="Открытые стихотворные фрагменты"></select>
+ <p tabindex="0" aria-label="Текст стихотворения"></p>
+ <footer><span id="poemNote">Читай в своём темпе. Текст не исчезнет.</span><button id="poemDone">Продолжить примерку</button></footer>
 </section>
-
-<div id="subtitles" hidden><span>Лана Ленкова</span><p></p><button id="hidePoem" aria-label="Скрыть субтитры">×</button></div>
 
 <dialog id="reactionDialog" aria-labelledby="reactionTitle"><form method="dialog"><header><span>BABYLAND</span><button aria-label="Закрыть">×</button></header><h2 id="reactionTitle"></h2><p id="reactionText"></p><button class="primary">Хорошо</button></form></dialog>
 
@@ -130,7 +124,7 @@
 <!-- Скример: бриф, стр. 5 — «корчит жуткую гримасу». Показываем её
      настоящее лицо крупно, снятое из сцены, а не текстовую плашку. -->
 <div id="scream" hidden aria-hidden="true">
- <canvas id="screamShot" width="360" height="300"></canvas>
+ <canvas id="screamShot" width="640" height="640"></canvas>
  <p>ЭТА ДЕВОЧКА ХОЧЕТ БЫТЬ КРАСИВОЙ</p>
 </div>
 

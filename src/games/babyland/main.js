@@ -1,4 +1,6 @@
 import './room.css';
+import './reader.css';
+import './scream.css';
 import { createScene } from './scene.js';
 import { CATEGORIES, ITEMS, BASE_CATS, SECRET_LOOK, itemById } from './items.js';
 import { markDone, MAP_URL } from '../../shared/nav.js';
@@ -13,9 +15,9 @@ let scene,muted=false,poemVersion=0,poemTimer,flashTimer,faceTimer,pressureTimer
 let dread,shine;
 let currentView='full';   // какой план камеры сейчас — от него зависят рамки спутников
 const poems=new Map(),played=new Set();
-$('game').inert=true;
+$('game').inert=false;
 window.addEventListener('pageshow',event=>{if(event.persisted)location.reload();});
-try{scene=createScene($('scene'));}catch(error){console.error('BABYLAND renderer:',error);$('sceneError').hidden=false;$('start').disabled=true;}
+try{scene=createScene($('scene'));}catch(error){console.error('BABYLAND renderer:',error);$('sceneError').hidden=false;}
 $('scene').addEventListener('scene-error',()=>{$('sceneError').hidden=false;document.querySelectorAll('#items button').forEach(b=>b.disabled=true);});
 const sound=(name,...args)=>{if(!muted)sfx[name]?.(...args);};
 const complete=()=>BASE_CATS.every(cat=>state.worn[cat]);
@@ -35,12 +37,12 @@ function render(){
  CATEGORIES.forEach((cat,i)=>{const b=document.createElement('button');b.dataset.category=cat.id;b.disabled=cat.id==='makeup'&&!complete();b.setAttribute('aria-pressed',String(state.active===cat.id));b.innerHTML=`<span class="cat-index">0${i+1}</span><span>${cat.label}</span><small>${state.worn[cat.id]?'надето':b.disabled?`${BASE_CATS.filter(c=>state.worn[c]).length}/5`:'выбрать'}</small>`;b.onclick=()=>{state.active=cat.id;sound('clickPlastic');if(cat.id==='makeup')setView(true);render();$('categories').querySelector(`[data-category="${cat.id}"]`).focus();};$('categories').append(b);});
  const cat=CATEGORIES.find(c=>c.id===state.active);$('categoryTitle').textContent=cat.label;$('categoryNumber').textContent=`0${CATEGORIES.indexOf(cat)+1} / 06`;$('categoryHint').textContent=cat.id==='makeup'?'Остался последний штрих.':'Нажми на вещь, чтобы примерить.';
  const focus=document.activeElement?.dataset.item;$('items').replaceChildren();
- ITEMS[state.active].forEach((item,i)=>{const b=document.createElement('button');b.dataset.item=item.id;b.disabled=state.ended||!scene;b.setAttribute('aria-pressed',String(state.worn[state.active]===item.id));const image=document.createElement('img');image.width=192;image.height=192;image.alt='';if(scene)image.src=scene.thumbnail(state.active,item,i);b.dataset.file=`${state.active}_${String(i+1).padStart(2,'0')}.gif`;const label=document.createElement('span');label.textContent=item.label;b.append(image,label);b.onclick=()=>pick(cat.id,item);$('items').append(b);});
+ ITEMS[state.active].forEach((item,i)=>{const b=document.createElement('button');b.dataset.item=item.id;b.disabled=state.ended||!scene;b.setAttribute('aria-pressed',String(state.worn[state.active]===item.id));const image=document.createElement('img');image.width=192;image.height=192;image.alt='';if(scene)image.src=scene.thumbnail(state.active,item,i);b.dataset.file=`${state.active}_${String(i+1).padStart(2,'0')}.gif`;const label=document.createElement('span');label.textContent=item.label;b.title=item.label;b.append(image,label);b.onclick=()=>pick(cat.id,item);$('items').append(b);});
  if(focus)$('items').querySelector(`[data-item="${focus}"]`)?.focus();
  $('slots').textContent=`${Object.keys(state.worn).length} / 6`;$('look').textContent=Object.values(state.worn).map(id=>itemById(id).label).join(' · ')||'Твой первый выбор — впереди.';
  shine?.set(Object.values(state.worn).filter(id=>itemById(id)?.kind==='pretty').length);
  $('cycles').textContent=state.wrong?`${state.cycles} / 3 · ${(state.wrong-1)%4+1} / 4`:'♡';
- scene?.face(mood(),state.worn.makeup);
+ scene?.face(!$('scream').hidden?'grimace':mood(),state.worn.makeup);
 }
 
 // Подъём уровня реакции. Вызывается и кликом по неправильной вещи, и таймером
@@ -56,8 +58,13 @@ function escalate(force=false){
  $('status').textContent='Кажется, что-то не так.';
  dread?.set(state.cycles+(level>=3?1:0));
  if(state.cycles>=3){finish('gone');return true;}
- if(level===4){sound('glitch');scene.face('grimace',state.worn.makeup);
-  if(!matchMedia('(prefers-reduced-motion: reduce)').matches){scene.capture($('screamShot'));$('scream').hidden=false;clearTimeout(flashTimer);flashTimer=setTimeout(()=>$('scream').hidden=true,620);}}
+ if(level===4&&!matchMedia('(prefers-reduced-motion: reduce)').matches){
+  hidePoem();sound('scream');scene.face('grimace',state.worn.makeup);scene.capture($('screamShot'));
+  $('game').inert=true;$('poemOpen').disabled=true;
+  $('scream').hidden=false;clearTimeout(flashTimer);
+  flashTimer=setTimeout(()=>{$('scream').hidden=true;$('game').inert=state.ended;updatePoemMenu();scene.face(mood(),state.worn.makeup);if(!state.ended)dialog('Эта девочка хочет быть красивой!');},2400);
+  return false;
+ }
  if(force||level===4)dialog('Эта девочка хочет быть красивой!');
  else if(level===3)dialog('Ей это не нравится!!!');
  else if(level===2)dialog('Это не очень красиво.');
@@ -73,37 +80,47 @@ function pressureTick(){
  // document.hidden.
  if(document.hidden)return;
  if(!state.started||state.ended||!wornWrong())return;
- if($('reactionDialog').open||$('exitDialog').open)return;   // не бить в открытое окно
+ if(document.querySelector('dialog[open]')||!$('subtitles').hidden||!$('scream').hidden)return;
  escalate();render();
 }
 function startPressure(){clearInterval(pressureTimer);pressureTimer=setInterval(pressureTick,PRESSURE_MS);}
 
-function hidePoem(){poemVersion++;clearTimeout(poemTimer);voice?.stop();voice=null;$('subtitles').hidden=true;}
-async function poem(key,secret=false){
- hidePoem();const version=poemVersion;
- try{if(!poems.has(key)){const res=await fetch(`${import.meta.env.BASE_URL}poems/babyland/${key}.txt`);if(!res.ok)throw new Error('poem unavailable');poems.set(key,await res.text());}if(version!==poemVersion)return;
- const lines=poems.get(key).split(/\r?\n/).filter(l=>l.trim()),chunks=[];for(let i=0;i<lines.length;i+=2)chunks.push(lines.slice(i,i+2).join('\n'));
- // Если запись чтения уже есть — субтитры идут по её реальному времени.
- // Пока записей нет («пишем звук с Сашей»), работает прежний таймер, и
- // игра от этого не ломается.
- let perChunk=0;
- if(!muted){
-  const buf=await sfx.loadVoice(`${import.meta.env.BASE_URL}audio/babyland/${key}.mp3`);
-  if(version!==poemVersion)return;
-  if(buf&&chunks.length){voice=sfx.playVoice(buf);perChunk=(buf.duration*1000)/chunks.length;}
- }
- let i=0;function next(){if(version!==poemVersion)return;if(i>=chunks.length){$('subtitles').hidden=true;if(secret)location.assign(MAP_URL);return;}$('subtitles').querySelector('p').textContent=chunks[i++];$('subtitles').hidden=false;const wait=perChunk||Math.max(4500,chunks[i-1].length*60);
-  // Стих — награда, и промотать его мимо ушедшего игрока значит отнять её.
-  // Если вкладку не смотрят, ждём возвращения и только потом отсчитываем.
-  poemTimer=setTimeout(function tick(){
-   if(version!==poemVersion)return;
-   if(document.hidden){poemTimer=setTimeout(tick,600);return;}
-   next();
-  },wait);}next();
- }catch{if(version===poemVersion)$('status').textContent='Стих не загрузился. Можно продолжать примерку.';}
+let currentPoem=null,secretReading=false,readerEpoch=0;
+const unlockedPoems=new Set();
+const poemLabel=key=>key==='secret'?'Секретный фрагмент':CATEGORIES.find(c=>c.poem===key)?.label||key;
+function updatePoemMenu(){
+ const select=$('poemSelect');select.replaceChildren();
+ for(const key of unlockedPoems){const o=document.createElement('option');o.value=key;o.textContent=poemLabel(key);select.append(o);}
+ select.value=currentPoem||'';$('poemOpen').disabled=!unlockedPoems.size;$('poemOpen').textContent=`Стихи · ${unlockedPoems.size}`;
 }
+function hidePoem(){const wasReading=!$('subtitles').hidden;poemVersion++;clearTimeout(poemTimer);voice?.stop();voice=null;$('subtitles').hidden=true;if(wasReading&&state.started&&!state.ended)startPressure();}
+async function showPoem(key,secret=false){
+ hidePoem();const version=poemVersion;currentPoem=key;secretReading=secret;
+ updatePoemMenu();$('subtitles').querySelector('p').textContent=poems.get(key);
+ $('subtitles').querySelector('p').scrollTop=0;$('subtitles').hidden=false;
+ $('poemSelect').disabled=secret;
+ $('poemDone').textContent=secret?'Закончить чтение и выйти':state.ended?'Закрыть текст':'Продолжить примерку';
+ $('poemNote').textContent='Читай в своём темпе. Текст не исчезнет.';
+ // Audio must never delay the text, and cannot replace a later selection.
+ if(!muted){const buf=await sfx.loadVoice(`${import.meta.env.BASE_URL}audio/babyland/${key}.mp3`);if(version===poemVersion&&buf)voice=sfx.playVoice(buf);}
+}
+async function poem(key,secret=false){
+ const epoch=readerEpoch;
+ try{
+  if(!poems.has(key)){const res=await fetch(`${import.meta.env.BASE_URL}poems/babyland/${key}.txt`);if(!res.ok)throw new Error('poem unavailable');poems.set(key,await res.text());}
+  if(epoch!==readerEpoch)return;
+  unlockedPoems.add(key);updatePoemMenu();
+  // A newly earned text is added to the menu without interrupting reading.
+  if(!$('subtitles').hidden&&!secret){$('poemNote').textContent='Открыт ещё один фрагмент — выбери его в списке.';return;}
+  await showPoem(key,secret);
+ }catch{$('status').textContent='Стих не загрузился. Нажми «Стихи», чтобы повторить.';unlockedPoems.add(key);updatePoemMenu();}
+}
+$('poemOpen').onclick=()=>{const key=currentPoem||[...unlockedPoems].at(-1);if(key)poems.has(key)?showPoem(key,state.ended&&key==='secret'):poem(key);};
+$('poemSelect').onchange=()=>showPoem($('poemSelect').value);
+$('poemDone').onclick=()=>{const leave=secretReading;hidePoem();if(leave)location.assign(MAP_URL);};
+
 function dialog(title,text=''){hidePoem();$('reactionTitle').textContent=title;$('reactionText').textContent=text;sound('uiOpen');$('reactionDialog').showModal();}
-function finish(kind){state.ended=true;clearInterval(pressureTimer);$('game').inert=true;hidePoem();scene.end(kind);markDone('babyland');$('machine').textContent='диск прочитан';
+function finish(kind){readerEpoch++;state.ended=true;clearInterval(pressureTimer);$('game').inert=true;hidePoem();scene.end(kind);markDone('babyland');$('machine').textContent='диск прочитан';
  if(kind==='secret'){$('status').textContent='Машина молчит.';sfx.killMusic();poem('secret',true);render();return;}
  if(kind==='perfect'){sound('fanfare');$('endingTitle').textContent='Ура! Теперь она красивая!';$('endingText').textContent='Идеальная девочка.';$('restart').hidden=true;}
  else{$('endingTitle').textContent='Она расстроена и устала.';$('endingText').textContent='Она больше так не может.';$('restart').hidden=false;sfx.killMusic();}
@@ -111,7 +128,7 @@ function finish(kind){state.ended=true;clearInterval(pressureTimer);$('game').in
  if(kind==='perfect')poem('makeup');
 }
 function pick(cat,item){
- if(!state.started||state.ended||state.worn[cat]===item.id||$('reactionDialog').open)return;
+ if(!state.started||state.ended||state.worn[cat]===item.id||$('reactionDialog').open||!$('scream').hidden)return;
  if(cat==='makeup'&&!complete())return;
  state.worn[cat]=item.id;scene.wear(cat,item.id);sound('clickPlastic');
  if(Object.entries(SECRET_LOOK).every(([c,id])=>state.worn[c]===id)){finish('secret');return;}
@@ -119,7 +136,7 @@ function pick(cat,item){
  if(item.kind==='pretty'){sound('sparkle');$('status').textContent='Вот так гораздо красивее.';shine.glow($('win-gaze'));shine.flash();{const r=$('win-gaze').getBoundingClientRect();shine.sparkle(r.left+r.width/2,r.top+r.height/2,14);}if(!played.has(cat)){played.add(cat);poem(CATEGORIES.find(c=>c.id===cat).poem);}}
  else{if(escalate(cat==='makeup'))return;}
  render();
- if(item.kind==='wrong'&&(state.wrong%4===0||cat==='makeup')){scene.face('grimace',state.worn.makeup);clearTimeout(faceTimer);faceTimer=setTimeout(()=>scene.face(mood(),state.worn.makeup),1100);}
+ if(item.kind==='wrong'&&$('scream').hidden&&(state.wrong%4===0||cat==='makeup')){scene.face('grimace',state.worn.makeup);clearTimeout(faceTimer);faceTimer=setTimeout(()=>scene.face(mood(),state.worn.makeup),1100);}
 }
 // Кадрирование окон-спутников. Каждое требование Ланы должно смотреть ровно
 // на ту часть, которой касается, — иначе окно с надписью «укладывать брови»
@@ -149,15 +166,20 @@ mountDiary();
 // блёстки на каждый клик по интерфейсу — бриф, стр. 11
 document.getElementById('game').addEventListener('pointerdown',e=>{if(state.started&&!state.ended)shine.sparkle(e.clientX,e.clientY,5);});
 
-$('start').onclick=()=>{if(!scene)return;state.started=true;startPressure();$('game').inert=false;$('intro').hidden=true;sound('unlockAudio');sound('startMusic');$('machine').textContent='диск читается';$('categories').querySelector('button')?.focus();};
+// The game opens directly. Audio starts on the first real interaction.
+let audioStarted=false;
+function activateAudio(){if(audioStarted||!scene)return;audioStarted=true;sound('unlockAudio');sound('startMusic');}
+document.addEventListener('pointerdown',activateAudio,{once:true});
+document.addEventListener('keydown',activateAudio,{once:true});
+if(scene){state.started=true;startPressure();$('machine').textContent='диск читается';}
 $('sound').onclick=()=>{muted=!muted;sfx.setMuted?.(muted);$('sound').textContent=`Звук: ${muted?'выкл.':'вкл.'}`;$('sound').setAttribute('aria-pressed',String(muted));if(!muted&&state.started)sfx.unlockAudio();};
 $('full').onclick=()=>setView(false);$('face').onclick=()=>setView(true);$('rotateLeft').onclick=()=>scene?.rotate(-Math.PI/6);$('rotateRight').onclick=()=>scene?.rotate(Math.PI/6);$('hidePoem').onclick=hidePoem;
 $('drawerToggle').onclick=()=>{const collapsed=$('game').classList.toggle('drawer-closed');$('drawerToggle').setAttribute('aria-expanded',String(!collapsed));$('drawerToggle').textContent=collapsed?'Открыть гардероб ↑':'Свернуть ↓';$('items').inert=collapsed;};
-$('restart').onclick=()=>{hidePoem();dread?.reset();shine?.reset();startPressure();$('game').inert=false;clearTimeout(flashTimer);clearTimeout(faceTimer);$('scream').hidden=true;Object.assign(state,{worn:{},active:'hair',wrong:0,cycles:0,sad:false,ended:false});played.clear();scene.reset();setView(false);$('ending').hidden=true;$('machine').textContent='диск читается';$('status').textContent='Попробуем ещё раз.';sound('startMusic');render();};
+$('restart').onclick=()=>{readerEpoch++;hidePoem();dread?.reset();shine?.reset();startPressure();$('game').inert=false;clearTimeout(flashTimer);clearTimeout(faceTimer);$('scream').hidden=true;Object.assign(state,{worn:{},active:'hair',wrong:0,cycles:0,sad:false,ended:false});played.clear();scene.reset();setView(false);$('ending').hidden=true;$('machine').textContent='диск читается';$('status').textContent='Попробуем ещё раз.';sound('startMusic');render();};
 document.querySelectorAll('a[href="/"]').forEach(a=>a.href=MAP_URL);
 $('back').addEventListener('click',e=>{if(state.started&&!state.ended){e.preventDefault();$('exitDialog').showModal();}});
 $('exitDialog').addEventListener('close',()=>{if($('exitDialog').returnValue==='leave')location.assign(MAP_URL);});
-document.addEventListener('keydown',e=>{if(e.key==='Escape'&&state.started&&!state.ended&&!$('reactionDialog').open&&!$('exitDialog').open){e.preventDefault();$('exitDialog').showModal();}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('scream').hidden){e.preventDefault();return;}if(e.key==='Escape'&&!$('subtitles').hidden){e.preventDefault();hidePoem();return;}if(e.key==='Escape'&&state.started&&!state.ended&&!$('reactionDialog').open&&!$('exitDialog').open){e.preventDefault();$('exitDialog').showModal();}});
 document.addEventListener('visibilitychange',()=>sfx.setMuted?.(muted||document.hidden));
 window.addEventListener('pagehide',()=>{hidePoem();clearInterval(pressureTimer);clearTimeout(flashTimer);clearTimeout(faceTimer);scene?.dispose();sfx.killMusic(0);},{once:true});
 if(import.meta.env.DEV)window.__babyland={state,stats:()=>scene?.stats()};
