@@ -1206,6 +1206,10 @@ window.addEventListener("resize", () => {
 let prev = performance.now();
 let treeIntroStart=null;
 let treeExitStart=null;
+const introLettering=new THREE.TextureLoader().load(`${import.meta.env.BASE_URL}art/intro/babyland-yggdrasil.png`);
+introLettering.colorSpace=THREE.SRGBColorSpace;
+let anchorStart=null;
+document.addEventListener('vol4:entered',()=>{anchorStart=performance.now();document.body.classList.add('hero-anchor');},{once:true});
 const introReduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
 function loop(now) {
   const dt = Math.min(0.05, (now - prev) / 1000);
@@ -1263,11 +1267,30 @@ function loop(now) {
       growing.push([o,o.scale.clone()]);o.scale.multiplyScalar(Math.max(.0001,reveal));
     });
     halftonePass.uniforms.heroFieldR.value=0;
+    const oldBackground=scene.background,oldIntensity=scene.backgroundIntensity;
+    const ratio=(1536/1024)/camera.aspect;
+    introLettering.repeat.set(Math.max(1,1/ratio),Math.min(1.65,Math.max(1,ratio)));
+    introLettering.offset.set((1-introLettering.repeat.x)/2,(1-introLettering.repeat.y)/2);
+    if(!exiting){scene.background=introLettering;scene.backgroundIntensity=.44*THREE.MathUtils.smoothstep(elapsed,.5,2.8);}
+    const oldGrid=halftonePass.uniforms.gridSize.value;
+    if(!exiting&&W()<600)halftonePass.uniforms.gridSize.value=4;
     composer.render();
+    halftonePass.uniforms.gridSize.value=oldGrid;
+    scene.background=oldBackground;scene.backgroundIntensity=oldIntensity;
     for(const [o,scale] of growing)o.scale.copy(scale);
     hidden.forEach(o=>o.visible=true);camera.position.copy(pos);camera.quaternion.copy(quat);
     if(elapsed>=5&&!window.__vol4TreeIntroReady){window.__vol4TreeIntroReady=true;window.dispatchEvent(new Event('vol4:tree-intro-ready'));}
-  }else composer.render();
+  }else if(anchorStart!==null&&now-anchorStart<1000){
+    // Only the actual hero remains in the render, not a circular hole showing
+    // bits of floor. Visibility is restored immediately after this frame.
+    const hidden=[];
+    for(const child of scene.children)if(child!==hero.group&&!child.isLight&&child.visible){hidden.push(child);child.visible=false;}
+    const oldMin=halftonePass.uniforms.minRadius.value;
+    halftonePass.uniforms.minRadius.value=0;
+    composer.render();
+    halftonePass.uniforms.minRadius.value=oldMin;
+    hidden.forEach(o=>o.visible=true);
+  }else{document.body.classList.remove('hero-anchor');composer.render();}
   if(!window.__vol4MapReady){window.__vol4MapReady=true;window.dispatchEvent(new Event('vol4:map-ready'));}
   requestAnimationFrame(loop);
 }
