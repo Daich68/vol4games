@@ -16,9 +16,12 @@ document.getElementById('loadProgress').textContent=count?`${count} / 4 · де�
 function open(){
  if(!ready||leaving)return;
  leaving=true;pre.classList.add('leaving');
- setTimeout(()=>{
+ enter.blur();
  targets.forEach((el,i)=>el.inert=previous[i]);
  document.body.classList.remove('preloading');
+ document.body.classList.add('intro-flight');
+ setTimeout(()=>{
+ document.body.classList.remove('intro-flight');
  pre.remove();
  document.dispatchEvent(new Event('vol4:entered'));
  },matchMedia('(prefers-reduced-motion: reduce)').matches?0:1100);

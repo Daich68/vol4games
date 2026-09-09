@@ -1106,7 +1106,6 @@ const SPEED   = 6.0;
 const ACT_RAD = 0.75;
 
 function updateHero(dt) {
-  if(document.body.classList.contains('hero-anchor'))return;
   if (teleport) { isMoving = false; idleTime = 0; return; }
   const { dx, dz, moving } = dirFromKeys();
   isMoving = moving;
@@ -1209,9 +1208,8 @@ let treeIntroStart=null;
 let treeExitStart=null;
 const introLettering=new THREE.TextureLoader().load(`${import.meta.env.BASE_URL}art/intro/babyland-yggdrasil.png`);
 introLettering.colorSpace=THREE.SRGBColorSpace;
-let anchorStart=null;
-let anchorTarget=null;
-document.addEventListener('vol4:entered',()=>{anchorStart=performance.now();document.body.classList.add('hero-anchor');},{once:true});
+let arrivalStart=null;
+document.addEventListener('vol4:entered',()=>{arrivalStart=performance.now();},{once:true});
 const introReduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
 function loop(now) {
   const dt = Math.min(0.05, (now - prev) / 1000);
@@ -1245,7 +1243,7 @@ function loop(now) {
     halftonePass.uniforms.heroFieldR.value = HERO_FIELD_RADIUS_PX;
   }
 
-  if(document.body.classList.contains('preloading')){
+  if(document.body.classList.contains('preloading')||document.body.classList.contains('intro-flight')){
     if(treeIntroStart===null)treeIntroStart=now;
     const elapsed=(now-treeIntroStart)/1000;
     const growth=introReduced?1:THREE.MathUtils.smoothstep(elapsed,.2,4.4);
@@ -1253,7 +1251,7 @@ function loop(now) {
     const hidden=[];
     const exiting=document.getElementById('preloader')?.classList.contains('leaving');
     if(exiting&&treeExitStart===null)treeExitStart=now;
-    for(const child of scene.children)if(child!==(exiting?hero.group:yggdrasil.group)&&!child.isLight&&child.visible){hidden.push(child);child.visible=false;}
+    for(const child of scene.children)if(!exiting&&child!==yggdrasil.group&&!child.isLight&&child.visible){hidden.push(child);child.visible=false;}
     const bounds=new THREE.Box3().setFromObject(yggdrasil.group);
     const center=bounds.getCenter(new THREE.Vector3()),size=bounds.getSize(new THREE.Vector3());
     const distance=Math.max(size.y,size.x/camera.aspect)*1.85;
@@ -1282,30 +1280,14 @@ function loop(now) {
     for(const [o,scale] of growing)o.scale.copy(scale);
     hidden.forEach(o=>o.visible=true);camera.position.copy(pos);camera.quaternion.copy(quat);
     if(elapsed>=5&&!window.__vol4TreeIntroReady){window.__vol4TreeIntroReady=true;window.dispatchEvent(new Event('vol4:tree-intro-ready'));}
-  }else if(anchorStart!==null&&now-anchorStart<4600){
-    const age=now-anchorStart;
-    const progress=THREE.MathUtils.clamp((age-1000)/3600,0,1);
-    const mix=1-THREE.MathUtils.smoothstep(progress,.88,1);
-    document.body.style.setProperty('--anchor-ui-opacity',String(1-mix));
-    if(!anchorTarget)anchorTarget=new THREE.WebGLRenderTarget(W(),H(),{type:THREE.HalfFloatType});
-    if(anchorTarget.width!==W()||anchorTarget.height!==H())anchorTarget.setSize(W(),H());
-    // Only the actual hero remains in the render, not a circular hole showing
-    // bits of floor. Visibility is restored immediately after this frame.
-    const hidden=[];
-    for(const child of scene.children)if(child!==hero.group&&!child.isLight&&child.visible){hidden.push(child);child.visible=false;}
-    const previousTarget=renderer.getRenderTarget();
-    renderer.setRenderTarget(anchorTarget);renderer.render(scene,camera);renderer.setRenderTarget(previousTarget);
-    hidden.forEach(o=>o.visible=true);
-    const oldMin=halftonePass.uniforms.minRadius.value;
-    halftonePass.uniforms.anchorTexture.value=anchorTarget.texture;
-    halftonePass.uniforms.anchorMix.value=mix;
-    halftonePass.uniforms.rebuildProgress.value=introReduced?-1:progress;
-    halftonePass.uniforms.minRadius.value=oldMin*(1-mix);
+  }else{
+    const progress=arrivalStart===null?1:Math.min(1,(now-arrivalStart)/1500);
+    const origin=new THREE.Vector3(TREE.x,0,TREE.z).project(camera);
+    halftonePass.uniforms.arrivalOrigin.value.set((origin.x+1)*.5*W(),(origin.y+1)*.5*H());
+    halftonePass.uniforms.arrivalProgress.value=introReduced?1:progress;
     composer.render();
-    halftonePass.uniforms.anchorMix.value=0;
-    halftonePass.uniforms.rebuildProgress.value=-1;
-    halftonePass.uniforms.minRadius.value=oldMin;
-  }else{document.body.classList.remove('hero-anchor');if(anchorTarget){anchorTarget.dispose();anchorTarget=null;halftonePass.uniforms.anchorTexture.value=null;}composer.render();}
+  }
+
   if(!window.__vol4MapReady){window.__vol4MapReady=true;window.dispatchEvent(new Event('vol4:map-ready'));}
   requestAnimationFrame(loop);
 }
