@@ -1,0 +1,22 @@
+#preloader{position:fixed;inset:0;z-index:100;background:#0c0e11;color:#eff1f4;overflow:auto;font-family:Arial,Helvetica,sans-serif;letter-spacing:normal;text-transform:none}
+.load-shell{min-height:100%;max-width:1160px;margin:auto;padding:40px 48px;display:flex;flex-direction:column}
+.load-brand{font-size:21px;font-weight:700;letter-spacing:-.7px}.load-brand span{font-weight:400;color:#89929e}
+.load-content{width:min(100%,640px);margin:auto 0;padding:64px 0}
+.load-eyebrow{font-size:11px;letter-spacing:.16em;color:#aab2bd;margin:0 0 24px}
+#loadTitle{font-size:clamp(30px,4.7vw,54px);font-weight:500;line-height:1.12;letter-spacing:-.045em;margin:0 0 22px;color:#eff1f4;text-transform:none}
+.load-description{font-size:17px;line-height:1.65;color:#aab2bd;max-width:510px;margin:0 0 32px}
+.load-state{display:flex;align-items:center;gap:10px;font-size:14px;line-height:1.5;color:#d3dae3;min-height:24px}
+.load-state i{width:14px;height:14px;border:2px solid #36404d;border-top-color:#d3dae3;border-radius:50%;animation:load-spin 1s linear infinite;flex:none}
+#preloader[data-state=ready] .load-state i{width:8px;height:8px;background:#a4d5bc;border:0;animation:none;margin:3px}
+#preloader[data-state=error] .load-state i{background:#e4aa9d;border:0;animation:none}
+.load-progress{font-size:14px;color:#aab2bd;margin:12px 0 24px;min-height:20px}
+#loadEnter,#loadRetry{display:block;width:260px;max-width:100%;min-height:48px;padding:12px 22px;border:1px solid #e4e9f0;border-radius:7px;background:#e4e9f0;color:#15191f;font:500 15px/1.4 Arial,sans-serif;letter-spacing:0;cursor:pointer;text-transform:none}
+#loadEnter:disabled{background:#20252d;border-color:#303844;color:#89929e;cursor:wait}
+#loadEnter:not(:disabled):hover,#loadRetry:hover{background:#fff}
+#preloader button:focus-visible{outline:3px solid #91b8e8;outline-offset:4px}
+#loadRetry[hidden],#loadEnter[hidden]{display:none}
+.load-note{font-size:12px;line-height:1.6;color:#89929e;margin:16px 0 0}
+.load-footer{display:flex;justify-content:space-between;gap:20px;border-top:1px solid #252b34;padding-top:20px;font-size:12px;color:#89929e}
+@keyframes load-spin{to{transform:rotate(360deg)}}
+@media(max-width:600px){.load-shell{padding:28px 24px max(24px,env(safe-area-inset-bottom))}.load-content{padding:48px 0}.load-description{font-size:16px}.load-footer{flex-direction:column;gap:8px}#loadEnter,#loadRetry{width:100%}}
+@media(prefers-reduced-motion:reduce){.load-state i{animation:none}}

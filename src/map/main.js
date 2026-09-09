@@ -1237,6 +1237,7 @@ function loop(now) {
   }
 
   composer.render();
+  if(!window.__vol4MapReady){window.__vol4MapReady=true;window.dispatchEvent(new Event('vol4:map-ready'));}
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
@@ -1356,5 +1357,6 @@ const CENTO = [
   });
 
   // дать карте включиться из кинескопа, затем запустить финал
-  setTimeout(start, 1300);
+  if(document.body.classList.contains('preloading'))document.addEventListener('vol4:entered',()=>setTimeout(start,1300),{once:true});
+  else setTimeout(start, 1300);
 })();
