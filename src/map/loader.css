@@ -1,22 +1,17 @@
-#preloader{position:fixed;inset:0;z-index:100;background:#0c0e11;color:#eff1f4;overflow:auto;font-family:Arial,Helvetica,sans-serif;letter-spacing:normal;text-transform:none}
-.load-shell{min-height:100%;max-width:1160px;margin:auto;padding:40px 48px;display:flex;flex-direction:column}
-.load-brand{font-size:21px;font-weight:700;letter-spacing:-.7px}.load-brand span{font-weight:400;color:#89929e}
-.load-content{width:min(100%,640px);margin:auto 0;padding:64px 0}
-.load-eyebrow{font-size:11px;letter-spacing:.16em;color:#aab2bd;margin:0 0 24px}
-#loadTitle{font-size:clamp(30px,4.7vw,54px);font-weight:500;line-height:1.12;letter-spacing:-.045em;margin:0 0 22px;color:#eff1f4;text-transform:none}
-.load-description{font-size:17px;line-height:1.65;color:#aab2bd;max-width:510px;margin:0 0 32px}
-.load-state{display:flex;align-items:center;gap:10px;font-size:14px;line-height:1.5;color:#d3dae3;min-height:24px}
-.load-state i{width:14px;height:14px;border:2px solid #36404d;border-top-color:#d3dae3;border-radius:50%;animation:load-spin 1s linear infinite;flex:none}
-#preloader[data-state=ready] .load-state i{width:8px;height:8px;background:#a4d5bc;border:0;animation:none;margin:3px}
-#preloader[data-state=error] .load-state i{background:#e4aa9d;border:0;animation:none}
-.load-progress{font-size:14px;color:#aab2bd;margin:12px 0 24px;min-height:20px}
-#loadEnter,#loadRetry{display:block;width:260px;max-width:100%;min-height:48px;padding:12px 22px;border:1px solid #e4e9f0;border-radius:7px;background:#e4e9f0;color:#15191f;font:500 15px/1.4 Arial,sans-serif;letter-spacing:0;cursor:pointer;text-transform:none}
-#loadEnter:disabled{background:#20252d;border-color:#303844;color:#89929e;cursor:wait}
-#loadEnter:not(:disabled):hover,#loadRetry:hover{background:#fff}
-#preloader button:focus-visible{outline:3px solid #91b8e8;outline-offset:4px}
+﻿#preloader{position:fixed;inset:0;z-index:100;background:transparent;color:#e8ecf5;font-family:'JetBrains Mono',monospace;transition:opacity 1.1s ease;overflow:hidden}
+#preloader::before{content:'';position:absolute;inset:0;pointer-events:none;background:linear-gradient(#000 0%,transparent 22%,transparent 65%,#000c 100%)}
+body.preloading>:not(#preloader):not(#c):not(script):not(style){visibility:hidden}
+.tree-intro-mark{position:absolute;top:max(38px,env(safe-area-inset-top));left:0;right:0;text-align:center;font-size:24px;font-weight:300;letter-spacing:.38em;text-indent:.38em}
+.tree-intro-mark span{display:block;margin-top:12px;color:#929bb9;font-size:9px;letter-spacing:.22em}
+.tree-intro-caption{position:absolute;bottom:max(40px,env(safe-area-inset-bottom));left:20px;right:20px;text-align:center}
+#loadStatus{font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:#b4ccee;margin:0 0 12px;animation:tree-breath 3s ease-in-out infinite}
+#loadProgress{font-size:9px;letter-spacing:.12em;color:#929bb9;margin:0 0 22px;min-height:14px}
+#loadEnter,#loadRetry{display:block;margin:0 auto;min-width:210px;min-height:48px;border:1px solid #b4ccee77;border-radius:0;background:#0008;color:#e8ecf5;font:11px/1.4 'JetBrains Mono',monospace;letter-spacing:.22em;text-transform:uppercase;padding:14px 24px;cursor:pointer;transition:opacity .7s,transform .7s,background .2s}
+#loadEnter:disabled{opacity:0;transform:translateY(10px);pointer-events:none}
+#loadEnter:hover,#loadRetry:hover{background:#b4ccee20;border-color:#b4ccee}
+#loadEnter:focus-visible,#loadRetry:focus-visible{outline:2px solid #e8ecf5;outline-offset:5px}
 #loadRetry[hidden],#loadEnter[hidden]{display:none}
-.load-note{font-size:12px;line-height:1.6;color:#89929e;margin:16px 0 0}
-.load-footer{display:flex;justify-content:space-between;gap:20px;border-top:1px solid #252b34;padding-top:20px;font-size:12px;color:#89929e}
-@keyframes load-spin{to{transform:rotate(360deg)}}
-@media(max-width:600px){.load-shell{padding:28px 24px max(24px,env(safe-area-inset-bottom))}.load-content{padding:48px 0}.load-description{font-size:16px}.load-footer{flex-direction:column;gap:8px}#loadEnter,#loadRetry{width:100%}}
-@media(prefers-reduced-motion:reduce){.load-state i{animation:none}}
+#preloader.leaving{opacity:0;pointer-events:none}
+@keyframes tree-breath{0%,100%{opacity:.45}50%{opacity:1}}
+@media(max-width:600px){.tree-intro-mark{top:30px;font-size:20px}.tree-intro-caption{bottom:max(26px,env(safe-area-inset-bottom))}}
+@media(prefers-reduced-motion:reduce){#loadStatus{animation:none}#preloader,#loadEnter{transition:none}}

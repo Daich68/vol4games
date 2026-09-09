@@ -330,22 +330,12 @@
   #crtFx:not(.boot) .crt-top, #crtFx:not(.boot) .crt-bot { transform: scaleY(0); }
 </style>
 
-<!-- The loader becomes ready only after the map renders its first frame. -->
-<section id="preloader" aria-labelledby="loadTitle">
- <div class="load-shell">
-  <div class="load-brand">vol4<span> / games</span></div>
-  <div class="load-content">
-   <p class="load-eyebrow">ИНТЕРАКТИВНЫЙ АЛЬМАНАХ</p>
-   <h1 id="loadTitle">Четыре стихотворения.<br>Четыре способа прочитать.</h1>
-   <p class="load-description">Исследуй карту, выбирай произведение и входи в игру. Каждая открывает свой способ взаимодействия с текстом.</p>
-   <div class="load-state" role="status" aria-live="polite"><i aria-hidden="true"></i><span id="loadStatus">Подготавливаем карту…</span></div>
-   <p id="loadProgress" class="load-progress"></p>
-   <button id="loadEnter" disabled>Загрузка…</button>
-   <button id="loadRetry" hidden>Повторить загрузку</button>
-   <p class="load-note">Без регистрации. Прогресс сохраняется в этом браузере.</p>
-  </div>
-  <footer class="load-footer"><span>vol4 · поэзия в действии</span><span>4 произведения + BABYLAND DLC</span></footer>
- </div>
+<!-- The actual map tree is revealed by the map renderer behind this overlay. -->
+<section id="preloader" aria-label="Пробуждение дерева">
+ <header class="tree-intro-mark">vol4<span>поэтическая машина</span></header>
+ <div class="tree-intro-caption"><p id="loadStatus" role="status" aria-live="polite">пробуждение</p>
+ <p id="loadProgress"></p><button id="loadEnter" disabled>войти в мир</button>
+ <button id="loadRetry" hidden>повторить загрузку</button></div>
 </section>
 
 <canvas id="c"></canvas>

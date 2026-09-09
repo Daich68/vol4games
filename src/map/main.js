@@ -1204,6 +1204,9 @@ window.addEventListener("resize", () => {
 
 // ── loop ─────────────────────────────────────────────────────────────────
 let prev = performance.now();
+let treeIntroStart=null;
+let treeExitStart=null;
+const introReduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
 function loop(now) {
   const dt = Math.min(0.05, (now - prev) / 1000);
   prev = now;
@@ -1236,7 +1239,35 @@ function loop(now) {
     halftonePass.uniforms.heroFieldR.value = HERO_FIELD_RADIUS_PX;
   }
 
-  composer.render();
+  if(document.body.classList.contains('preloading')){
+    if(treeIntroStart===null)treeIntroStart=now;
+    const elapsed=(now-treeIntroStart)/1000;
+    const growth=introReduced?1:THREE.MathUtils.smoothstep(elapsed,.2,4.4);
+    const pos=camera.position.clone(),quat=camera.quaternion.clone();
+    const hidden=[];
+    const exiting=document.getElementById('preloader')?.classList.contains('leaving');
+    if(exiting&&treeExitStart===null)treeExitStart=now;
+    for(const child of scene.children)if(!exiting&&child!==yggdrasil.group&&!child.isLight&&child.visible){hidden.push(child);child.visible=false;}
+    const bounds=new THREE.Box3().setFromObject(yggdrasil.group);
+    const center=bounds.getCenter(new THREE.Vector3()),size=bounds.getSize(new THREE.Vector3());
+    const distance=Math.max(size.y,size.x/camera.aspect)*1.85;
+    const angle=introReduced?.24:.24+Math.min(elapsed,8)*.055;
+    camera.position.set(center.x+Math.sin(angle)*distance,center.y+size.y*.08,center.z+Math.cos(angle)*distance);
+    camera.lookAt(center);
+    if(exiting){const blend=THREE.MathUtils.smoothstep(now-treeExitStart,0,1050);camera.position.lerp(pos,blend);camera.quaternion.slerp(quat,blend);}
+    const growing=[];
+    yggdrasil.group.traverse(o=>{if(!o.isMesh)return;
+      const world=o.getWorldPosition(new THREE.Vector3());
+      const level=THREE.MathUtils.clamp((world.y-bounds.min.y)/size.y,0,1);
+      const reveal=introReduced?1:THREE.MathUtils.smoothstep(growth,level*.8,level*.8+.2);
+      growing.push([o,o.scale.clone()]);o.scale.multiplyScalar(Math.max(.0001,reveal));
+    });
+    halftonePass.uniforms.heroFieldR.value=0;
+    composer.render();
+    for(const [o,scale] of growing)o.scale.copy(scale);
+    hidden.forEach(o=>o.visible=true);camera.position.copy(pos);camera.quaternion.copy(quat);
+    if(elapsed>=5&&!window.__vol4TreeIntroReady){window.__vol4TreeIntroReady=true;window.dispatchEvent(new Event('vol4:tree-intro-ready'));}
+  }else composer.render();
   if(!window.__vol4MapReady){window.__vol4MapReady=true;window.dispatchEvent(new Event('vol4:map-ready'));}
   requestAnimationFrame(loop);
 }
