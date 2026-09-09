@@ -1106,6 +1106,7 @@ const SPEED   = 6.0;
 const ACT_RAD = 0.75;
 
 function updateHero(dt) {
+  if(document.body.classList.contains('hero-anchor'))return;
   if (teleport) { isMoving = false; idleTime = 0; return; }
   const { dx, dz, moving } = dirFromKeys();
   isMoving = moving;
@@ -1252,7 +1253,7 @@ function loop(now) {
     const hidden=[];
     const exiting=document.getElementById('preloader')?.classList.contains('leaving');
     if(exiting&&treeExitStart===null)treeExitStart=now;
-    for(const child of scene.children)if(!exiting&&child!==yggdrasil.group&&!child.isLight&&child.visible){hidden.push(child);child.visible=false;}
+    for(const child of scene.children)if(child!==(exiting?hero.group:yggdrasil.group)&&!child.isLight&&child.visible){hidden.push(child);child.visible=false;}
     const bounds=new THREE.Box3().setFromObject(yggdrasil.group);
     const center=bounds.getCenter(new THREE.Vector3()),size=bounds.getSize(new THREE.Vector3());
     const distance=Math.max(size.y,size.x/camera.aspect)*1.85;
@@ -1281,9 +1282,10 @@ function loop(now) {
     for(const [o,scale] of growing)o.scale.copy(scale);
     hidden.forEach(o=>o.visible=true);camera.position.copy(pos);camera.quaternion.copy(quat);
     if(elapsed>=5&&!window.__vol4TreeIntroReady){window.__vol4TreeIntroReady=true;window.dispatchEvent(new Event('vol4:tree-intro-ready'));}
-  }else if(anchorStart!==null&&now-anchorStart<4200){
+  }else if(anchorStart!==null&&now-anchorStart<4600){
     const age=now-anchorStart;
-    const mix=THREE.MathUtils.smoothstep(age,200,1400)*(1-THREE.MathUtils.smoothstep(age,2400,4200));
+    const progress=THREE.MathUtils.clamp((age-1000)/3600,0,1);
+    const mix=1-THREE.MathUtils.smoothstep(progress,.88,1);
     document.body.style.setProperty('--anchor-ui-opacity',String(1-mix));
     if(!anchorTarget)anchorTarget=new THREE.WebGLRenderTarget(W(),H(),{type:THREE.HalfFloatType});
     if(anchorTarget.width!==W()||anchorTarget.height!==H())anchorTarget.setSize(W(),H());
@@ -1297,9 +1299,11 @@ function loop(now) {
     const oldMin=halftonePass.uniforms.minRadius.value;
     halftonePass.uniforms.anchorTexture.value=anchorTarget.texture;
     halftonePass.uniforms.anchorMix.value=mix;
+    halftonePass.uniforms.rebuildProgress.value=introReduced?-1:progress;
     halftonePass.uniforms.minRadius.value=oldMin*(1-mix);
     composer.render();
     halftonePass.uniforms.anchorMix.value=0;
+    halftonePass.uniforms.rebuildProgress.value=-1;
     halftonePass.uniforms.minRadius.value=oldMin;
   }else{document.body.classList.remove('hero-anchor');if(anchorTarget){anchorTarget.dispose();anchorTarget=null;halftonePass.uniforms.anchorTexture.value=null;}composer.render();}
   if(!window.__vol4MapReady){window.__vol4MapReady=true;window.dispatchEvent(new Event('vol4:map-ready'));}

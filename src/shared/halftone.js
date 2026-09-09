@@ -12,6 +12,7 @@ const halftoneShader = {
     tDiffuse:    { value: null },
     anchorTexture: { value: null },
     anchorMix: { value: 0 },
+    rebuildProgress: { value: -1 },
     resolution:  { value: new THREE.Vector2(1, 1) },
     gridSize:    { value: 6.0  }, // px на ячейку
     minRadius:   { value: 0.45 }, // baseline-точки
@@ -33,6 +34,7 @@ const halftoneShader = {
     uniform sampler2D tDiffuse;
     uniform sampler2D anchorTexture;
     uniform float anchorMix;
+    uniform float rebuildProgress;
     uniform vec2  resolution;
     uniform float gridSize;
     uniform float minRadius;
@@ -83,7 +85,33 @@ const halftoneShader = {
         dotCol = mix(dotCol, inv, fieldMask);
       }
 
-      gl_FragColor = vec4(dotCol * a, 1.0);
+      vec3 result=dotCol*a;
+      if(rebuildProgress>=0.0&&rebuildProgress<1.0){
+        float p=rebuildProgress;
+        float ease=p*p*(3.0-2.0*p);
+        float spread=mix(1.65,1.0,ease);
+        vec2 drift=vec2(sin(p*3.14159)*55.0,-110.0*(1.0-ease));
+        vec2 sourcePx=heroPos+(px-heroPos-drift)/spread;
+        vec2 sourceId=floor(sourcePx/gridSize);
+        vec3 particles=vec3(0.0);
+        for(int y=-1;y<=1;y++)for(int x=-1;x<=1;x++){
+          vec2 id=sourceId+vec2(float(x),float(y));
+          vec2 target=(id+.5)*gridSize;
+          vec2 uv=target/resolution;
+          if(uv.x<0.0||uv.y<0.0||uv.x>1.0||uv.y>1.0)continue;
+          float seed=fract(sin(dot(id,vec2(12.9898,78.233)))*43758.5453);
+          vec2 jitter=vec2(sin(seed*62.8+p*5.0),cos(seed*31.4+p*4.0))*gridSize*.4*(1.0-ease);
+          vec2 position=heroPos+(target-heroPos)*spread+drift+jitter;
+          vec3 color=max(vec3(0.0),texture2D(tDiffuse,uv).rgb-texture2D(anchorTexture,uv).rgb);
+          float light=clamp(pow(dot(color,vec3(.299,.587,.114)),.65)*boost,0.0,1.0);
+          float radius=mix(0.0,maxRadius,light);
+          float alpha=1.0-smoothstep(radius-.6,radius+.6,length(px-position));
+          float born=smoothstep(seed*.28,seed*.28+.18,p);
+          particles=max(particles,(color+.10)*alpha*born*smoothstep(.015,.08,light));
+        }
+        result=max(result,particles*(1.0-smoothstep(.94,1.0,p)));
+      }
+      gl_FragColor = vec4(result, 1.0);
     }
   `,
 };
