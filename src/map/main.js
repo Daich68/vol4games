@@ -1209,6 +1209,7 @@ let treeExitStart=null;
 const introLettering=new THREE.TextureLoader().load(`${import.meta.env.BASE_URL}art/intro/babyland-yggdrasil.png`);
 introLettering.colorSpace=THREE.SRGBColorSpace;
 let anchorStart=null;
+let anchorTarget=null;
 document.addEventListener('vol4:entered',()=>{anchorStart=performance.now();document.body.classList.add('hero-anchor');},{once:true});
 const introReduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
 function loop(now) {
@@ -1280,17 +1281,27 @@ function loop(now) {
     for(const [o,scale] of growing)o.scale.copy(scale);
     hidden.forEach(o=>o.visible=true);camera.position.copy(pos);camera.quaternion.copy(quat);
     if(elapsed>=5&&!window.__vol4TreeIntroReady){window.__vol4TreeIntroReady=true;window.dispatchEvent(new Event('vol4:tree-intro-ready'));}
-  }else if(anchorStart!==null&&now-anchorStart<1000){
+  }else if(anchorStart!==null&&now-anchorStart<4200){
+    const age=now-anchorStart;
+    const mix=THREE.MathUtils.smoothstep(age,200,1400)*(1-THREE.MathUtils.smoothstep(age,2400,4200));
+    document.body.style.setProperty('--anchor-ui-opacity',String(1-mix));
+    if(!anchorTarget)anchorTarget=new THREE.WebGLRenderTarget(W(),H(),{type:THREE.HalfFloatType});
+    if(anchorTarget.width!==W()||anchorTarget.height!==H())anchorTarget.setSize(W(),H());
     // Only the actual hero remains in the render, not a circular hole showing
     // bits of floor. Visibility is restored immediately after this frame.
     const hidden=[];
     for(const child of scene.children)if(child!==hero.group&&!child.isLight&&child.visible){hidden.push(child);child.visible=false;}
-    const oldMin=halftonePass.uniforms.minRadius.value;
-    halftonePass.uniforms.minRadius.value=0;
-    composer.render();
-    halftonePass.uniforms.minRadius.value=oldMin;
+    const previousTarget=renderer.getRenderTarget();
+    renderer.setRenderTarget(anchorTarget);renderer.render(scene,camera);renderer.setRenderTarget(previousTarget);
     hidden.forEach(o=>o.visible=true);
-  }else{document.body.classList.remove('hero-anchor');composer.render();}
+    const oldMin=halftonePass.uniforms.minRadius.value;
+    halftonePass.uniforms.anchorTexture.value=anchorTarget.texture;
+    halftonePass.uniforms.anchorMix.value=mix;
+    halftonePass.uniforms.minRadius.value=oldMin*(1-mix);
+    composer.render();
+    halftonePass.uniforms.anchorMix.value=0;
+    halftonePass.uniforms.minRadius.value=oldMin;
+  }else{document.body.classList.remove('hero-anchor');if(anchorTarget){anchorTarget.dispose();anchorTarget=null;halftonePass.uniforms.anchorTexture.value=null;}composer.render();}
   if(!window.__vol4MapReady){window.__vol4MapReady=true;window.dispatchEvent(new Event('vol4:map-ready'));}
   requestAnimationFrame(loop);
 }

@@ -10,6 +10,8 @@ import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass.js";
 const halftoneShader = {
   uniforms: {
     tDiffuse:    { value: null },
+    anchorTexture: { value: null },
+    anchorMix: { value: 0 },
     resolution:  { value: new THREE.Vector2(1, 1) },
     gridSize:    { value: 6.0  }, // px на ячейку
     minRadius:   { value: 0.45 }, // baseline-точки
@@ -29,6 +31,8 @@ const halftoneShader = {
   `,
   fragmentShader: `
     uniform sampler2D tDiffuse;
+    uniform sampler2D anchorTexture;
+    uniform float anchorMix;
     uniform vec2  resolution;
     uniform float gridSize;
     uniform float minRadius;
@@ -46,6 +50,7 @@ const halftoneShader = {
       vec2 cellUv     = cellCenter / resolution;
 
       vec3 col = texture2D(tDiffuse, cellUv).rgb;
+      if(anchorMix>0.0)col=mix(col,texture2D(anchorTexture,cellUv).rgb,anchorMix);
       float lum = dot(col, vec3(0.299, 0.587, 0.114));
       lum = pow(lum, 0.65);
       lum = clamp(lum * boost, 0.0, 1.0);
